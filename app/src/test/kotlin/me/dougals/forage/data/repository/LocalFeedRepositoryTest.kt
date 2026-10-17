@@ -69,6 +69,22 @@ class LocalFeedRepositoryTest : DbTestBase() {
         assertEquals(1, db.feedDao().getAll().size)
     }
 
+    @Test fun refreshBackfillsThumbnailsOnArticlesStoredWithoutOneAndKeepsExistingOnes() = runTest {
+        source.feeds["https://a/feed"] = parsed("A", "1", "2")
+        repo.addFeed("https://a/feed").getOrThrow()
+        db.articleDao().fillImageUrl(1, "2", "https://site/kept.jpg")
+
+        val withImages = parsed("A", "1", "2")
+        source.feeds["https://a/feed"] = withImages.copy(
+            items = withImages.items.map { it.copy(imageUrl = "https://site/new-${it.guid}.jpg") },
+        )
+        repo.refresh().getOrThrow()
+
+        val byGuid = db.articleDao().getAll().associate { it.guid to it.imageUrl }
+        assertEquals("https://site/new-1.jpg", byGuid["1"])
+        assertEquals("https://site/kept.jpg", byGuid["2"])
+    }
+
     @Test fun refreshAddsOnlyNewItemsAndKeepsReadState() = runTest {
         source.feeds["https://a/feed"] = parsed("A", "1")
         repo.addFeed("https://a/feed").getOrThrow()

@@ -92,8 +92,9 @@ class LocalFeedRepository(
     }
 
     /** @return how many items were new */
-    private suspend fun store(feedId: Long, items: List<ParsedItem>): Int =
-        db.articleDao().insertIgnore(
+    private suspend fun store(feedId: Long, items: List<ParsedItem>): Int {
+        items.forEach { item -> item.imageUrl?.let { db.articleDao().fillImageUrl(feedId, item.guid, it) } }
+        return db.articleDao().insertIgnore(
             items.map {
                 ArticleEntity(
                     feedId = feedId, guid = it.guid, title = it.title, url = it.url, author = it.author,
@@ -102,4 +103,5 @@ class LocalFeedRepository(
                 )
             },
         ).count { it != -1L }
+    }
 }

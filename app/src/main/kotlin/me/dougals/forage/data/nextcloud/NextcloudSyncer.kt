@@ -128,6 +128,7 @@ class NextcloudSyncer(
                 dao.insertIgnore(listOf(item.toEntity(feedId, isRead, isSaved))).single().takeIf { it != -1L } ?: continue
             } else {
                 dao.updateRemoteState(existing.id, item.id, isRead, isSaved)
+                item.toEntity(feedId, isRead, isSaved).imageUrl?.let { dao.fillImageUrl(feedId, existing.guid, it) }
                 existing.id
             }
             if (existing == null && !isRead) newUnread++

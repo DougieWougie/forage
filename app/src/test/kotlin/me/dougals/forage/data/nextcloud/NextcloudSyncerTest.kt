@@ -53,6 +53,17 @@ class NextcloudSyncerTest : DbTestBase() {
         assertEquals(null, db.articleDao().getByRemoteId(3)!!.imageUrl)
     }
 
+    @Test fun laterPullBackfillsAThumbnailOnAnArticleStoredWithoutOne() = runTest {
+        serverWithOneFeed()
+        api.itemList += item(1, feedId = 10)
+        syncer.pull()
+        assertEquals(null, db.articleDao().getByRemoteId(1)!!.imageUrl)
+
+        api.itemList[0] = api.itemList[0].copy(mediaThumbnail = "https://cdn.example.com/t.jpg", lastModified = 999)
+        syncer.pull()
+        assertEquals("https://cdn.example.com/t.jpg", db.articleDao().getByRemoteId(1)!!.imageUrl)
+    }
+
     @Test fun initialPullMapsFoldersFeedsAndItems() = runTest {
         serverWithOneFeed()
         api.itemList += item(1, feedId = 10)
