@@ -33,7 +33,9 @@ import me.dougals.forage.data.content.PageFetcher
 import me.dougals.forage.data.local.ForageDatabase
 import me.dougals.forage.data.nextcloud.CredentialStore
 import me.dougals.forage.data.nextcloud.NextcloudApiProvider
+import me.dougals.forage.data.nextcloud.NextcloudLoginFlow
 import me.dougals.forage.data.nextcloud.NextcloudSyncer
+import me.dougals.forage.data.nextcloud.OkHttpNextcloudLoginFlow
 import me.dougals.forage.data.nextcloud.PendingChangeFlusher
 import me.dougals.forage.data.nextcloud.PrefsSyncStateStore
 import me.dougals.forage.data.nextcloud.RetrofitNextcloudApiProvider
@@ -100,6 +102,9 @@ object AppModule {
     @Provides @Singleton
     fun nextcloudApi(creds: CredentialStore, @ApiClient client: OkHttpClient): NextcloudApiProvider =
         RetrofitNextcloudApiProvider(creds, client)
+
+    @Provides @Singleton
+    fun nextcloudLoginFlow(@ApiClient client: OkHttpClient): NextcloudLoginFlow = OkHttpNextcloudLoginFlow(client)
 
     @Provides @Singleton
     fun feedSource(@WebClient client: OkHttpClient, settings: SettingsRepository): FeedSource =

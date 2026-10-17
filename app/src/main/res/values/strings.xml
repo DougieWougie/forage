@@ -114,7 +114,7 @@
     <string name="local_mode">Local mode</string>
     <string name="local_mode_body">Feeds are fetched directly. Connect Nextcloud News to sync read and saved state across devices.</string>
     <string name="get_news_app">Get News app</string>
-    <string name="nextcloud_requirements">You\'ll need a Nextcloud server with the News app installed, and an app password (Nextcloud → Settings → Security → Devices &amp; sessions).</string>
+    <string name="nextcloud_requirements">You\'ll need a Nextcloud server with the News app installed, then log in through your browser.</string>
     <string name="last_synced_never">Not synced yet</string>
     <string name="last_synced_now">Last synced just now</string>
     <string name="last_synced_relative">Last synced %1$s</string>
@@ -133,6 +133,12 @@
     <string name="field_username">Username</string>
     <string name="field_app_password">App password</string>
     <string name="app_password_hint">Create an app password in Nextcloud under Settings → Security.</string>
+    <string name="log_in_with_browser_hint">You\'ll log in on your server\'s own page in the browser, and Forage gets an app password of its own.</string>
+    <string name="action_log_in">Log in</string>
+    <string name="use_app_password">Use an app password instead</string>
+    <string name="use_browser_login">Log in through the browser instead</string>
+    <string name="login_waiting">Finish logging in to Nextcloud in your browser.</string>
+    <string name="login_open_again">Open again</string>
 
     <!-- Messages shown in snackbars -->
     <string name="unknown_error">unknown error</string>
@@ -140,6 +146,9 @@
     <string name="sync_failed">Could not sync: %1$s</string>
     <string name="connect_fill_in_all">Fill in server, username and app password</string>
     <string name="connect_requires_https">Nextcloud server must use https://</string>
+    <string name="connect_enter_server">Enter your Nextcloud server</string>
+    <string name="login_failed">Could not log in: %1$s</string>
+    <string name="login_timed_out">Login timed out; try again</string>
     <string name="connected_to">Connected to %1$s</string>
     <string name="enter_feed_url">Enter a feed URL</string>
     <string name="added_feed">Added %1$s</string>

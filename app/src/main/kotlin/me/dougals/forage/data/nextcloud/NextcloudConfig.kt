@@ -28,8 +28,16 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 class NextcloudNotConfiguredException(cause: Throwable? = null) : Exception("Nextcloud is not configured", cause)
 
-/** [appPassword] is a Nextcloud app password, never the account password. */
-data class NextcloudCredentials(val serverUrl: String, val username: String, val appPassword: String)
+/**
+ * [appPassword] is a Nextcloud app password, never the account password. [fromLoginFlow] marks one the
+ * server created for Forage, which is safe to revoke on disconnect; one the user pasted in may be shared.
+ */
+data class NextcloudCredentials(
+    val serverUrl: String,
+    val username: String,
+    val appPassword: String,
+    val fromLoginFlow: Boolean = false,
+)
 
 interface CredentialStore {
     fun get(): NextcloudCredentials?
@@ -42,18 +50,19 @@ class PrefsCredentialStore(private val prefs: SharedPreferences) : CredentialSto
         val url = prefs.getString(URL, null) ?: return null
         val user = prefs.getString(USER, null) ?: return null
         val pass = prefs.getString(PASS, null) ?: return null
-        return NextcloudCredentials(url, user, pass)
+        return NextcloudCredentials(url, user, pass, prefs.getBoolean(FLOW, false))
     }
 
     override fun save(credentials: NextcloudCredentials) = prefs.edit {
         putString(URL, credentials.serverUrl)
         putString(USER, credentials.username)
         putString(PASS, credentials.appPassword)
+        putBoolean(FLOW, credentials.fromLoginFlow)
     }
 
     override fun clear() = prefs.edit { clear() }
 
-    private companion object { const val URL = "url"; const val USER = "user"; const val PASS = "pass" }
+    private companion object { const val URL = "url"; const val USER = "user"; const val PASS = "pass"; const val FLOW = "flow" }
 }
 
 /** Keystore-backed; needs a device/emulator, so tests use [PrefsCredentialStore] with plain prefs. */

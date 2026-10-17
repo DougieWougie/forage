@@ -93,6 +93,12 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
 
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() } }
 
+    // Open each Nextcloud login page once, not again when the screen is recreated (e.g. on rotation).
+    var openedLoginUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.loginUrl) {
+        state.loginUrl?.takeIf { it != openedLoginUrl }?.let { context.openInBrowser(it); openedLoginUrl = it }
+    }
+
     // A login finishes on another screen; pick up the new session when we come back.
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
@@ -175,6 +181,13 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
                     )
+                } else if (state.loginUrl != null) {
+                    Text(stringResource(R.string.connect_nextcloud_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.login_waiting), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button({ context.openInBrowser(state.loginUrl!!) }) { Text(stringResource(R.string.login_open_again)) }
+                        OutlinedButton(vm::cancelNextcloudLogin) { Text(stringResource(R.string.action_cancel)) }
+                    }
                 } else {
                     Text(stringResource(R.string.local_mode), style = MaterialTheme.typography.titleMedium)
                     Text(stringResource(R.string.local_mode_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -224,7 +237,11 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
         }
     }
 
-    if (showConnect) ConnectDialog(onDismiss = { showConnect = false }, onConnect = { u, n, p -> showConnect = false; vm.connectNextcloud(u, n, p) })
+    if (showConnect) ConnectDialog(
+        onDismiss = { showConnect = false },
+        onLogIn = { u -> showConnect = false; vm.logInToNextcloud(u) },
+        onConnect = { u, n, p -> showConnect = false; vm.connectNextcloud(u, n, p) },
+    )
     if (showLogin) {
         var url by rememberSaveable { mutableStateOf("https://") }
         AlertDialog(
@@ -249,8 +266,9 @@ private fun Section(title: String, divider: Boolean = true) {
 }
 
 @Composable
-private fun ConnectDialog(onDismiss: () -> Unit, onConnect: (String, String, String) -> Unit) {
+private fun ConnectDialog(onDismiss: () -> Unit, onLogIn: (String) -> Unit, onConnect: (String, String, String) -> Unit) {
     var server by rememberSaveable { mutableStateOf("https://") }
+    var useAppPassword by rememberSaveable { mutableStateOf(false) }
     var user by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") } // deliberately not saved across process death
     AlertDialog(
@@ -259,15 +277,25 @@ private fun ConnectDialog(onDismiss: () -> Unit, onConnect: (String, String, Str
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(server, { server = it }, singleLine = true, label = { Text(stringResource(R.string.field_server)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
-                OutlinedTextField(user, { user = it }, singleLine = true, label = { Text(stringResource(R.string.field_username)) })
-                OutlinedTextField(
-                    password, { password = it }, singleLine = true, label = { Text(stringResource(R.string.field_app_password)) },
-                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                )
-                Text(stringResource(R.string.app_password_hint), style = MaterialTheme.typography.bodySmall)
+                if (useAppPassword) {
+                    OutlinedTextField(user, { user = it }, singleLine = true, label = { Text(stringResource(R.string.field_username)) })
+                    OutlinedTextField(
+                        password, { password = it }, singleLine = true, label = { Text(stringResource(R.string.field_app_password)) },
+                        visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    )
+                    Text(stringResource(R.string.app_password_hint), style = MaterialTheme.typography.bodySmall)
+                } else {
+                    Text(stringResource(R.string.log_in_with_browser_hint), style = MaterialTheme.typography.bodySmall)
+                }
+                TextButton({ useAppPassword = !useAppPassword }, contentPadding = PaddingValues(0.dp)) {
+                    Text(stringResource(if (useAppPassword) R.string.use_browser_login else R.string.use_app_password))
+                }
             }
         },
-        confirmButton = { TextButton({ onConnect(server, user, password) }) { Text(stringResource(R.string.action_connect)) } },
+        confirmButton = {
+            if (useAppPassword) TextButton({ onConnect(server, user, password) }) { Text(stringResource(R.string.action_connect)) }
+            else TextButton({ onLogIn(server) }) { Text(stringResource(R.string.action_log_in)) }
+        },
         dismissButton = { TextButton(onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
