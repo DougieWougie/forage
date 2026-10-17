@@ -28,6 +28,7 @@ import retrofit2.http.Query
     val id: Long, val guid: String, val url: String? = null, val title: String? = null,
     val author: String? = null, val pubDate: Long? = null, val body: String? = null,
     val feedId: Long, val unread: Boolean, val starred: Boolean, val lastModified: Long,
+    val mediaThumbnail: String? = null,
 )
 
 @Serializable data class FoldersResponse(val folders: List<FolderDto> = emptyList())

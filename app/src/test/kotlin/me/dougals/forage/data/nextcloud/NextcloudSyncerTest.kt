@@ -42,6 +42,17 @@ class NextcloudSyncerTest : DbTestBase() {
         api.feedList += FeedDto(10, "https://lwn.net/rss", "LWN", folderId = 1)
     }
 
+    @Test fun pullTakesTheServersThumbnailElseTheFirstImageInTheBody() = runTest {
+        serverWithOneFeed()
+        api.itemList += item(1, feedId = 10).copy(mediaThumbnail = "https://cdn.example.com/t.jpg")
+        api.itemList += item(2, feedId = 10).copy(body = """<p>x</p><img src="/pic.jpg">""")
+        api.itemList += item(3, feedId = 10)
+        syncer.pull()
+        assertEquals("https://cdn.example.com/t.jpg", db.articleDao().getByRemoteId(1)!!.imageUrl)
+        assertEquals("https://example.com/pic.jpg", db.articleDao().getByRemoteId(2)!!.imageUrl)
+        assertEquals(null, db.articleDao().getByRemoteId(3)!!.imageUrl)
+    }
+
     @Test fun initialPullMapsFoldersFeedsAndItems() = runTest {
         serverWithOneFeed()
         api.itemList += item(1, feedId = 10)

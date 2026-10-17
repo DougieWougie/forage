@@ -168,4 +168,60 @@ class FeedParserTest {
     @Test fun malformedXmlThrows() {
         assertThrows(FeedParseException::class.java) { parse("<rss><channel><title>oops") }
     }
+
+    private fun rssImage(inner: String, base: String = "https://example.com/feed.xml") = parse("""
+        <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+        <channel><title>t</title><item><title>x</title><link>https://example.com/p</link>$inner</item></channel></rss>
+    """, base).items.single().imageUrl
+
+    @Test fun mediaThumbnailIsTheImage() {
+        assertEquals("https://example.com/t.jpg", rssImage("""<media:thumbnail url="https://example.com/t.jpg"/>"""))
+    }
+
+    @Test fun mediaContentCountsOnlyWhenItIsAnImage() {
+        assertEquals("https://example.com/m.jpg", rssImage("""<media:content url="https://example.com/m.jpg" medium="image"/>"""))
+        assertEquals("https://example.com/m2.png", rssImage("""<media:content url="https://example.com/m2.png" type="image/png"/>"""))
+        assertNull(rssImage("""<media:content url="https://example.com/v.mp4" medium="video" type="video/mp4"/>"""))
+    }
+
+    @Test fun mediaGroupIsSearched() {
+        assertEquals(
+            "https://example.com/g.jpg",
+            rssImage("""<media:group><media:thumbnail url="https://example.com/g.jpg"/></media:group>"""),
+        )
+    }
+
+    @Test fun imageEnclosureIsUsedButAudioIsNot() {
+        assertEquals("https://example.com/e.jpg", rssImage("""<enclosure url="https://example.com/e.jpg" type="image/jpeg" length="1"/>"""))
+        assertNull(rssImage("""<enclosure url="https://example.com/e.mp3" type="audio/mpeg" length="1"/>"""))
+    }
+
+    @Test fun fallsBackToTheFirstImgInTheBodyThenSummary() {
+        assertEquals(
+            "https://example.com/body.jpg",
+            rssImage("""<description>&lt;img src="/sum.jpg"&gt;</description><content:encoded><![CDATA[<img src="/body.jpg">]]></content:encoded>"""),
+        )
+        assertEquals("https://example.com/sum.jpg", rssImage("""<description>&lt;img src="/sum.jpg"&gt;</description>"""))
+    }
+
+    @Test fun relativeMediaUrlsAreResolvedAgainstTheFeed() {
+        assertEquals("https://example.com/img/t.jpg", rssImage("""<media:thumbnail url="/img/t.jpg"/>"""))
+    }
+
+    @Test fun nonHttpMediaUrlIsIgnored() {
+        assertNull(rssImage("""<media:thumbnail url="javascript:alert(1)"/>"""))
+    }
+
+    @Test fun atomEnclosureLinkAndContentImage() {
+        val atom = parse("""
+            <feed xmlns="http://www.w3.org/2005/Atom"><title>t</title>
+              <entry><title>a</title><id>1</id><link href="https://example.com/a"/>
+                <link rel="enclosure" type="image/jpeg" href="https://example.com/enc.jpg"/></entry>
+              <entry><title>b</title><id>2</id><link href="https://example.com/b"/>
+                <content type="html">&lt;img src="/c.jpg"&gt;</content></entry>
+              <entry><title>c</title><id>3</id><link href="https://example.com/c"/></entry>
+            </feed>
+        """)
+        assertEquals(listOf("https://example.com/enc.jpg", "https://example.com/c.jpg", null), atom.items.map { it.imageUrl })
+    }
 }

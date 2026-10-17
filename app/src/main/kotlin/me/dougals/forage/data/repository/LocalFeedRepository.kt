@@ -97,7 +97,7 @@ class LocalFeedRepository(
             items.map {
                 ArticleEntity(
                     feedId = feedId, guid = it.guid, title = it.title, url = it.url, author = it.author,
-                    summary = it.summary, contentHtml = it.contentHtml,
+                    summary = it.summary, contentHtml = it.contentHtml, imageUrl = it.imageUrl,
                     publishedAt = if (it.publishedAt == 0L) clock() else it.publishedAt,
                 )
             },
