@@ -6,6 +6,7 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@color/splash_background</item>
         <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon_empty</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
     </style>
 </resources>
