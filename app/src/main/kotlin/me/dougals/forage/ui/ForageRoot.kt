@@ -40,7 +40,11 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
     Settings("settings", "Settings", Icons.Outlined.Settings),
 }
 
-private const val LIST_ROUTE = "list/{source}?feedId={feedId}"
+// One destination per list: tabs that share a destination would share saved back-stack state.
+private const val UNREAD_ROUTE = "list/unread"
+private const val SAVED_ROUTE = "list/saved"
+private const val FEED_ROUTE = "list/feed?feedId={feedId}"
+private fun isListRoute(route: String?) = route != null && route.startsWith("list/")
 private const val READER_ROUTE = "reader/{articleId}"
 private const val LOGIN_ROUTE = "login?url={url}"
 
@@ -51,7 +55,7 @@ fun ForageRoot() {
     val destination = entry?.destination
     val source = entry?.arguments?.getString("source")
     val onTopLevel = destination?.route == "categories" || destination?.route == "settings" ||
-        (destination?.route == LIST_ROUTE && source in listOf("unread", "saved"))
+        (isListRoute(destination?.route) && source in listOf("unread", "saved"))
 
     Scaffold(
         bottomBar = {
@@ -59,7 +63,7 @@ fun ForageRoot() {
                 NavigationBar {
                     Tab.entries.forEach { tab ->
                         val selected = if (tab.source != null) {
-                            destination?.route == LIST_ROUTE && source == tab.source
+                            isListRoute(destination?.route) && source == tab.source
                         } else {
                             destination?.hierarchy?.any { it.route == tab.route } == true
                         }
@@ -79,17 +83,23 @@ fun ForageRoot() {
                 .padding(bottom = inner.calculateBottomPadding())
                 .consumeWindowInsets(PaddingValues(bottom = inner.calculateBottomPadding())),
         ) {
-            composable(
-                LIST_ROUTE,
-                arguments = listOf(
-                    navArgument("source") { type = NavType.StringType },
-                    navArgument("feedId") { type = NavType.LongType; defaultValue = -1L },
-                ),
-            ) {
-                ArticleListScreen(
-                    onOpenArticle = { nav.navigate("reader/$it") },
-                    onBack = if (source == "feed") ({ nav.popBackStack() }) else null,
-                )
+            listOf(
+                UNREAD_ROUTE to "unread",
+                SAVED_ROUTE to "saved",
+                FEED_ROUTE to "feed",
+            ).forEach { (route, kind) ->
+                composable(
+                    route,
+                    arguments = listOf(
+                        navArgument("source") { type = NavType.StringType; defaultValue = kind },
+                        navArgument("feedId") { type = NavType.LongType; defaultValue = -1L },
+                    ),
+                ) {
+                    ArticleListScreen(
+                        onOpenArticle = { nav.navigate("reader/$it") },
+                        onBack = if (kind == "feed") ({ nav.popBackStack() }) else null,
+                    )
+                }
             }
             composable("categories") {
                 CategoriesScreen(onOpenFeed = { nav.navigate("list/feed?feedId=$it") })
