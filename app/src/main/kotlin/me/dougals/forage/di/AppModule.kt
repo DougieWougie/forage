@@ -56,6 +56,7 @@ import me.dougals.forage.data.work.FlushAction
 import me.dougals.forage.data.work.RefreshAction
 import me.dougals.forage.data.work.SyncScheduler
 import me.dougals.forage.data.work.WorkManagerSchedulers
+import me.dougals.forage.domain.model.RefreshProgress
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
 import okhttp3.OkHttpClient
@@ -124,13 +125,16 @@ object AppModule {
     @Provides fun archiveAction(a: OfflineArchiver): ArchiveAction = a
     @Provides fun refreshAction(repo: FeedRepository): RefreshAction = RefreshAction { repo.refresh().map { } }
 
+    @Provides @Singleton fun refreshProgress() = RefreshProgress()
+
     @Provides @Singleton
     fun feedRepository(
         db: ForageDatabase, source: FeedSource, api: NextcloudApiProvider, flusher: PendingChangeFlusher,
         syncer: NextcloudSyncer, sync: SyncScheduler, archive: ArchiveScheduler, settings: SettingsRepository,
+        progress: RefreshProgress,
     ): FeedRepository = ModeAwareFeedRepository(
         mode = settings.settings.map { it.syncMode }.distinctUntilChanged(),
-        local = LocalFeedRepository(db, source, archive),
+        local = LocalFeedRepository(db, source, archive, progress = progress),
         nextcloud = NextcloudFeedRepository(db, api, flusher, syncer, sync, archive),
     )
 

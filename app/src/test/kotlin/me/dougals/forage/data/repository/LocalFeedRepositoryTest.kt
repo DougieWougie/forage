@@ -12,6 +12,7 @@
 package me.dougals.forage.data.repository
 
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.data.local.DbTestBase
 import me.dougals.forage.data.remote.ParsedFeed
@@ -89,6 +90,30 @@ class LocalFeedRepositoryTest : DbTestBase() {
         source.failing += "https://a/feed"
         assertTrue(repo.refresh().isFailure)
         assertEquals(3, db.articleDao().getAll().size)
+    }
+
+    @Test fun refreshReportsProgressPerFeedAndClearsWhenDone() = runTest {
+        val progress = me.dougals.forage.domain.model.RefreshProgress()
+        val tracked = LocalFeedRepository(db, source, schedulers, progress = progress)
+        source.feeds["https://a/feed"] = parsed("A", "1")
+        source.feeds["https://b/feed"] = parsed("B", "1")
+        tracked.addFeed("https://a/feed").getOrThrow()
+        tracked.addFeed("https://b/feed").getOrThrow()
+
+        val seen = mutableListOf<me.dougals.forage.domain.model.FeedProgress?>()
+        val job = launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) { progress.state.collect { seen += it } }
+        tracked.refresh().getOrThrow()
+        job.cancel()
+
+        assertEquals(
+            listOf(
+                null,
+                me.dougals.forage.domain.model.FeedProgress(0, 2),
+                me.dougals.forage.domain.model.FeedProgress(1, 2),
+                null,
+            ),
+            seen,
+        )
     }
 
     @Test fun savingSchedulesArchiveAndUnsavingDropsIt() = runTest {
