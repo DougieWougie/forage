@@ -18,6 +18,7 @@ Forage bundles or links the following. Each keeps its own license; none changes 
 | Jetpack Compose and Material 3 | Apache-2.0 |
 | Dagger / Hilt | Apache-2.0 |
 | OkHttp | Apache-2.0 |
+| Coil | Apache-2.0 |
 | Retrofit | Apache-2.0 |
 | jsoup | MIT |
 | OpenDyslexic font (bundled, reader only) | SIL Open Font License 1.1 |
