@@ -19,6 +19,9 @@ abstract class RoomFeedRepository(
 ) : FeedRepository {
     override fun observeUnread(): Flow<List<Article>> = db.articleDao().observeUnread().map { it.map { a -> a.toDomain() } }
     override fun observeSaved(): Flow<List<Article>> = db.articleDao().observeSaved().map { it.map { a -> a.toDomain() } }
+    override fun observeFeedArticles(feedId: Long): Flow<List<Article>> =
+        db.articleDao().observeByFeed(feedId).map { it.map { a -> a.toDomain() } }
+    override fun observeArticle(articleId: Long): Flow<Article?> = db.articleDao().observeById(articleId).map { it?.toDomain() }
     override fun observeFolders(): Flow<List<Folder>> = db.folderDao().observeAll().map { it.map { f -> f.toDomain() } }
     override fun observeFeeds(): Flow<List<Feed>> =
         combine(db.feedDao().observeAll(), db.articleDao().observeUnreadCounts()) { feeds, counts ->

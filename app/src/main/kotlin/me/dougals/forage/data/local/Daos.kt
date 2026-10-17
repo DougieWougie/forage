@@ -49,6 +49,9 @@ interface ArticleDao {
     @Query("UPDATE articles SET offlineHtml = NULL WHERE id = :id") suspend fun clearOfflineHtml(id: Long)
     @Query("SELECT * FROM articles WHERE isRead = 0 ORDER BY publishedAt DESC")
     fun observeUnread(): Flow<List<ArticleEntity>>
+    @Query("SELECT * FROM articles WHERE feedId = :feedId ORDER BY publishedAt DESC")
+    fun observeByFeed(feedId: Long): Flow<List<ArticleEntity>>
+    @Query("SELECT * FROM articles WHERE id = :id") fun observeById(id: Long): Flow<ArticleEntity?>
     @Query("SELECT * FROM articles WHERE isSaved = 1 ORDER BY publishedAt DESC")
     fun observeSaved(): Flow<List<ArticleEntity>>
     @Query("SELECT feedId, COUNT(*) AS count FROM articles WHERE isRead = 0 GROUP BY feedId")

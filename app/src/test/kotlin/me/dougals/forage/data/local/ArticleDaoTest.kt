@@ -77,4 +77,22 @@ class ArticleDaoTest : DbTestBase() {
         dao.markFeedRead(f1)
         assertEquals(listOf("2"), dao.observeUnread().first().map { it.guid })
     }
+
+    @Test fun feedArticlesIncludeReadOnesNewestFirst() = runTest {
+        val f1 = newFeed("https://a/feed")
+        val f2 = newFeed("https://b/feed")
+        dao.insertIgnore(listOf(
+            article(f1, "old", publishedAt = 1), article(f1, "new", publishedAt = 5, isRead = true), article(f2, "other", publishedAt = 9),
+        ))
+        assertEquals(listOf("new", "old"), dao.observeByFeed(f1).first().map { it.guid })
+    }
+
+    @Test fun observeByIdEmitsUpdatesAndNullWhenMissing() = runTest {
+        val feed = newFeed()
+        val id = dao.insertIgnore(listOf(article(feed, "a"))).single()
+        assertEquals(false, dao.observeById(id).first()!!.isRead)
+        dao.setRead(id, true)
+        assertEquals(true, dao.observeById(id).first()!!.isRead)
+        assertNull(dao.observeById(999).first())
+    }
 }

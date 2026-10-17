@@ -12,6 +12,8 @@ import me.dougals.forage.domain.model.Folder
 interface FeedRepository {
     fun observeUnread(): Flow<List<Article>>
     fun observeSaved(): Flow<List<Article>>
+    fun observeFeedArticles(feedId: Long): Flow<List<Article>>
+    fun observeArticle(articleId: Long): Flow<Article?>
     fun observeFolders(): Flow<List<Folder>>
     fun observeFeeds(): Flow<List<Feed>>
 

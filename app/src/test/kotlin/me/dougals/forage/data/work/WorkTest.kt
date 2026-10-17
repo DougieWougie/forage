@@ -80,4 +80,19 @@ class WorkTest {
         assertEquals(ListenableWorker.Result.retry(), run(1, Result.failure(java.io.IOException())))
         assertEquals(ListenableWorker.Result.failure(), run(5, Result.failure(java.io.IOException())))
     }
+
+    @Test fun refreshWorkerRetriesOnFailure() = runBlocking {
+        fun run(result: Result<Unit>) = build<RefreshWorker>({ c, p -> RefreshWorker(c, p) { result } }).let { runBlocking { it.doWork() } }
+        assertEquals(ListenableWorker.Result.success(), run(Result.success(Unit)))
+        assertEquals(ListenableWorker.Result.retry(), run(Result.failure(java.io.IOException())))
+    }
+
+    @Test fun periodicRefreshIsUniqueAndNeedsNetwork() {
+        val s = WorkManagerSchedulers(context)
+        s.schedulePeriodicRefresh()
+        s.schedulePeriodicRefresh()
+        val infos = WorkManager.getInstance(context).getWorkInfosForUniqueWork("periodic-refresh").get()
+        assertEquals(1, infos.size)
+        assertEquals(NetworkType.CONNECTED, infos.single().constraints.requiredNetworkType)
+    }
 }

@@ -1,13 +1,16 @@
 package me.dougals.forage.data.opml
 
 import me.dougals.forage.data.xml.XmlNode
+import me.dougals.forage.data.xml.XmlParseException
 import java.io.InputStream
 
 data class OpmlFeed(val title: String, val xmlUrl: String, val folder: String?)
 
 object Opml {
     fun parse(input: InputStream): List<OpmlFeed> {
-        val body = XmlNode.parse(input).child("body") ?: return emptyList()
+        val root = XmlNode.parse(input)
+        if (root.name != "opml") throw XmlParseException("Not an OPML file")
+        val body = root.child("body") ?: return emptyList()
         val out = mutableListOf<OpmlFeed>()
         fun walk(node: XmlNode, folder: String?) {
             for (o in node.children("outline")) {

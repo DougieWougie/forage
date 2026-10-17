@@ -7,7 +7,9 @@ import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -20,6 +22,7 @@ fun interface SyncScheduler { fun scheduleFlush() }
 fun interface ArchiveScheduler { fun schedule(articleId: Long) }
 
 fun interface FlushAction { suspend fun flush(): Result<Unit> }
+fun interface RefreshAction { suspend fun refresh(): Result<Unit> }
 fun interface ArchiveAction { suspend fun archive(articleId: Long): Result<Unit> }
 
 class WorkManagerSchedulers(context: Context) : SyncScheduler, ArchiveScheduler {
@@ -42,6 +45,12 @@ class WorkManagerSchedulers(context: Context) : SyncScheduler, ArchiveScheduler 
             .setInputData(workDataOf(ArchiveWorker.KEY_ARTICLE_ID to articleId))
             .build()
         wm.enqueueUniqueWork("archive-$articleId", ExistingWorkPolicy.KEEP, request)
+    }
+
+    /** Hourly background refresh; WorkManager's own minimum is 15 minutes. */
+    fun schedulePeriodicRefresh() {
+        val request = PeriodicWorkRequestBuilder<RefreshWorker>(1, TimeUnit.HOURS).setConstraints(online).build()
+        wm.enqueueUniquePeriodicWork("periodic-refresh", ExistingPeriodicWorkPolicy.KEEP, request)
     }
 
     private companion object { const val FLUSH_WORK = "nextcloud-flush" }
@@ -83,4 +92,13 @@ class ArchiveWorker @AssistedInject constructor(
         const val KEY_ARTICLE_ID = "articleId"
         private const val MAX_ATTEMPTS = 5
     }
+}
+
+@HiltWorker
+class RefreshWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
+    private val refresher: RefreshAction,
+) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result = if (refresher.refresh().isSuccess) Result.success() else Result.retry()
 }
