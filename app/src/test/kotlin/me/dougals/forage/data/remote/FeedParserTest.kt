@@ -68,6 +68,16 @@ class FeedParserTest {
         assertEquals(Instant.parse("2025-06-10T12:00:00Z").toEpochMilli(), item.publishedAt)
     }
 
+    @Test fun rss2NamedTimezoneThatRfc1123Rejects() {
+        val item = parse("""
+            <rss version="2.0"><channel><title>t</title>
+              <item><title>x</title><link>https://example.com/p</link>
+              <pubDate>Tue, 10 Jun 2025 08:00:00 EDT</pubDate></item>
+            </channel></rss>
+        """).items.single()
+        assertEquals(Instant.parse("2025-06-10T12:00:00Z").toEpochMilli(), item.publishedAt)
+    }
+
     @Test fun rdfRss1() {
         val feed = parse("""
             <?xml version="1.0"?>

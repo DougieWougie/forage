@@ -13,7 +13,11 @@ package me.dougals.forage.data.content
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import coil3.ImageLoader
+import coil3.decode.DataSource
 import coil3.disk.DiskCache
+import coil3.fetch.SourceFetchResult
+import coil3.toUri
 import coil3.request.CachePolicy
 import coil3.request.Options
 import kotlinx.coroutines.test.runTest
@@ -22,7 +26,10 @@ import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
 import okio.Buffer
 import okio.Path.Companion.toOkioPath
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
@@ -63,6 +70,34 @@ class ThumbnailFetcherTest {
         assertThrows(IOException::class.java) {
             kotlinx.coroutines.runBlocking { fetcher("https://example.com/a.png", cache, CachePolicy.DISABLED).fetch() }
         }
+    }
+
+    @Test fun withoutADiskCacheTheBytesAreServedFromMemory() = runTest {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse.Builder().addHeader("Content-Type", "image/png").body(Buffer().write(png)).build())
+            val f = ThumbnailFetcher(
+                server.url("/a.png").toString(),
+                Options(ApplicationProvider.getApplicationContext<Context>()),
+                ImageResourceFetcher(OkHttpClient()),
+                allowPrivate = { true },
+                diskCache = { null },
+            )
+            val result = f.fetch() as SourceFetchResult
+            assertEquals(DataSource.NETWORK, result.dataSource)
+            assertEquals("image/png", result.mimeType)
+            assertArrayEquals(png, result.source.source().readByteArray())
+        }
+    }
+
+    @Test fun factoryOnlyHandlesWebUrls() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val factory = ThumbnailFetcher.Factory(ImageResourceFetcher(OkHttpClient())) { false }
+        val loader = ImageLoader(context)
+        assertNotNull(factory.create("https://example.com/a.png".toUri(), Options(context), loader))
+        assertNotNull(factory.create("http://example.com/a.png".toUri(), Options(context), loader))
+        assertNull(factory.create("file:///sdcard/a.png".toUri(), Options(context), loader))
+        assertNull(factory.create("content://media/1".toUri(), Options(context), loader))
     }
 
     @Test fun nonImageResponsesAreRejected() = runTest {

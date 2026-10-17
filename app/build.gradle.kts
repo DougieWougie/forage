@@ -15,6 +15,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    jacoco
 }
 
 android {
@@ -30,6 +31,7 @@ android {
     }
 
     buildTypes {
+        debug { enableUnitTestCoverage = true }
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -53,7 +55,14 @@ kotlin { jvmToolchain(17) }
 
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 
-tasks.withType<Test>().configureEach { useJUnitPlatform() }
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+    // Robolectric loads classes itself; without this JaCoCo misses everything those tests run
+    configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
+    }
+}
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))

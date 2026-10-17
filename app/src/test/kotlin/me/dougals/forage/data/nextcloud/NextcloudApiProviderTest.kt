@@ -17,7 +17,9 @@ import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -99,5 +101,18 @@ class NextcloudApiProviderTest {
 
     @Test fun missingCredentialsThrowNotConfigured() {
         assertThrows(NextcloudNotConfiguredException::class.java) { provider(null).api() }
+    }
+
+    @Test fun unusableServerUrlThrowsNotConfigured() {
+        assertThrows(NextcloudNotConfiguredException::class.java) { provider(NextcloudCredentials("not a url", "u", "p")).api() }
+    }
+
+    @Test fun apiIsReusedUntilTheCredentialsChange() {
+        val creds = MemCreds(NextcloudCredentials(server.url("/").toString(), "u", "p"))
+        val p = RetrofitNextcloudApiProvider(creds, OkHttpClient(), allowInsecure = true)
+        val first = p.api()
+        assertSame(first, p.api())
+        creds.value = NextcloudCredentials(server.url("/").toString(), "u", "new-pass")
+        assertNotSame(first, p.api())
     }
 }

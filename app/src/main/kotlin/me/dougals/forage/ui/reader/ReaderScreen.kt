@@ -87,6 +87,7 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
     val context = LocalContext.current
     var showType by remember { mutableStateOf(false) }
     val article = state.article
+    val shareTitle = stringResource(R.string.share_article)
 
     Scaffold(
         topBar = {
@@ -102,7 +103,7 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
                                 stringResource(if (article.isSaved) R.string.action_remove_saved else R.string.action_save_offline),
                             )
                         }
-                        IconButton({ context.startActivity(Intent.createChooser(ShareIntents.send(article), context.getString(R.string.share_article))) }) {
+                        IconButton({ context.startActivity(Intent.createChooser(ShareIntents.send(article), shareTitle)) }) {
                             Icon(Icons.Filled.Share, stringResource(R.string.cd_share))
                         }
                         if (isWebUrl(article.url)) {

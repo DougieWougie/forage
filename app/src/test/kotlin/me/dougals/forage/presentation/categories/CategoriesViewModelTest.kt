@@ -83,6 +83,26 @@ class CategoriesViewModelTest {
         coVerify { repo.moveFeed(5, 2); repo.moveFeed(6, null) }
     }
 
+    @Test fun deletingRemovingAndMarkingReadAskTheRepository() = runTest {
+        val v = vm
+        v.deleteFolder(3)
+        v.removeFeed(4)
+        v.markFeedRead(5)
+        coVerify { repo.deleteFolder(3); repo.removeFeed(4); repo.markFeedRead(5) }
+    }
+
+    @Test fun failedDeleteAndRemoveAreReported() = runTest {
+        coEvery { repo.deleteFolder(any()) } returns Result.failure(java.io.IOException("folder busy"))
+        coEvery { repo.removeFeed(any()) } returns Result.failure(java.io.IOException("feed busy"))
+        val v = vm
+        v.state.test {
+            awaitItem(); v.deleteFolder(1)
+            assertEquals(UiText.Raw("folder busy"), awaitUntil { it.message != null }.message)
+            v.dismissMessage(); v.removeFeed(1)
+            assertEquals(UiText.Raw("feed busy"), awaitUntil { it.message == UiText.Raw("feed busy") }.message)
+        }
+    }
+
     @Test fun aFailedMoveIsReported() = runTest {
         coEvery { repo.moveFeed(any(), any()) } returns Result.failure(java.io.IOException("offline"))
         val v = vm
