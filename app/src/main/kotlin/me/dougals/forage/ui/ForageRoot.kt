@@ -9,6 +9,8 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,7 +74,11 @@ fun ForageRoot() {
             }
         },
     ) { inner ->
-        NavHost(nav, startDestination = Tab.Unread.route, modifier = Modifier.padding(inner)) {
+        NavHost(nav, startDestination = Tab.Unread.route, modifier = Modifier
+                // Screens own their top bar and status-bar inset; only reserve the bottom nav here.
+                .padding(bottom = inner.calculateBottomPadding())
+                .consumeWindowInsets(PaddingValues(bottom = inner.calculateBottomPadding())),
+        ) {
             composable(
                 LIST_ROUTE,
                 arguments = listOf(
