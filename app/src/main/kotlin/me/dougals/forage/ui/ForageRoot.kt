@@ -48,8 +48,33 @@ private fun isListRoute(route: String?) = route != null && route.startsWith("lis
 private const val READER_ROUTE = "reader/{articleId}"
 private const val LOGIN_ROUTE = "login?url={url}"
 
+/** The screens behind each destination, so navigation can be tested with stand-ins. */
+class ForageScreens(
+    val list: @Composable (kind: String, nav: NavHostController) -> Unit,
+    val categories: @Composable (nav: NavHostController) -> Unit,
+    val settings: @Composable (nav: NavHostController) -> Unit,
+    val reader: @Composable (nav: NavHostController) -> Unit,
+    val login: @Composable (startUrl: String, nav: NavHostController) -> Unit,
+)
+
+private val RealScreens = ForageScreens(
+    list = { kind, nav ->
+        ArticleListScreen(
+            onOpenArticle = { nav.navigate("reader/$it") },
+            onBack = if (kind == "feed") ({ nav.popBackStack() }) else null,
+        )
+    },
+    categories = { nav -> CategoriesScreen(onOpenFeed = { nav.navigate("list/feed?feedId=$it") }) },
+    settings = { nav -> SettingsScreen(onLogin = { url -> nav.navigate("login?url=${android.net.Uri.encode(url)}") }) },
+    reader = { nav -> ReaderScreen(onBack = { nav.popBackStack() }) },
+    login = { url, nav -> LoginScreen(startUrl = url, onDone = { nav.popBackStack() }) },
+)
+
 @Composable
-fun ForageRoot() {
+fun ForageRoot() = ForageNavScaffold(RealScreens)
+
+@Composable
+fun ForageNavScaffold(screens: ForageScreens) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
@@ -94,28 +119,17 @@ fun ForageRoot() {
                         navArgument("source") { type = NavType.StringType; defaultValue = kind },
                         navArgument("feedId") { type = NavType.LongType; defaultValue = -1L },
                     ),
-                ) {
-                    ArticleListScreen(
-                        onOpenArticle = { nav.navigate("reader/$it") },
-                        onBack = if (kind == "feed") ({ nav.popBackStack() }) else null,
-                    )
-                }
+                ) { screens.list(kind, nav) }
             }
-            composable("categories") {
-                CategoriesScreen(onOpenFeed = { nav.navigate("list/feed?feedId=$it") })
-            }
-            composable("settings") {
-                SettingsScreen(onLogin = { url -> nav.navigate("login?url=${android.net.Uri.encode(url)}") })
-            }
+            composable("categories") { screens.categories(nav) }
+            composable("settings") { screens.settings(nav) }
             composable(READER_ROUTE, arguments = listOf(navArgument("articleId") { type = NavType.LongType })) {
-                ReaderScreen(onBack = { nav.popBackStack() })
+                screens.reader(nav)
             }
             composable(
                 LOGIN_ROUTE,
                 arguments = listOf(navArgument("url") { type = NavType.StringType; defaultValue = "" }),
-            ) { e ->
-                LoginScreen(startUrl = e.arguments?.getString("url").orEmpty(), onDone = { nav.popBackStack() })
-            }
+            ) { e -> screens.login(e.arguments?.getString("url").orEmpty(), nav) }
         }
     }
 }
