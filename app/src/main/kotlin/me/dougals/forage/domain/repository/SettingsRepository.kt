@@ -16,6 +16,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.ThumbnailSide
 
 interface SettingsRepository {
     val settings: Flow<AppSettings>
@@ -23,6 +24,7 @@ interface SettingsRepository {
     suspend fun setAllowLocalNetwork(allow: Boolean)
     suspend fun setPullToRefresh(enabled: Boolean)
     suspend fun setThumbnails(mode: ThumbnailMode)
+    suspend fun setThumbnailSide(side: ThumbnailSide)
     suspend fun dismissSuggestion(feedUrl: String)
     suspend fun clearDismissedSuggestions()
     suspend fun setReaderFont(font: ReaderFont)

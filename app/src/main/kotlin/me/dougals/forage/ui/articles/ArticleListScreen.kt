@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.ui.rememberMeteredConnection
 import me.dougals.forage.presentation.articles.ListSource
@@ -106,6 +107,7 @@ fun ArticleListScreen(
                             onClick = { onOpenArticle(article.id) },
                             onToggleRead = { vm.toggleRead(article) },
                             onToggleSaved = { vm.toggleSaved(article) },
+                            thumbnailSide = state.thumbnailSide,
                             showThumbnail = state.thumbnails != ThumbnailMode.OFF,
                             thumbnailFromCacheOnly = state.thumbnails == ThumbnailMode.WIFI_ONLY && metered,
                         )

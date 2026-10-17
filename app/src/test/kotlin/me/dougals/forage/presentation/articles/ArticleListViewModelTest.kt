@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.repository.SettingsRepository
 import me.dougals.forage.domain.repository.FeedRepository
@@ -74,6 +75,15 @@ class ArticleListViewModelTest {
             assertEquals(ThumbnailMode.ALWAYS, awaitUntil { it.feedTitles.isNotEmpty() }.thumbnails)
             settings.value = AppSettings(thumbnails = ThumbnailMode.OFF)
             assertEquals(ThumbnailMode.OFF, awaitUntil { it.thumbnails == ThumbnailMode.OFF }.thumbnails)
+        }
+    }
+
+    @Test fun thumbnailSideFollowsTheSetting() = runTest {
+        every { repo.observeUnread() } returns MutableStateFlow(listOf(article(1)))
+        vm("source" to "unread").state.test {
+            assertEquals(ThumbnailSide.END, awaitUntil { it.feedTitles.isNotEmpty() }.thumbnailSide)
+            settings.value = AppSettings(thumbnailSide = ThumbnailSide.START)
+            assertEquals(ThumbnailSide.START, awaitUntil { it.thumbnailSide == ThumbnailSide.START }.thumbnailSide)
         }
     }
 

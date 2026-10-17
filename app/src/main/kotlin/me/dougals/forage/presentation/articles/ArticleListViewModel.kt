@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import me.dougals.forage.R
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.toUiText
 import me.dougals.forage.domain.repository.FeedRepository
@@ -52,6 +53,7 @@ data class ArticleListState(
     val isRefreshing: Boolean = false,
     val pullToRefresh: Boolean = true,
     val thumbnails: ThumbnailMode = ThumbnailMode.ALWAYS,
+    val thumbnailSide: ThumbnailSide = ThumbnailSide.END,
     val message: UiText? = null,
 )
 
@@ -76,7 +78,7 @@ class ArticleListViewModel @Inject constructor(
         settingsRepo.settings,
     ) { list, titles, isRefreshing, msg, settings ->
         ArticleListState(
-            list, titles, isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, msg,
+            list, titles, isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())

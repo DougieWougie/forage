@@ -29,6 +29,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
 import me.dougals.forage.presentation.UiText
@@ -122,6 +123,7 @@ class SettingsViewModel @Inject constructor(
     fun setAllowLocalNetwork(allow: Boolean) { viewModelScope.launch { settingsRepo.setAllowLocalNetwork(allow) } }
     fun setPullToRefresh(enabled: Boolean) { viewModelScope.launch { settingsRepo.setPullToRefresh(enabled) } }
     fun setThumbnails(mode: ThumbnailMode) { viewModelScope.launch { settingsRepo.setThumbnails(mode) } }
+    fun setThumbnailSide(side: ThumbnailSide) { viewModelScope.launch { settingsRepo.setThumbnailSide(side) } }
     fun setFont(font: ReaderFont) { viewModelScope.launch { settingsRepo.setReaderFont(font) } }
     fun setFontScale(scale: Float) { viewModelScope.launch { settingsRepo.setFontScale(scale) } }
     fun dismissMessage() { message.value = null }

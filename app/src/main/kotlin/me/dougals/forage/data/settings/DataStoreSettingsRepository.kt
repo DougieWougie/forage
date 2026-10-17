@@ -24,6 +24,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.repository.SettingsRepository
 
 class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : SettingsRepository {
@@ -35,6 +36,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             allowLocalNetwork = p[LOCAL_NET] ?: false,
             pullToRefresh = p[PULL] ?: true,
             thumbnails = p[THUMBS]?.let { runCatching { ThumbnailMode.valueOf(it) }.getOrNull() } ?: ThumbnailMode.ALWAYS,
+            thumbnailSide = p[THUMB_SIDE]?.let { runCatching { ThumbnailSide.valueOf(it) }.getOrNull() } ?: ThumbnailSide.END,
             dismissedSuggestions = p[DISMISSED].orEmpty(),
         )
     }
@@ -43,6 +45,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
     override suspend fun setAllowLocalNetwork(allow: Boolean) { store.edit { it[LOCAL_NET] = allow } }
     override suspend fun setPullToRefresh(enabled: Boolean) { store.edit { it[PULL] = enabled } }
     override suspend fun setThumbnails(mode: ThumbnailMode) { store.edit { it[THUMBS] = mode.name } }
+    override suspend fun setThumbnailSide(side: ThumbnailSide) { store.edit { it[THUMB_SIDE] = side.name } }
     override suspend fun dismissSuggestion(feedUrl: String) { store.edit { it[DISMISSED] = it[DISMISSED].orEmpty() + feedUrl } }
     override suspend fun clearDismissedSuggestions() { store.edit { it.remove(DISMISSED) } }
     override suspend fun setReaderFont(font: ReaderFont) { store.edit { it[FONT] = font.name } }
@@ -57,6 +60,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val LOCAL_NET = booleanPreferencesKey("allow_local_network")
         val PULL = booleanPreferencesKey("pull_to_refresh")
         val THUMBS = stringPreferencesKey("thumbnails")
+        val THUMB_SIDE = stringPreferencesKey("thumbnail_side")
         val DISMISSED = stringSetPreferencesKey("dismissed_suggestions")
     }
 }
