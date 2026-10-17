@@ -1,3 +1,5 @@
+![Forage](docs/banner.jpg)
+
 # Forage
 
 A native Android RSS reader with optional [Nextcloud News](https://apps.nextcloud.com/apps/news) sync.
