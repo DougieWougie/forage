@@ -45,4 +45,17 @@ class CredentialStoreTest {
         s.save(c)
         assertEquals(c, s.get())
     }
+
+    @Test fun syncStateStartsAtZeroAndPersists() {
+        val prefs = ApplicationProvider.getApplicationContext<Context>().getSharedPreferences("test-sync", Context.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+        val s = PrefsSyncStateStore(prefs)
+        assertEquals(0L, s.lastModified)
+        assertEquals(0L, s.lastSyncedAt)
+        s.lastModified = 1_700_000_000
+        s.lastSyncedAt = 1_700_000_123_000
+        val reopened = PrefsSyncStateStore(prefs)
+        assertEquals(1_700_000_000L, reopened.lastModified)
+        assertEquals(1_700_000_123_000L, reopened.lastSyncedAt)
+    }
 }
