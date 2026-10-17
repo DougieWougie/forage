@@ -38,4 +38,11 @@ class CredentialStoreTest {
         s.clear()
         assertNull(s.get())
     }
+
+    @Test fun remembersWhetherTheAppPasswordCameFromBrowserLogin() {
+        val s = store()
+        val c = NextcloudCredentials("https://cloud.example.com", "dougie", "pw", fromLoginFlow = true)
+        s.save(c)
+        assertEquals(c, s.get())
+    }
 }

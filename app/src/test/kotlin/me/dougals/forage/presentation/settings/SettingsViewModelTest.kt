@@ -22,7 +22,9 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import me.dougals.forage.data.nextcloud.LoginFlowSession
 import me.dougals.forage.data.nextcloud.NextcloudCredentials
+import me.dougals.forage.data.nextcloud.NextcloudLoginFlow
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.SyncReport
@@ -48,7 +50,11 @@ class SettingsViewModelTest {
     private val sync = MemSyncState(lastModified = 999)
     private val sessions = MemSessionStore()
     private val repo = mockk<FeedRepository>(relaxed = true)
-    private fun vm() = SettingsViewModel(settings, creds, sync, sessions, repo)
+    private val loginFlow = mockk<NextcloudLoginFlow>(relaxed = true)
+    private fun vm() = SettingsViewModel(settings, creds, sync, sessions, repo, loginFlow)
+
+    private val session = LoginFlowSession("https://cloud.example.com", "https://cloud.example.com/login/v2/flow/x", "https://cloud.example.com/login/v2/poll", "t")
+    private val granted = NextcloudCredentials("https://cloud.example.com", "dougie", "app-pw", fromLoginFlow = true)
 
     @Test fun nonHttpsServerIsRefusedAndNothingIsSaved() = runTest {
         val v = vm()
@@ -83,6 +89,78 @@ class SettingsViewModelTest {
         }
         assertNull(creds.value)
         coVerify { settings.setSyncMode(SyncMode.LOCAL) }
+    }
+
+    @Test fun browserLoginShowsTheLoginPageThenConnectsOnceGranted() = runTest {
+        coEvery { loginFlow.start("https://cloud.example.com") } returns session
+        coEvery { loginFlow.poll(session) } returnsMany listOf(null, null) andThenThrows IOException("offline") andThen granted
+        coEvery { repo.refresh() } returns Result.success(SyncReport())
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.logInToNextcloud(" https://cloud.example.com/ ")
+            assertEquals(session.loginUrl, awaitUntil { it.loginUrl != null }.loginUrl)
+            assertEquals(UiText.Res(R.string.connected_to, listOf("https://cloud.example.com")), awaitUntil { it.message != null }.message)
+            assertNull(v.state.value.loginUrl)
+        }
+        assertEquals(granted, creds.value)
+        coVerify(exactly = 4) { loginFlow.poll(session) }
+        coVerifyOrder { settings.setSyncMode(SyncMode.NEXTCLOUD); repo.refresh() }
+    }
+
+    @Test fun browserLoginRefusesNonHttpsAndEmptyServers() = runTest {
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.logInToNextcloud("http://cloud.example.com")
+            assertEquals(UiText.Res(R.string.connect_requires_https), awaitUntil { it.message != null }.message)
+            v.dismissMessage(); v.logInToNextcloud("https://")
+            assertEquals(UiText.Res(R.string.connect_enter_server), awaitUntil { it.message != null }.message)
+        }
+        coVerify(exactly = 0) { loginFlow.start(any()) }
+    }
+
+    @Test fun browserLoginThatCannotStartReportsWhy() = runTest {
+        coEvery { loginFlow.start(any()) } throws IOException("HTTP 404")
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.logInToNextcloud("https://cloud.example.com")
+            assertEquals(UiText.Res(R.string.login_failed, listOf(UiText.Raw("HTTP 404"))), awaitUntil { it.message != null }.message)
+        }
+        assertNull(creds.value)
+    }
+
+    @Test fun browserLoginTimesOutWhenNeverGranted() = runTest {
+        coEvery { loginFlow.start(any()) } returns session
+        coEvery { loginFlow.poll(session) } returns null
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.logInToNextcloud("https://cloud.example.com")
+            assertEquals(UiText.Res(R.string.login_timed_out), awaitUntil { it.message != null }.message)
+        }
+        assertNull(creds.value)
+        assertTrue(!v.state.value.isConnecting)
+    }
+
+    @Test fun cancellingBrowserLoginStopsPolling() = runTest {
+        coEvery { loginFlow.start(any()) } returns session
+        coEvery { loginFlow.poll(session) } returns null
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.logInToNextcloud("https://cloud.example.com")
+            awaitUntil { it.loginUrl != null }
+            v.cancelNextcloudLogin()
+            val s = awaitUntil { it.loginUrl == null && !it.isConnecting }
+            assertNull(s.message)
+        }
+        assertNull(creds.value)
+    }
+
+    @Test fun failedFirstSyncAfterBrowserLoginRevokesTheNewAppPassword() = runTest {
+        coEvery { loginFlow.start(any()) } returns session
+        coEvery { loginFlow.poll(session) } returns granted
+        coEvery { repo.refresh() } returns Result.failure(IOException("News app not installed"))
+        vm().logInToNextcloud("https://cloud.example.com")
+        assertNull(creds.value)
+        coVerify { loginFlow.revoke(granted); settings.setSyncMode(SyncMode.LOCAL) }
     }
 
     @Test fun syncNowRefreshesAndReportsSuccess() = runTest {
@@ -151,6 +229,15 @@ class SettingsViewModelTest {
         vm().disconnectNextcloud()
         assertNull(creds.value)
         coVerify { settings.setSyncMode(SyncMode.LOCAL) }
+        coVerify(exactly = 0) { loginFlow.revoke(any()) } // a pasted app password may be in use elsewhere
+    }
+
+    @Test fun disconnectRevokesAnAppPasswordFromBrowserLoginEvenIfTheServerIsUnreachable() = runTest {
+        creds.value = granted
+        coEvery { loginFlow.revoke(any()) } throws IOException("offline")
+        vm().disconnectNextcloud()
+        assertNull(creds.value)
+        coVerify { loginFlow.revoke(granted); settings.setSyncMode(SyncMode.LOCAL) }
     }
 
     @Test fun stateShowsServerAndUserButNeverThePassword() = runTest {

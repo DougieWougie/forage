@@ -14,6 +14,11 @@ package me.dougals.forage.ui.settings
 import me.dougals.forage.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,6 +37,9 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -80,7 +88,7 @@ import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.settings.SettingsViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -92,6 +100,12 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     var scale by remember(state.settings.fontScale) { mutableFloatStateOf(state.settings.fontScale) }
 
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() } }
+
+    // Open each Nextcloud login page once, not again when the screen is recreated (e.g. on rotation).
+    var openedLoginUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.loginUrl) {
+        state.loginUrl?.takeIf { it != openedLoginUrl }?.let { context.openInBrowser(it); openedLoginUrl = it }
+    }
 
     // A login finishes on another screen; pick up the new session when we come back.
     val owner = LocalLifecycleOwner.current
@@ -160,13 +174,26 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
             }
             item { Section(stringResource(R.string.section_sync)) }
             item {
-                if (state.isConnecting || state.isSyncing) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if (state.settings.syncMode == SyncMode.NEXTCLOUD) {
+                val nextcloud = state.settings.syncMode == SyncMode.NEXTCLOUD
+                // Once connected, progress shows between the buttons instead (the first sync counts as connecting).
+                if (state.isConnecting && !nextcloud) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (nextcloud) {
                     Text(stringResource(R.string.nextcloud_news), style = MaterialTheme.typography.titleMedium)
                     Text("${state.nextcloudUser} @ ${state.nextcloudServer}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // No spacedBy: the gap after the indicator animates with it, so Disconnect slides rather than jumps.
+                    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Button(vm::syncNow, enabled = !state.isSyncing) {
                             Text(stringResource(if (state.isSyncing) R.string.syncing else R.string.sync_now))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        AnimatedVisibility(
+                            state.isSyncing || state.isConnecting,
+                            enter = expandHorizontally() + fadeIn(), exit = fadeOut() + shrinkHorizontally(),
+                        ) {
+                            Row {
+                                CircularWavyProgressIndicator(Modifier.size(ButtonDefaults.MinHeight))
+                                Spacer(Modifier.width(8.dp))
+                            }
                         }
                         OutlinedButton(vm::disconnectNextcloud) { Text(stringResource(R.string.disconnect)) }
                     }
@@ -175,6 +202,13 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
                     )
+                } else if (state.loginUrl != null) {
+                    Text(stringResource(R.string.connect_nextcloud_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.login_waiting), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button({ context.openInBrowser(state.loginUrl!!) }) { Text(stringResource(R.string.login_open_again)) }
+                        OutlinedButton(vm::cancelNextcloudLogin) { Text(stringResource(R.string.action_cancel)) }
+                    }
                 } else {
                     Text(stringResource(R.string.local_mode), style = MaterialTheme.typography.titleMedium)
                     Text(stringResource(R.string.local_mode_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -224,7 +258,11 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
         }
     }
 
-    if (showConnect) ConnectDialog(onDismiss = { showConnect = false }, onConnect = { u, n, p -> showConnect = false; vm.connectNextcloud(u, n, p) })
+    if (showConnect) ConnectDialog(
+        onDismiss = { showConnect = false },
+        onLogIn = { u -> showConnect = false; vm.logInToNextcloud(u) },
+        onConnect = { u, n, p -> showConnect = false; vm.connectNextcloud(u, n, p) },
+    )
     if (showLogin) {
         var url by rememberSaveable { mutableStateOf("https://") }
         AlertDialog(
@@ -249,8 +287,9 @@ private fun Section(title: String, divider: Boolean = true) {
 }
 
 @Composable
-private fun ConnectDialog(onDismiss: () -> Unit, onConnect: (String, String, String) -> Unit) {
+private fun ConnectDialog(onDismiss: () -> Unit, onLogIn: (String) -> Unit, onConnect: (String, String, String) -> Unit) {
     var server by rememberSaveable { mutableStateOf("https://") }
+    var useAppPassword by rememberSaveable { mutableStateOf(false) }
     var user by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") } // deliberately not saved across process death
     AlertDialog(
@@ -259,15 +298,25 @@ private fun ConnectDialog(onDismiss: () -> Unit, onConnect: (String, String, Str
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(server, { server = it }, singleLine = true, label = { Text(stringResource(R.string.field_server)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
-                OutlinedTextField(user, { user = it }, singleLine = true, label = { Text(stringResource(R.string.field_username)) })
-                OutlinedTextField(
-                    password, { password = it }, singleLine = true, label = { Text(stringResource(R.string.field_app_password)) },
-                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                )
-                Text(stringResource(R.string.app_password_hint), style = MaterialTheme.typography.bodySmall)
+                if (useAppPassword) {
+                    OutlinedTextField(user, { user = it }, singleLine = true, label = { Text(stringResource(R.string.field_username)) })
+                    OutlinedTextField(
+                        password, { password = it }, singleLine = true, label = { Text(stringResource(R.string.field_app_password)) },
+                        visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    )
+                    Text(stringResource(R.string.app_password_hint), style = MaterialTheme.typography.bodySmall)
+                } else {
+                    Text(stringResource(R.string.log_in_with_browser_hint), style = MaterialTheme.typography.bodySmall)
+                }
+                TextButton({ useAppPassword = !useAppPassword }, contentPadding = PaddingValues(0.dp)) {
+                    Text(stringResource(if (useAppPassword) R.string.use_browser_login else R.string.use_app_password))
+                }
             }
         },
-        confirmButton = { TextButton({ onConnect(server, user, password) }) { Text(stringResource(R.string.action_connect)) } },
+        confirmButton = {
+            if (useAppPassword) TextButton({ onConnect(server, user, password) }) { Text(stringResource(R.string.action_connect)) }
+            else TextButton({ onLogIn(server) }) { Text(stringResource(R.string.action_log_in)) }
+        },
         dismissButton = { TextButton(onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
