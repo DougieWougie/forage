@@ -14,6 +14,11 @@ package me.dougals.forage.ui.settings
 import me.dougals.forage.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,6 +37,9 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -80,7 +88,7 @@ import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.settings.SettingsViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -166,13 +174,26 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
             }
             item { Section(stringResource(R.string.section_sync)) }
             item {
-                if (state.isConnecting || state.isSyncing) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if (state.settings.syncMode == SyncMode.NEXTCLOUD) {
+                val nextcloud = state.settings.syncMode == SyncMode.NEXTCLOUD
+                // Once connected, progress shows between the buttons instead (the first sync counts as connecting).
+                if (state.isConnecting && !nextcloud) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (nextcloud) {
                     Text(stringResource(R.string.nextcloud_news), style = MaterialTheme.typography.titleMedium)
                     Text("${state.nextcloudUser} @ ${state.nextcloudServer}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // No spacedBy: the gap after the indicator animates with it, so Disconnect slides rather than jumps.
+                    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Button(vm::syncNow, enabled = !state.isSyncing) {
                             Text(stringResource(if (state.isSyncing) R.string.syncing else R.string.sync_now))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        AnimatedVisibility(
+                            state.isSyncing || state.isConnecting,
+                            enter = expandHorizontally() + fadeIn(), exit = fadeOut() + shrinkHorizontally(),
+                        ) {
+                            Row {
+                                CircularWavyProgressIndicator(Modifier.size(ButtonDefaults.MinHeight))
+                                Spacer(Modifier.width(8.dp))
+                            }
                         }
                         OutlinedButton(vm::disconnectNextcloud) { Text(stringResource(R.string.disconnect)) }
                     }
