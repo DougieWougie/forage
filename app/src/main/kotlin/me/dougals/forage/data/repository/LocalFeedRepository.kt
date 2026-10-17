@@ -22,6 +22,7 @@ import me.dougals.forage.data.remote.ParsedItem
 import me.dougals.forage.data.work.ArchiveScheduler
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.RefreshProgress
 import me.dougals.forage.domain.model.SyncReport
 
 /** Local Mode: feeds are fetched straight from their publishers; nothing is synced anywhere. */
@@ -30,6 +31,7 @@ class LocalFeedRepository(
     private val source: FeedSource,
     archive: ArchiveScheduler,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val progress: RefreshProgress = RefreshProgress(),
 ) : RoomFeedRepository(db, archive) {
 
     override suspend fun addFeed(url: String, folderId: Long?): Result<Feed> {
@@ -52,14 +54,20 @@ class LocalFeedRepository(
     override suspend fun refresh(): Result<SyncReport> {
         var failure: Throwable? = null
         var fresh = 0
-        for (feed in db.feedDao().getAll()) {
-            try {
-                fresh += store(feed.id, source.fetch(feed.url).items)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                failure = failure ?: e
+        val feeds = db.feedDao().getAll()
+        try {
+            feeds.forEachIndexed { i, feed ->
+                progress.report(i, feeds.size)
+                try {
+                    fresh += store(feed.id, source.fetch(feed.url).items)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    failure = failure ?: e
+                }
             }
+        } finally {
+            progress.clear()
         }
         return failure?.let { Result.failure(it) } ?: Result.success(SyncReport(newArticles = fresh))
     }

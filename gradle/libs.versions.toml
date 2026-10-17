@@ -6,6 +6,8 @@ hilt = "2.60.1"
 hiltAndroidx = "1.4.0"
 room = "2.8.5"
 composeBom = "2026.09.00"
+# Expressive APIs (MaterialExpressiveTheme, wavy progress) ship in 1.5; the BOM still pins 1.4.
+material3 = "1.5.0-beta01"
 activityCompose = "1.13.0"
 navigationCompose = "2.10.2"
 lifecycle = "2.11.0"
@@ -32,7 +34,7 @@ androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
-androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }

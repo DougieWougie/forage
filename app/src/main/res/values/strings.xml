@@ -2,6 +2,10 @@
 <resources>
     <string name="app_name">Forage</string>
 
+    <!-- Startup -->
+    <string name="splash_updating">Updating feeds…</string>
+    <string name="splash_updating_progress">Updating feed %1$d of %2$d</string>
+
     <!-- Navigation -->
     <string name="tab_unread">Unread</string>
     <string name="tab_categories">Categories</string>

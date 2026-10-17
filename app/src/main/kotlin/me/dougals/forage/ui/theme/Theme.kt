@@ -13,7 +13,9 @@ package me.dougals.forage.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -45,6 +47,7 @@ private val Dark = darkColorScheme(
     outline = Color(0xFF99968A),
 )
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ForageTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val context = LocalContext.current
@@ -54,5 +57,5 @@ fun ForageTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable
         darkTheme -> Dark
         else -> Light
     }
-    MaterialTheme(colorScheme = scheme, typography = ForageTypography, content = content)
+    MaterialExpressiveTheme(colorScheme = scheme, motionScheme = MotionScheme.expressive(), typography = ForageTypography, content = content)
 }

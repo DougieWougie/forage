@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#1A2129</color>
+    <!-- Window and splash background: the fallback palette's paper, so the system splash and the in-app one match. -->
+    <color name="splash_background">#FBFAF6</color>
 </resources>
