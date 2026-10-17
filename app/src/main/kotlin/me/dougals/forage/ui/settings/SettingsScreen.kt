@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -88,20 +92,32 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
         LazyColumn(Modifier.padding(inner).fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
             item { Section("Sync") }
             item {
-                if (state.isConnecting) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (state.isConnecting || state.isSyncing) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (state.settings.syncMode == SyncMode.NEXTCLOUD) {
                     Text("Nextcloud News", style = MaterialTheme.typography.titleMedium)
                     Text("${state.nextcloudUser} @ ${state.nextcloudServer}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    OutlinedButton(vm::disconnectNextcloud, Modifier.padding(top = 8.dp)) { Text("Disconnect (use local mode)") }
+                    Button(vm::syncNow, Modifier.padding(top = 8.dp), enabled = !state.isSyncing) {
+                        Text(if (state.isSyncing) "Syncing…" else "Sync now")
+                    }
+                    Text(
+                        lastSyncedLabel(state.lastSyncedAt),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(vm::disconnectNextcloud) { Text("Disconnect (use local mode)") }
                 } else {
                     Text("Local mode", style = MaterialTheme.typography.titleMedium)
                     Text("Feeds are fetched directly. Connect Nextcloud News to sync read and saved state across devices.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Button({ showConnect = true }, Modifier.padding(top = 8.dp)) { Text("Connect Nextcloud") }
-                    TextButton({ context.openInBrowser(Links.NEXTCLOUD_NEWS) }) { Text("Get the Nextcloud News app") }
+                    OutlinedButton({ context.openInBrowser(Links.NEXTCLOUD_NEWS) }, Modifier.padding(top = 8.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Get the Nextcloud News app")
+                    }
                     Text(
                         "You'll need a Nextcloud server with the News app installed, and an app password " +
                             "(Nextcloud → Settings → Security → Devices & sessions).",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 12.dp),
                     )
                 }
             }
@@ -193,4 +209,14 @@ private fun ConnectDialog(onDismiss: () -> Unit, onConnect: (String, String, Str
         confirmButton = { TextButton({ onConnect(server, user, password) }) { Text("Connect") } },
         dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
     )
+}
+
+@Composable
+private fun lastSyncedLabel(at: Long?): String {
+    if (at == null) return "Not synced yet"
+    val now = System.currentTimeMillis()
+    if (now - at < 60_000) return "Last synced just now"
+    return "Last synced " + android.text.format.DateUtils.getRelativeTimeSpanString(
+        at, now, android.text.format.DateUtils.MINUTE_IN_MILLIS,
+    ).toString().replaceFirstChar { it.lowercase() }
 }

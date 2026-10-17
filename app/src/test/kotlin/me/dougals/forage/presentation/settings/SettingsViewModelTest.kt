@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import me.dougals.forage.data.nextcloud.NextcloudCredentials
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.SyncMode
+import me.dougals.forage.domain.model.SyncReport
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
@@ -52,7 +53,7 @@ class SettingsViewModelTest {
     }
 
     @Test fun successfulConnectSavesSwitchesModeResetsSyncMarkerThenRefreshes() = runTest {
-        coEvery { repo.refresh() } returns Result.success(Unit)
+        coEvery { repo.refresh() } returns Result.success(SyncReport())
         vm().connectNextcloud(" https://cloud.example.com/ ", " dougie ", "app-pw")
         assertEquals(NextcloudCredentials("https://cloud.example.com", "dougie", "app-pw"), creds.value)
         assertEquals(0L, sync.lastModified)
@@ -68,6 +69,67 @@ class SettingsViewModelTest {
         }
         assertNull(creds.value)
         coVerify { settings.setSyncMode(SyncMode.LOCAL) }
+    }
+
+    @Test fun syncNowRefreshesAndReportsSuccess() = runTest {
+        coEvery { repo.refresh() } returns Result.success(SyncReport())
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.syncNow()
+            assertEquals("Already up to date", awaitUntil { it.message != null }.message)
+        }
+        coVerify(exactly = 1) { repo.refresh() }
+        assertTrue(!v.state.value.isSyncing)
+    }
+
+    @Test fun syncNowMessageDescribesWhatChanged() = runTest {
+        coEvery { repo.refresh() } returns Result.success(SyncReport(newArticles = 12, changesSent = 3))
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.syncNow()
+            assertEquals("Synced · 12 new articles · 3 changes sent", awaitUntil { it.message != null }.message)
+        }
+    }
+
+    @Test fun lastSyncedTimeIsShownAndRefreshedAfterSyncNow() = runTest {
+        sync.lastSyncedAt = 1_000
+        coEvery { repo.refresh() } coAnswers { sync.lastSyncedAt = 2_000; Result.success(SyncReport()) }
+        val v = vm()
+        v.state.test {
+            assertEquals(1_000L, awaitUntil { it.lastSyncedAt == 1_000L }.lastSyncedAt)
+            v.syncNow()
+            assertEquals(2_000L, awaitUntil { it.lastSyncedAt == 2_000L }.lastSyncedAt)
+        }
+    }
+
+    @Test fun neverSyncedHasNoLastSyncedTime() = runTest {
+        assertNull(vm().state.value.lastSyncedAt)
+    }
+
+    @Test fun syncNowReportsFailureAndKeepsCredentials() = runTest {
+        creds.value = NextcloudCredentials("https://c", "u", "p")
+        coEvery { repo.refresh() } returns Result.failure(IOException("timeout"))
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.syncNow()
+            assertTrue(awaitUntil { it.message != null }.message!!.contains("timeout"))
+        }
+        assertEquals(NextcloudCredentials("https://c", "u", "p"), creds.value)
+        coVerify(exactly = 0) { settings.setSyncMode(any()) }
+    }
+
+    @Test fun syncNowWhileSyncingIsIgnored() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Result<me.dougals.forage.domain.model.SyncReport>>()
+        coEvery { repo.refresh() } coAnswers { gate.await() }
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.syncNow()
+            awaitUntil { it.isSyncing }
+            v.syncNow()
+            gate.complete(Result.success(SyncReport()))
+            awaitUntil { it.message != null }
+        }
+        coVerify(exactly = 1) { repo.refresh() }
     }
 
     @Test fun disconnectClearsCredentialsAndGoesLocal() = runTest {

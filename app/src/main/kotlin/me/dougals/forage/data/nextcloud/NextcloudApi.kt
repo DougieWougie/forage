@@ -5,7 +5,6 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
-import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -25,7 +24,7 @@ import retrofit2.http.Query
 @Serializable data class ItemsResponse(val items: List<ItemDto> = emptyList())
 @Serializable data class CreateFolderRequest(val name: String)
 @Serializable data class CreateFeedRequest(val url: String, val folderId: Long? = null)
-@Serializable data class ItemIdsRequest(val items: List<Long>)
+@Serializable data class ItemIdsRequest(val itemIds: List<Long>)
 
 /** Nextcloud News REST API v1-3, relative to `/index.php/apps/news/api/v1-3/`. */
 interface NextcloudApi {
@@ -51,8 +50,8 @@ interface NextcloudApi {
         @Query("id") id: Long = 0,
     ): ItemsResponse
 
-    @PUT("items/read/multiple") suspend fun markRead(@Body body: ItemIdsRequest)
-    @PUT("items/unread/multiple") suspend fun markUnread(@Body body: ItemIdsRequest)
-    @PUT("items/star/multiple") suspend fun star(@Body body: ItemIdsRequest)
-    @PUT("items/unstar/multiple") suspend fun unstar(@Body body: ItemIdsRequest)
+    @POST("items/read/multiple") suspend fun markRead(@Body body: ItemIdsRequest)
+    @POST("items/unread/multiple") suspend fun markUnread(@Body body: ItemIdsRequest)
+    @POST("items/star/multiple") suspend fun star(@Body body: ItemIdsRequest)
+    @POST("items/unstar/multiple") suspend fun unstar(@Body body: ItemIdsRequest)
 }

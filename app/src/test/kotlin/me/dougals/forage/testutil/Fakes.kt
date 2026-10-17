@@ -63,13 +63,13 @@ class FakeNextcloudApi : NextcloudApi {
     override suspend fun updatedItems(lastModified: Long, type: Int, id: Long) = rec("updated:$lastModified") {
         ItemsResponse(itemList.filter { it.lastModified > lastModified })
     }
-    override suspend fun markRead(body: ItemIdsRequest) = rec("markRead") { batches["markRead"] = body.items }
-    override suspend fun markUnread(body: ItemIdsRequest) = rec("markUnread") { batches["markUnread"] = body.items }
-    override suspend fun star(body: ItemIdsRequest) = rec("star") { batches["star"] = body.items }
-    override suspend fun unstar(body: ItemIdsRequest) = rec("unstar") { batches["unstar"] = body.items }
+    override suspend fun markRead(body: ItemIdsRequest) = rec("markRead") { batches["markRead"] = body.itemIds }
+    override suspend fun markUnread(body: ItemIdsRequest) = rec("markUnread") { batches["markUnread"] = body.itemIds }
+    override suspend fun star(body: ItemIdsRequest) = rec("star") { batches["star"] = body.itemIds }
+    override suspend fun unstar(body: ItemIdsRequest) = rec("unstar") { batches["unstar"] = body.itemIds }
 }
 
-class MemSyncState(override var lastModified: Long = 0) : SyncStateStore
+class MemSyncState(override var lastModified: Long = 0, override var lastSyncedAt: Long = 0) : SyncStateStore
 
 class RecordingSchedulers : SyncScheduler, ArchiveScheduler {
     var flushes = 0

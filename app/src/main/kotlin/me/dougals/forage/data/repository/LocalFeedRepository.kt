@@ -11,6 +11,7 @@ import me.dougals.forage.data.remote.ParsedItem
 import me.dougals.forage.data.work.ArchiveScheduler
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.SyncReport
 
 /** Local Mode: feeds are fetched straight from their publishers; nothing is synced anywhere. */
 class LocalFeedRepository(
@@ -37,18 +38,19 @@ class LocalFeedRepository(
         }
     }
 
-    override suspend fun refresh(): Result<Unit> {
+    override suspend fun refresh(): Result<SyncReport> {
         var failure: Throwable? = null
+        var fresh = 0
         for (feed in db.feedDao().getAll()) {
             try {
-                store(feed.id, source.fetch(feed.url).items)
+                fresh += store(feed.id, source.fetch(feed.url).items)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 failure = failure ?: e
             }
         }
-        return failure?.let { Result.failure(it) } ?: Result.success(Unit)
+        return failure?.let { Result.failure(it) } ?: Result.success(SyncReport(newArticles = fresh))
     }
 
     override suspend fun removeFeed(feedId: Long): Result<Unit> {
@@ -64,7 +66,8 @@ class LocalFeedRepository(
         return Result.success(Unit)
     }
 
-    private suspend fun store(feedId: Long, items: List<ParsedItem>) {
+    /** @return how many items were new */
+    private suspend fun store(feedId: Long, items: List<ParsedItem>): Int =
         db.articleDao().insertIgnore(
             items.map {
                 ArticleEntity(
@@ -73,6 +76,5 @@ class LocalFeedRepository(
                     publishedAt = if (it.publishedAt == 0L) clock() else it.publishedAt,
                 )
             },
-        )
-    }
+        ).count { it != -1L }
 }

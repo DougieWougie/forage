@@ -150,4 +150,25 @@ class NextcloudSyncerTest : DbTestBase() {
         runCatching { syncer.pull() }.also { assertTrue(it.isFailure) }
         assertEquals(0L, state.lastModified)
     }
+
+    @Test fun successfulPullRecordsWhenItHappened() = runTest {
+        serverWithOneFeed()
+        val before = System.currentTimeMillis()
+        syncer.pull()
+        assertTrue(state.lastSyncedAt >= before)
+    }
+
+    @Test fun failedPullDoesNotRecordASync() = runTest {
+        serverWithOneFeed()
+        api.failOn = setOf("feeds")
+        runCatching { syncer.pull() }
+        assertEquals(0L, state.lastSyncedAt)
+    }
+
+    @Test fun pullReturnsHowManyUnreadArticlesWereNew() = runTest {
+        serverWithOneFeed()
+        api.itemList += item(1, 10); api.itemList += item(2, 10, unread = false, starred = true)
+        assertEquals(1, syncer.pull())
+        assertEquals(0, syncer.pull())
+    }
 }

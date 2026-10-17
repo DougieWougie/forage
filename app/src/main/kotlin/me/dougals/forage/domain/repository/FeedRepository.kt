@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.SyncReport
 
 /**
  * Single seam for both operating modes: Local (direct RSS fetching) and Nextcloud Sync.
@@ -27,5 +28,5 @@ interface FeedRepository {
     suspend fun markFeedRead(feedId: Long)
 
     /** Pull new items (and, in Nextcloud mode, push queued changes first). */
-    suspend fun refresh(): Result<Unit>
+    suspend fun refresh(): Result<SyncReport>
 }

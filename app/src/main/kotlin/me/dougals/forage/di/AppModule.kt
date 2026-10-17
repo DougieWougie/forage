@@ -109,7 +109,7 @@ object AppModule {
 
     @Provides fun flushAction(f: PendingChangeFlusher): FlushAction = f
     @Provides fun archiveAction(a: OfflineArchiver): ArchiveAction = a
-    @Provides fun refreshAction(repo: FeedRepository): RefreshAction = RefreshAction { repo.refresh() }
+    @Provides fun refreshAction(repo: FeedRepository): RefreshAction = RefreshAction { repo.refresh().map { } }
 
     @Provides @Singleton
     fun feedRepository(

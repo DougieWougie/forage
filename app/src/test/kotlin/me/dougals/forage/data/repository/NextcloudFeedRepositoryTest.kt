@@ -8,6 +8,7 @@ import me.dougals.forage.data.nextcloud.FeedDto
 import me.dougals.forage.data.nextcloud.NextcloudApiProvider
 import me.dougals.forage.data.nextcloud.NextcloudSyncer
 import me.dougals.forage.data.nextcloud.PendingChangeFlusher
+import me.dougals.forage.domain.model.SyncReport
 import me.dougals.forage.testutil.FakeNextcloudApi
 import me.dougals.forage.testutil.MemSyncState
 import me.dougals.forage.testutil.RecordingSchedulers
@@ -158,4 +159,107 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
         assertEquals(1, repo.observeFeeds().first().single().unreadCount)
     }
 
+
+    // --- feeds that only exist locally (added or read before connecting) ---
+
+    private suspend fun localFeed(url: String = "https://omgubuntu.co.uk/feed", folderId: Long? = null) =
+        db.feedDao().insert(me.dougals.forage.data.local.FeedEntity(url = url, title = "Local", folderId = folderId))
+
+    @Test fun localOnlyFeedIsCreatedOnTheServerAndAdoptedNotDuplicated() = runTest {
+        localFeed()
+        assertTrue(repo.refresh().isSuccess)
+        assertEquals(listOf("createFeed:https://omgubuntu.co.uk/feed:null"), api.calls.filter { it.startsWith("createFeed") })
+        val feed = db.feedDao().getAll().single()
+        assertEquals(api.feedList.single().id, feed.remoteId)
+    }
+
+    @Test fun feedAlreadyOnTheServerIsNotCreatedAgain() = runTest {
+        localFeed()
+        api.feedList += FeedDto(10, "https://omgubuntu.co.uk/feed", "OMG")
+        repo.refresh()
+        assertTrue(api.calls.none { it.startsWith("createFeed") })
+        assertEquals(10L, db.feedDao().getAll().single().remoteId)
+    }
+
+    @Test fun localFolderIsCreatedFirstAndTheFeedIsPutInIt() = runTest {
+        val folder = db.folderDao().insert(me.dougals.forage.data.local.FolderEntity(name = "Tech"))
+        localFeed(folderId = folder)
+        repo.refresh()
+        val remoteFolder = api.folderList.single()
+        assertEquals("Tech", remoteFolder.name)
+        assertTrue(api.calls.contains("createFeed:https://omgubuntu.co.uk/feed:${remoteFolder.id}"))
+        assertEquals(1, db.folderDao().getAll().size)
+        assertEquals(remoteFolder.id, db.folderDao().getAll().single().remoteId)
+    }
+
+    @Test fun localFolderMatchingAServerFolderByNameIsAdopted() = runTest {
+        val folder = db.folderDao().insert(me.dougals.forage.data.local.FolderEntity(name = "Tech"))
+        localFeed(folderId = folder)
+        api.folderList += me.dougals.forage.data.nextcloud.FolderDto(3, "Tech")
+        repo.refresh()
+        assertTrue(api.calls.none { it == "createFolder" })
+        assertEquals(1, db.folderDao().getAll().size)
+        assertEquals(3L, db.folderDao().getAll().single().remoteId)
+    }
+
+    @Test fun readAndSavedStateFromBeforeConnectingIsPushedNotOverwritten() = runTest {
+        val feedId = localFeed()
+        db.articleDao().insertIgnore(
+            listOf(
+                me.dougals.forage.data.local.ArticleEntity(feedId = feedId, guid = "guid-1", title = "t", url = "u", publishedAt = 0, isRead = true),
+                me.dougals.forage.data.local.ArticleEntity(feedId = feedId, guid = "guid-2", title = "t", url = "u", publishedAt = 0, isSaved = true),
+            ),
+        )
+        // The server will know the feed (as id 100) with both items unread and unstarred.
+        api.itemList += item(1, 100)
+        api.itemList += item(2, 100)
+        repo.refresh()
+        val byGuid = db.articleDao().getAll().associateBy { it.guid }
+        assertTrue(byGuid.getValue("guid-1").isRead)
+        assertTrue(byGuid.getValue("guid-2").isSaved)
+        assertEquals(listOf(1L), api.batches["markRead"])
+        assertEquals(listOf(2L), api.batches["star"])
+        assertEquals(emptyList<Any>(), db.pendingChangeDao().getAll())
+    }
+
+    @Test fun createFeedFailureFailsTheRefresh() = runTest {
+        localFeed()
+        api.failOn = setOf("createFeed:https://omgubuntu.co.uk/feed:null")
+        assertTrue(repo.refresh().isFailure)
+    }
+
+    // --- the report behind the "Sync now" message ---
+
+    @Test fun reportCountsNewArticlesPulled() = runTest {
+        api.feedList += FeedDto(10, "https://lwn.net/rss", "LWN")
+        api.itemList += item(1, 10); api.itemList += item(2, 10)
+        assertEquals(SyncReport(newArticles = 2), repo.refresh().getOrThrow())
+    }
+
+    @Test fun alreadyReadItemsArePulledButNotCountedAsNew() = runTest {
+        api.feedList += FeedDto(10, "https://lwn.net/rss", "LWN")
+        api.itemList += item(1, 10, unread = false, starred = true)
+        assertEquals(SyncReport(), repo.refresh().getOrThrow())
+    }
+
+    @Test fun reportCountsQueuedChangesSent() = runTest {
+        val id = syncedArticle()
+        repo.setRead(id, true)
+        repo.setSaved(id, true)
+        assertEquals(SyncReport(changesSent = 2), repo.refresh().getOrThrow())
+    }
+
+    @Test fun reportCountsFeedsCreatedOnTheServerAndStatePushedAfterAdoption() = runTest {
+        val feedId = localFeed()
+        db.articleDao().insertIgnore(
+            listOf(me.dougals.forage.data.local.ArticleEntity(feedId = feedId, guid = "guid-1", title = "t", url = "u", publishedAt = 0, isRead = true)),
+        )
+        api.itemList += item(1, 100)
+        assertEquals(SyncReport(feedsAdded = 1, changesSent = 1), repo.refresh().getOrThrow())
+    }
+
+    @Test fun nothingToDoGivesAnEmptyReport() = runTest {
+        syncedArticle()
+        assertEquals(SyncReport(), repo.refresh().getOrThrow())
+    }
 }

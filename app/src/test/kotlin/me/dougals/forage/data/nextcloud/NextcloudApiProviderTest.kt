@@ -37,6 +37,22 @@ class NextcloudApiProviderTest {
         assertEquals("Basic ZG91Z2llOmFwcC1wYXNz", req.headers["Authorization"])
     }
 
+    @Test fun bulkStateCallsArePostsWithItemIdsAgainstTheV13Routes() = runTest {
+        val creds = NextcloudCredentials(server.url("/").toString(), "u", "p")
+        val api = provider(creds).api()
+        val calls = listOf<Pair<String, suspend (ItemIdsRequest) -> Unit>>(
+            "read" to api::markRead, "unread" to api::markUnread, "star" to api::star, "unstar" to api::unstar,
+        )
+        for ((route, call) in calls) {
+            server.enqueue(MockResponse.Builder().build())
+            call(ItemIdsRequest(listOf(4, 7)))
+            val req = server.takeRequest()
+            assertEquals("POST", req.method, route)
+            assertEquals("/index.php/apps/news/api/v1-3/items/$route/multiple", req.url.encodedPath)
+            assertEquals("""{"itemIds":[4,7]}""", req.body?.utf8(), route)
+        }
+    }
+
     @Test fun serverUrlWithSubpathAndNoTrailingSlash() = runTest {
         server.enqueue(MockResponse.Builder().body(foldersJson).build())
         val creds = NextcloudCredentials(server.url("/nextcloud").toString(), "u", "p")

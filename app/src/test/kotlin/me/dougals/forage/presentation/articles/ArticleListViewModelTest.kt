@@ -68,7 +68,7 @@ class ArticleListViewModelTest {
     }
 
     @Test fun refreshShowsSpinnerThenSurfacesFailure() = runTest {
-        val gate = CompletableDeferred<Result<Unit>>()
+        val gate = CompletableDeferred<Result<me.dougals.forage.domain.model.SyncReport>>()
         every { repo.observeUnread() } returns flowOf(emptyList())
         coEvery { repo.refresh() } coAnswers { gate.await() }
         val v = vm("source" to "unread")

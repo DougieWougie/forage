@@ -28,6 +28,8 @@ data class SettingsUiState(
     val sessionDomains: List<String> = emptyList(),
     val message: String? = null,
     val isConnecting: Boolean = false,
+    val isSyncing: Boolean = false,
+    val lastSyncedAt: Long? = null,
 )
 
 @HiltViewModel
@@ -42,9 +44,16 @@ class SettingsViewModel @Inject constructor(
     private val domains = MutableStateFlow(sessions.domains())
     private val message = MutableStateFlow<String?>(null)
     private val connecting = MutableStateFlow(false)
+    private val syncing = MutableStateFlow(false)
+    private val lastSynced = MutableStateFlow(syncState.lastSyncedAt)
 
-    val state: StateFlow<SettingsUiState> = combine(settingsRepo.settings, creds, domains, message, connecting) { s, c, d, m, busy ->
-        SettingsUiState(s, c?.serverUrl, c?.username, d, m, busy)
+    val state: StateFlow<SettingsUiState> = combine(settingsRepo.settings, creds, domains, message, connecting, syncing, lastSynced) { values ->
+        @Suppress("UNCHECKED_CAST")
+        val c = values[1] as NextcloudCredentials?
+        SettingsUiState(
+            values[0] as AppSettings, c?.serverUrl, c?.username, values[2] as List<String>,
+            values[3] as String?, values[4] as Boolean, values[5] as Boolean, (values[6] as Long).takeIf { it > 0 },
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun connectNextcloud(rawUrl: String, rawUser: String, password: String) {
@@ -73,6 +82,16 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /** Flushes queued local changes, then pulls. Failures leave the connection intact. */
+    fun syncNow() {
+        if (!syncing.compareAndSet(expect = false, update = true)) return
+        viewModelScope.launch {
+            val result = try { repo.refresh() } finally { syncing.value = false }
+            lastSynced.value = syncState.lastSyncedAt
+            message.value = if (result.isSuccess) result.getOrThrow().summary() else "Could not sync: ${result.exceptionOrNull()?.message ?: "unknown error"}"
+        }
+    }
+
     fun disconnectNextcloud() {
         viewModelScope.launch {
             credentials.clear(); creds.value = null
@@ -81,7 +100,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun removeSession(domain: String) { sessions.remove(domain); reloadSessions() }
-    fun reloadSessions() { domains.value = sessions.domains() }
+    fun reloadSessions() { domains.value = sessions.domains(); lastSynced.value = syncState.lastSyncedAt }
     fun setAllowLocalNetwork(allow: Boolean) { viewModelScope.launch { settingsRepo.setAllowLocalNetwork(allow) } }
     fun setFont(font: ReaderFont) { viewModelScope.launch { settingsRepo.setReaderFont(font) } }
     fun setFontScale(scale: Float) { viewModelScope.launch { settingsRepo.setFontScale(scale) } }

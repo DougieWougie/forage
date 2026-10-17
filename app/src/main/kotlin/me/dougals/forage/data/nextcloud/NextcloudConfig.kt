@@ -106,10 +106,17 @@ class RetrofitNextcloudApiProvider(
     }
 }
 
-interface SyncStateStore { var lastModified: Long }
+interface SyncStateStore {
+    var lastModified: Long
+    /** Wall-clock time of the last successful pull, 0 if never. */
+    var lastSyncedAt: Long
+}
 
 class PrefsSyncStateStore(private val prefs: SharedPreferences) : SyncStateStore {
     override var lastModified: Long
         get() = prefs.getLong("lastModified", 0)
         set(v) = prefs.edit { putLong("lastModified", v) }
+    override var lastSyncedAt: Long
+        get() = prefs.getLong("lastSyncedAt", 0)
+        set(v) = prefs.edit { putLong("lastSyncedAt", v) }
 }
