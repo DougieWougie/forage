@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v5
+      - run: ./gradlew lintDebug
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.*
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v5
+      - run: ./gradlew testDebugUnitTest
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: test-report
+          path: app/build/reports/tests/testDebugUnitTest/
+      - run: ./gradlew createDebugUnitTestCoverageReport
+      - uses: actions/upload-artifact@v5
+        with:
+          name: coverage-report
+          path: app/build/reports/coverage/test/debug/
