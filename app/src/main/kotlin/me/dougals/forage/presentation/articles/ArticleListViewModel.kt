@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.dougals.forage.R
 import me.dougals.forage.domain.model.Article
+import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.toUiText
 import me.dougals.forage.domain.repository.FeedRepository
@@ -50,6 +51,7 @@ data class ArticleListState(
     val feedTitles: Map<Long, String> = emptyMap(),
     val isRefreshing: Boolean = false,
     val pullToRefresh: Boolean = true,
+    val thumbnails: ThumbnailMode = ThumbnailMode.ALWAYS,
     val message: UiText? = null,
 )
 
@@ -71,8 +73,12 @@ class ArticleListViewModel @Inject constructor(
 
     val state: StateFlow<ArticleListState> = combine(
         articles, repo.observeFeeds().map { feeds -> feeds.associate { it.id to it.title } }, refreshing, message,
-        settingsRepo.settings.map { it.pullToRefresh && source == ListSource.Unread },
-    ) { list, titles, isRefreshing, msg, pull -> ArticleListState(list, titles, isRefreshing, pull, msg) }
+        settingsRepo.settings,
+    ) { list, titles, isRefreshing, msg, settings ->
+        ArticleListState(
+            list, titles, isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, msg,
+        )
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
 
     fun toggleRead(article: Article) { viewModelScope.launch { repo.setRead(article.id, !article.isRead) } }

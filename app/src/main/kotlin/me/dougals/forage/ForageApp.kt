@@ -14,20 +14,43 @@ package me.dougals.forage
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.disk.DiskCache
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.flow.first
+import me.dougals.forage.data.content.ImageResourceFetcher
+import me.dougals.forage.data.content.ThumbnailFetcher
 import me.dougals.forage.data.work.WorkManagerSchedulers
+import me.dougals.forage.domain.repository.SettingsRepository
+import okio.Path.Companion.toOkioPath
 import javax.inject.Inject
 
 @HiltAndroidApp
-class ForageApp : Application(), Configuration.Provider {
+class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Factory {
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var schedulers: WorkManagerSchedulers
+    @Inject lateinit var images: ImageResourceFetcher
+    @Inject lateinit var settings: SettingsRepository
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
+    /** Article-list thumbnails: fetched by [ThumbnailFetcher] (guarded, cookie-free), cached on disk under the app cache. */
+    override fun newImageLoader(context: PlatformContext): ImageLoader = ImageLoader.Builder(context)
+        .components { add(ThumbnailFetcher.Factory(images) { settings.settings.first().allowLocalNetwork }) }
+        .diskCache {
+            DiskCache.Builder().directory(cacheDir.resolve("thumbnails").toOkioPath()).maxSizeBytes(THUMBNAIL_CACHE_BYTES).build()
+        }
+        .build()
+
     override fun onCreate() {
         super.onCreate()
         schedulers.schedulePeriodicRefresh()
+    }
+
+    private companion object {
+        const val THUMBNAIL_CACHE_BYTES = 64L * 1024 * 1024
     }
 }
