@@ -8,13 +8,16 @@ interface SessionStore {
     fun get(domain: String): String?
     fun remove(domain: String)
     fun domains(): List<String>
-    /** Cookies for a request host: exact domain or any parent domain with a stored session. */
+    /**
+     * Cookies for a request host. Exact host match only: the WebView hands us a bare cookie string
+     * without Domain/Path attributes, so we cannot tell host-only cookies from domain cookies and
+     * must not widen them to other subdomains. Log in from the host the feed is served from.
+     */
     fun findForHost(host: String): String?
 
     companion object {
         fun matchHost(sessions: Map<String, String>, host: String): String? {
-            val h = host.lowercase()
-            return sessions.entries.firstOrNull { (domain, _) -> h == domain || h.endsWith(".$domain") }?.value
+            return sessions[host.lowercase()]
         }
     }
 }

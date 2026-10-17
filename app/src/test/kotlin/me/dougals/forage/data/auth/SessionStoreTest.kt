@@ -45,11 +45,13 @@ class SessionStoreTest {
         assertEquals(listOf("a.com", "b.com"), s.domains())
     }
 
-    @Test fun findForHostMatchesParentDomainButNotSuffixLookalike() {
+    @Test fun findForHostIsExactAndNeverWidensToSubdomainsOrParents() {
         val s = store()
         s.save("lwn.net", "a=1")
         assertEquals("a=1", s.findForHost("lwn.net"))
-        assertEquals("a=1", s.findForHost("www.lwn.net"))
+        assertNull(s.findForHost("www.lwn.net"))
+        assertNull(s.findForHost("user-content.lwn.net"))
+        assertEquals("a=1", s.findForHost("LWN.net"))
         assertNull(s.findForHost("evil-lwn.net"))
         assertNull(s.findForHost("net"))
     }
