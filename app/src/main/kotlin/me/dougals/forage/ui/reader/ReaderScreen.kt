@@ -54,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ReaderFont
+import me.dougals.forage.presentation.reader.ReaderFonts
 import me.dougals.forage.presentation.reader.ReaderHtml
 import me.dougals.forage.presentation.reader.ReaderStyle
 import me.dougals.forage.presentation.reader.ReaderViewModel
@@ -151,6 +152,9 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, modifier: Modif
                     override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                         val scheme = request.url.scheme
                         if (scheme != "http" && scheme != "https") return null
+                        ReaderFonts.assetFor(request.url.toString())?.let { path ->
+                            return WebResourceResponse("font/woff2", null, ctx.assets.open(path))
+                        }
                         val image = if (request.method == "GET") {
                             runBlocking { images.fetch(request.url.toString(), allowLocal) }.getOrNull()
                         } else null
@@ -198,6 +202,7 @@ private fun TypographySheet(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(settings.readerFont == ReaderFont.SERIF, { onFont(ReaderFont.SERIF) }, label = { Text("Serif") })
                 FilterChip(settings.readerFont == ReaderFont.SANS, { onFont(ReaderFont.SANS) }, label = { Text("Sans-serif") })
+                FilterChip(settings.readerFont == ReaderFont.DYSLEXIC, { onFont(ReaderFont.DYSLEXIC) }, label = { Text("OpenDyslexic") })
             }
             Text("Text size  ${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

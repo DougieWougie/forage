@@ -31,6 +31,12 @@ class SettingsRepositoryTest {
         assertEquals(AppSettings(SyncMode.NEXTCLOUD, ReaderFont.SANS, 1.5f), r.settings.first())
     }
 
+    @Test fun dyslexicFontPersists() = runTest {
+        val r = repo()
+        r.setReaderFont(ReaderFont.DYSLEXIC)
+        assertEquals(ReaderFont.DYSLEXIC, r.settings.first().readerFont)
+    }
+
     @Test fun localNetworkAccessIsOffByDefaultAndPersists() = runTest {
         val r = repo()
         assertEquals(false, r.settings.first().allowLocalNetwork)

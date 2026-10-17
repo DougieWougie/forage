@@ -1,6 +1,6 @@
 package me.dougals.forage.domain.model
 
-enum class ReaderFont { SERIF, SANS }
+enum class ReaderFont { SERIF, SANS, DYSLEXIC }
 
 data class AppSettings(
     val syncMode: SyncMode = SyncMode.LOCAL,

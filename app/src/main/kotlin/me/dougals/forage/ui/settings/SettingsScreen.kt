@@ -101,6 +101,7 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                 Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(state.settings.readerFont == ReaderFont.SERIF, { vm.setFont(ReaderFont.SERIF) }, label = { Text("Serif") })
                     FilterChip(state.settings.readerFont == ReaderFont.SANS, { vm.setFont(ReaderFont.SANS) }, label = { Text("Sans-serif") })
+                    FilterChip(state.settings.readerFont == ReaderFont.DYSLEXIC, { vm.setFont(ReaderFont.DYSLEXIC) }, label = { Text("OpenDyslexic") })
                 }
                 Text("Text size  ${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
                 Slider(scale, { scale = it }, onValueChangeFinished = { vm.setFontScale(scale) }, valueRange = AppSettings.MIN_SCALE..AppSettings.MAX_SCALE)

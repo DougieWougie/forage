@@ -14,18 +14,37 @@ data class ReaderStyle(
     val link: String,
 )
 
+/**
+ * OpenDyslexic (SIL OFL 1.1) is bundled in assets. The page names it by a URL on a reserved, unresolvable host
+ * and the WebView hands those requests to [assetFor]; nothing else is ever served from assets.
+ */
+object ReaderFonts {
+    const val ORIGIN = "https://forage.invalid"
+    const val REGULAR_URL = "$ORIGIN/fonts/opendyslexic-400.woff2"
+    const val BOLD_URL = "$ORIGIN/fonts/opendyslexic-700.woff2"
+
+    private val assets = mapOf(REGULAR_URL to "fonts/opendyslexic-400.woff2", BOLD_URL to "fonts/opendyslexic-700.woff2")
+
+    fun assetFor(url: String): String? = assets[url]
+}
+
 object ReaderHtml {
     fun wrap(title: String, byline: String?, bodyHtml: String, style: ReaderStyle): String {
         val family = when (style.font) {
             ReaderFont.SERIF -> "Georgia, 'Noto Serif', serif"
             ReaderFont.SANS -> "system-ui, Roboto, sans-serif"
+            ReaderFont.DYSLEXIC -> "'OpenDyslexic', system-ui, Roboto, sans-serif"
         }
+        val fontFace = if (style.font == ReaderFont.DYSLEXIC) """
+            @font-face { font-family: 'OpenDyslexic'; font-weight: 400; src: url('${ReaderFonts.REGULAR_URL}') format('woff2'); }
+            @font-face { font-family: 'OpenDyslexic'; font-weight: 700; src: url('${ReaderFonts.BOLD_URL}') format('woff2'); }
+        """ else ""
         val percent = (style.fontScale * 100).roundToInt()
         return """
             <!doctype html><html><head><meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: http: data:; style-src 'unsafe-inline'; script-src 'none'">
-            <style>
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: http: data:; style-src 'unsafe-inline'; font-src ${ReaderFonts.ORIGIN}; script-src 'none'">
+            <style>$fontFace
             html { font-size: $percent%; }
             body { margin: 0; padding: 20px 20px 48px; background: ${style.background}; color: ${style.text};
                    font-family: $family; line-height: 1.65; overflow-wrap: anywhere; }

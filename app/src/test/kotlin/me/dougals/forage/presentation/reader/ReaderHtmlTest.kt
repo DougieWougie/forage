@@ -1,7 +1,9 @@
 package me.dougals.forage.presentation.reader
 
 import me.dougals.forage.domain.model.ReaderFont
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -29,6 +31,40 @@ class ReaderHtmlTest {
         val sans = page(s = style.copy(font = ReaderFont.SANS))
         assertTrue(sans.contains("sans-serif"))
         assertFalse(sans.contains("Georgia"))
+    }
+
+    @Test fun dyslexicFontDeclaresBundledFaceAndFallsBack() {
+        val h = page(s = style.copy(font = ReaderFont.DYSLEXIC))
+        assertTrue(h.contains("@font-face"))
+        assertTrue(h.contains("'OpenDyslexic'"))
+        assertTrue(h.contains(ReaderFonts.REGULAR_URL))
+        assertTrue(h.contains(ReaderFonts.BOLD_URL))
+        assertTrue(h.contains("sans-serif"))
+    }
+
+    @Test fun otherFontsDoNotLoadTheBundledFace() {
+        listOf(ReaderFont.SERIF, ReaderFont.SANS).forEach {
+            val h = page(s = style.copy(font = it))
+            assertFalse(h.contains("@font-face"), it.name)
+            assertFalse(h.contains("OpenDyslexic"), it.name)
+        }
+    }
+
+    @Test fun cspAllowsFontsFromTheReservedOriginOnly() {
+        val csp = Regex("Content-Security-Policy\" content=\"([^\"]*)\"").find(page())!!.groupValues[1]
+        val fontSrc = csp.split(";").map { it.trim() }.single { it.startsWith("font-src") }
+        assertEquals("font-src ${ReaderFonts.ORIGIN}", fontSrc)
+        assertTrue(csp.contains("script-src 'none'"))
+    }
+
+    @Test fun onlyTheTwoBundledFontUrlsMapToAssets() {
+        assertEquals("fonts/opendyslexic-400.woff2", ReaderFonts.assetFor(ReaderFonts.REGULAR_URL))
+        assertEquals("fonts/opendyslexic-700.woff2", ReaderFonts.assetFor(ReaderFonts.BOLD_URL))
+        listOf(
+            "${ReaderFonts.ORIGIN}/fonts/../../secret", "${ReaderFonts.ORIGIN}/fonts/other.woff2",
+            "https://evil.example/fonts/opendyslexic-400.woff2", "http://forage.invalid/fonts/opendyslexic-400.woff2",
+            "${ReaderFonts.REGULAR_URL}?x=1", "",
+        ).forEach { assertNull(ReaderFonts.assetFor(it), it) }
     }
 
     @Test fun fontScaleBecomesPercentage() {
