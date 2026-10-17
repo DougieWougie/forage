@@ -24,6 +24,7 @@ import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -35,32 +36,48 @@ class SplashViewModelTest {
     private val repo = mockk<FeedRepository>()
     private val progress = RefreshProgress()
 
-    @Test fun finishesHalfASecondAfterTheRefreshEnds() = runTest {
+    @Test fun reportsNewArticlesThenWaitsForATap() = runTest {
         val gate = CompletableDeferred<Unit>()
-        coEvery { repo.refresh() } coAnswers { gate.await(); Result.success(SyncReport()) }
+        coEvery { repo.refresh() } coAnswers { gate.await(); Result.success(SyncReport(newArticles = 12)) }
         val vm = SplashViewModel(repo, progress)
+        assertFalse(vm.state.value.ready)
+
+        vm.continueNow() // too early: the result hasn't been shown yet
+        gate.complete(Unit)
+        advanceTimeBy(1)
+        assertTrue(vm.state.value.ready)
+        assertEquals(12, vm.state.value.newArticles)
         assertFalse(vm.state.value.finished)
 
-        gate.complete(Unit)
-        assertFalse(vm.state.value.finished)
-        advanceTimeBy(SplashViewModel.HOLD_MS - 1)
-        assertFalse(vm.state.value.finished)
-        advanceTimeBy(2)
+        vm.continueNow()
+        advanceTimeBy(1)
         assertTrue(vm.state.value.finished)
     }
 
-    @Test fun finishesEvenWhenTheRefreshFails() = runTest {
+    @Test fun continuesOnItsOwnIfNobodyTaps() = runTest {
+        coEvery { repo.refresh() } returns Result.success(SyncReport())
+        val vm = SplashViewModel(repo, progress)
+        advanceTimeBy(SplashViewModel.AUTO_MS - 1)
+        assertFalse(vm.state.value.finished)
+        advanceTimeBy(2)
+        assertTrue(vm.state.value.finished)
+        assertEquals(0, vm.state.value.newArticles)
+    }
+
+    @Test fun aFailedRefreshHasNoCount() = runTest {
         coEvery { repo.refresh() } returns Result.failure(java.io.IOException("offline"))
         val vm = SplashViewModel(repo, progress)
-        advanceTimeBy(SplashViewModel.HOLD_MS + 1)
-        assertTrue(vm.state.value.finished)
+        advanceTimeBy(1)
+        assertTrue(vm.state.value.ready)
+        assertNull(vm.state.value.newArticles)
     }
 
     @Test fun givesUpOnASlowRefresh() = runTest {
         coEvery { repo.refresh() } coAnswers { CompletableDeferred<Unit>().await(); Result.success(SyncReport()) }
         val vm = SplashViewModel(repo, progress)
-        advanceTimeBy(SplashViewModel.TIMEOUT_MS + SplashViewModel.HOLD_MS + 1)
-        assertTrue(vm.state.value.finished)
+        advanceTimeBy(SplashViewModel.TIMEOUT_MS + 1)
+        assertTrue(vm.state.value.ready)
+        assertNull(vm.state.value.newArticles)
     }
 
     @Test fun exposesFeedProgress() = runTest {

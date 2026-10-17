@@ -4,6 +4,13 @@
 
     <!-- Startup -->
     <string name="splash_updating">Updating feeds…</string>
+    <string name="splash_no_new">No new articles</string>
+    <string name="splash_update_failed">Couldn\'t update feeds</string>
+    <string name="splash_tap_to_continue">Tap to continue</string>
+    <plurals name="splash_new_articles">
+        <item quantity="one">%d new article</item>
+        <item quantity="other">%d new articles</item>
+    </plurals>
     <string name="splash_updating_progress">Updating feed %1$d of %2$d</string>
 
     <!-- Navigation -->
