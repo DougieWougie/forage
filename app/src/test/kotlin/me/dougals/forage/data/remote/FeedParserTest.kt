@@ -179,6 +179,100 @@ class FeedParserTest {
         assertThrows(FeedParseException::class.java) { parse("<rss><channel><title>oops") }
     }
 
+    @Test fun rssOrRdfWithoutAChannelThrows() {
+        assertThrows(FeedParseException::class.java) { parse("""<rss version="2.0"><item><title>x</title></item></rss>""") }
+        assertThrows(FeedParseException::class.java) {
+            parse("""<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><item><title>x</title></item></rdf:RDF>""")
+        }
+    }
+
+    @Test fun emptyDocumentThrows() {
+        assertThrows(FeedParseException::class.java) { parse("") }
+    }
+
+    // Fallbacks for missing or partial fields
+
+    @Test fun bareChannelHasEmptyTitleAndNoSite() {
+        val feed = parse("""<rss version="2.0"><channel><item><link>https://example.com/1</link></item></channel></rss>""")
+        assertEquals("", feed.title)
+        assertNull(feed.siteUrl)
+        assertEquals("", feed.items.single().title)
+    }
+
+    @Test fun rssGuidFallsBackToRdfAboutThenTitle() {
+        val items = parse("""
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/">
+              <channel><title>t</title></channel>
+              <item rdf:about="https://example.com/about"><title>About</title></item>
+              <item><title>Only a title</title></item>
+            </rdf:RDF>
+        """).items
+        assertEquals(listOf("https://example.com/about", "Only a title"), items.map { it.guid })
+        assertEquals(listOf("", ""), items.map { it.url })
+    }
+
+    @Test fun rssAuthorIsUsedWithoutDcCreator() {
+        val item = parse("""
+            <rss version="2.0"><channel><title>t</title>
+              <item><title>x</title><link>https://example.com/p</link><author>ann@example.com (Ann)</author></item>
+            </channel></rss>
+        """).items.single()
+        assertEquals("ann@example.com (Ann)", item.author)
+    }
+
+    @Test fun linksAreTrimmedAndKeptAsIsWhenTheBaseIsNotAUrl() {
+        val item = parse("""
+            <rss version="2.0"><channel><title>t</title>
+              <item><title>x</title><link>
+                /posts/1
+              </link></item>
+            </channel></rss>
+        """, base = "not a url").items.single()
+        assertEquals("/posts/1", item.url)
+    }
+
+    @Test fun blankDateYieldsZero() {
+        val item = parse("""
+            <rss version="2.0"><channel><title>t</title>
+              <item><title>x</title><link>https://e/1</link><pubDate>   </pubDate></item>
+            </channel></rss>
+        """).items.single()
+        assertEquals(0L, item.publishedAt)
+    }
+
+    @Test fun atomGuidFallsBackToLinkThenTitle() {
+        val entries = parse("""
+            <feed xmlns="http://www.w3.org/2005/Atom"><title>t</title>
+              <entry><title>linked</title><link href="https://example.com/e"/></entry>
+              <entry><title>bare</title></entry>
+            </feed>
+        """).items
+        assertEquals(listOf("https://example.com/e", "bare"), entries.map { it.guid })
+        assertEquals(listOf("https://example.com/e", ""), entries.map { it.url })
+        assertEquals(listOf(null, null), entries.map { it.author })
+        assertEquals(listOf(0L, 0L), entries.map { it.publishedAt })
+    }
+
+    @Test fun atomSkipsSelfLinksAndLinksWithoutHref() {
+        val feed = parse("""
+            <feed xmlns="http://www.w3.org/2005/Atom"><title>t</title>
+              <link rel="self" href="https://example.com/atom.xml"/>
+              <entry><id>1</id><title>x</title><link rel="alternate"/><link href="https://example.com/real"/></entry>
+            </feed>
+        """)
+        assertNull(feed.siteUrl)
+        assertEquals("https://example.com/real", feed.items.single().url)
+    }
+
+    @Test fun atomAuthorWithoutANameIsNull() {
+        val e = parse("""
+            <feed xmlns="http://www.w3.org/2005/Atom"><title>t</title>
+              <entry><id>1</id><title>x</title><author><email>a@example.com</email></author></entry>
+            </feed>
+        """).items.single()
+        assertNull(e.author)
+    }
+
     private fun rssImage(inner: String, base: String = "https://example.com/feed.xml") = parse("""
         <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
         <channel><title>t</title><item><title>x</title><link>https://example.com/p</link>$inner</item></channel></rss>
@@ -216,6 +310,11 @@ class FeedParserTest {
 
     @Test fun relativeMediaUrlsAreResolvedAgainstTheFeed() {
         assertEquals("https://example.com/img/t.jpg", rssImage("""<media:thumbnail url="/img/t.jpg"/>"""))
+    }
+
+    @Test fun otherMediaElementsAreNotImages() {
+        assertNull(rssImage("""<media:player url="https://example.com/player.jpg"/>"""))
+        assertNull(rssImage("""<media:content medium="image"/>"""))
     }
 
     @Test fun nonHttpMediaUrlIsIgnored() {
