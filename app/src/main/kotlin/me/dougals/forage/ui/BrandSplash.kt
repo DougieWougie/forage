@@ -12,10 +12,15 @@
 package me.dougals.forage.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,7 +41,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,28 +68,51 @@ fun BrandSplash(content: @Composable () -> Unit) {
 private fun SplashOverlay(onFinished: () -> Unit, vm: SplashViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.finished) { if (state.finished) { delay(FADE_MS.toLong()); onFinished() } }
+    val pulse by rememberInfiniteTransition(label = "pulse").animateFloat(
+        initialValue = 0.4f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "pulse",
+    )
     AnimatedVisibility(!state.finished, exit = fadeOut(tween(FADE_MS))) {
-        Box(Modifier.fillMaxSize().background(colorResource(R.color.splash_background)), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(
+            Modifier.fillMaxSize().background(colorResource(R.color.splash_background))
+                .clickable(enabled = state.ready, interactionSource = null, indication = null, onClick = vm::continueNow),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(Modifier.height(140.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Image(
                     painterResource(R.drawable.logo_wordmark),
                     contentDescription = stringResource(R.string.app_name),
                     modifier = Modifier.width(240.dp),
                 )
                 val progress = state.progress
-                val fraction = progress?.takeIf { it.total > 0 }?.let { it.done.toFloat() / it.total }
-                if (fraction != null) {
-                    LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.width(160.dp))
+                if (state.ready) {
+                    val found = state.newArticles
+                    Text(
+                        if (found == null) stringResource(R.string.splash_update_failed)
+                        else if (found == 0) stringResource(R.string.splash_no_new)
+                        else pluralStringResource(R.plurals.splash_new_articles, found, found),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        stringResource(R.string.splash_tap_to_continue),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.alpha(pulse),
+                    )
                 } else {
-                    LinearWavyProgressIndicator(Modifier.width(160.dp))
+                    val fraction = progress?.takeIf { it.total > 0 }?.let { it.done.toFloat() / it.total }
+                    if (fraction != null) {
+                        LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.width(160.dp))
+                    } else {
+                        LinearWavyProgressIndicator(Modifier.width(160.dp))
+                    }
+                    Text(
+                        if (progress != null) stringResource(R.string.splash_updating_progress, progress.done + 1, progress.total)
+                        else stringResource(R.string.splash_updating),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-                Text(
-                    if (progress != null) stringResource(R.string.splash_updating_progress, progress.done + 1, progress.total)
-                    else stringResource(R.string.splash_updating),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.height(24.dp),
-                )
             }
         }
     }
