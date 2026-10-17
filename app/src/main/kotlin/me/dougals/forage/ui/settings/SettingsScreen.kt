@@ -29,6 +29,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
+import me.dougals.forage.data.net.Links
+import me.dougals.forage.ui.openInBrowser
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -61,6 +64,7 @@ import me.dougals.forage.presentation.settings.SettingsViewModel
 fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
     val scroll = TopAppBarDefaults.pinnedScrollBehavior()
     var showConnect by rememberSaveable { mutableStateOf(false) }
     var showLogin by rememberSaveable { mutableStateOf(false) }
@@ -93,6 +97,12 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                     Text("Local mode", style = MaterialTheme.typography.titleMedium)
                     Text("Feeds are fetched directly. Connect Nextcloud News to sync read and saved state across devices.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Button({ showConnect = true }, Modifier.padding(top = 8.dp)) { Text("Connect Nextcloud") }
+                    TextButton({ context.openInBrowser(Links.NEXTCLOUD_NEWS) }) { Text("Get the Nextcloud News app") }
+                    Text(
+                        "You'll need a Nextcloud server with the News app installed, and an app password " +
+                            "(Nextcloud → Settings → Security → Devices & sessions).",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
             item { Section("Reading") }

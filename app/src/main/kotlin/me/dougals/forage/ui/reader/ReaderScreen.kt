@@ -55,6 +55,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.presentation.reader.ReaderFonts
+import me.dougals.forage.ui.openInBrowser
 import me.dougals.forage.presentation.reader.ReaderHtml
 import me.dougals.forage.presentation.reader.ReaderStyle
 import me.dougals.forage.presentation.reader.ReaderViewModel
@@ -176,15 +177,6 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, modifier: Modif
         },
         onRelease = { it.destroy() },
     )
-}
-
-private fun Context.openInBrowser(url: String) {
-    if (!isWebUrl(url)) return
-    try {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    } catch (_: ActivityNotFoundException) {
-        // no browser installed; nothing sensible to do
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
