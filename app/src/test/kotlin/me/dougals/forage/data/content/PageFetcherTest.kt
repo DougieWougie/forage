@@ -52,6 +52,52 @@ class PageFetcherTest {
         }
     }
 
+    @Test fun ipLiteralHostsBypassDnsSoTheyAreCheckedExplicitly() {
+        MockWebServer().use { s ->
+            s.start()
+            val literal = s.url("/").newBuilder().host("127.0.0.1").build().toString()
+            assertThrows(IOException::class.java) { runBlocking { fetcher(allowPrivate = false).fetchHtml(literal) } }
+            assertThrows(IOException::class.java) {
+                runBlocking { fetcher(allowPrivate = false).fetchHtml("http://[::1]:${s.port}/") }
+            }
+            assertEquals(0, s.requestCount)
+        }
+    }
+
+    @Test fun redirectToAnInternalLiteralIsRefusedBeforeConnecting() {
+        MockWebServer().use { s ->
+            s.start()
+            s.enqueue(MockResponse.Builder().code(302).addHeader("Location", "http://169.254.169.254/latest/meta-data/").build())
+            // Policy lets the test server (loopback) through but is otherwise the real one.
+            val f = OkHttpPageFetcher(OkHttpClient(), addressPolicy = { it.isLoopbackAddress || isPublicAddress(it) })
+            val e = assertThrows(IOException::class.java) { runBlocking { f.fetchHtml(s.url("/").toString()) } }
+            assertTrue(e.message!!.contains("non-public"), e.message)
+            assertEquals(1, s.requestCount)
+        }
+    }
+
+    @Test fun redirectsAreFollowedAndCappedWhenAllowed() {
+        MockWebServer().use { s ->
+            s.start()
+            s.enqueue(MockResponse.Builder().code(301).addHeader("Location", "/final").build())
+            s.enqueue(MockResponse.Builder().body("<p>ok</p>").build())
+            assertEquals("<p>ok</p>", runBlocking { fetcher().fetchHtml(s.url("/start").toString()) })
+            repeat(12) { s.enqueue(MockResponse.Builder().code(302).addHeader("Location", "/again").build()) }
+            assertThrows(IOException::class.java) { runBlocking { fetcher().fetchHtml(s.url("/loop").toString()) } }
+        }
+    }
+
+    @Test fun strictAddressClassification() {
+        listOf(
+            "0.1.2.3", "10.1.1.1", "100.64.0.1", "127.0.0.2", "169.254.1.1", "172.31.0.1", "192.0.0.8", "192.0.2.1",
+            "192.168.0.1", "198.18.0.1", "198.19.255.1", "198.51.100.7", "203.0.113.9", "224.0.0.1", "240.0.0.1",
+            "255.255.255.255", "::", "::1", "::2", "fe80::1", "fec0::1", "fc00::1", "ff02::1", "64:ff9b::7f00:1",
+            "64:ff9b:1::1", "2002:7f00:1::", "2001::1", "2001:db8::1", "::ffff:10.0.0.1", "1000::1",
+        ).forEach { assertTrue(!isPublicAddress(InetAddress.getByName(it)), "$it must be rejected") }
+        listOf("8.8.8.8", "1.1.1.1", "93.184.216.34", "172.32.0.1", "198.20.0.1", "2606:4700:4700::1111", "2a00:1450:4001::1")
+            .forEach { assertTrue(isPublicAddress(InetAddress.getByName(it)), "$it must be allowed") }
+    }
+
     private fun dnsReturning(vararg ip: String) = Dns { _ -> ip.map { InetAddress.getByName(it) } }
 
     @Test fun publicAddressesPass() {
