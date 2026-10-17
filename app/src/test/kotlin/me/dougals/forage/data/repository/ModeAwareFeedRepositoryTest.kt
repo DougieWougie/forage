@@ -44,6 +44,14 @@ class ModeAwareFeedRepositoryTest {
         coVerify(exactly = 0) { nextcloud.addFeed(any(), any()) }
     }
 
+    @Test fun movingFeedsFollowsTheMode() = runTest {
+        repo.moveFeed(1, 2)
+        coVerify { local.moveFeed(1, 2) }
+        mode.value = SyncMode.NEXTCLOUD
+        repo.moveFeed(3, null)
+        coVerify { nextcloud.moveFeed(3, null) }
+    }
+
     @Test fun readsComeFromSharedRoomRegardlessOfMode() = runTest {
         val articles = flowOf(emptyList<me.dougals.forage.domain.model.Article>())
         every { local.observeUnread() } returns articles

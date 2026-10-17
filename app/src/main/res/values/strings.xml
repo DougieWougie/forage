@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Forage</string>
+
+    <!-- Navigation -->
+    <string name="tab_unread">Unread</string>
+    <string name="tab_categories">Categories</string>
+    <string name="tab_saved">Saved</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Shared -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_back">Back</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_create">Create</string>
+    <string name="action_add">Add</string>
+    <string name="action_open">Open</string>
+    <string name="action_connect">Connect</string>
+    <string name="action_mark_all_read">Mark all as read</string>
+    <string name="action_mark_read">Mark read</string>
+    <string name="action_mark_unread">Mark unread</string>
+    <string name="action_save">Save</string>
+    <string name="action_remove_saved">Remove from saved</string>
+    <string name="cd_saved">Saved</string>
+    <string name="cd_available_offline">Available offline</string>
+
+    <!-- Article lists -->
+    <string name="title_feed_fallback">Feed</string>
+    <string name="title_unread">Unread</string>
+    <string name="title_saved">Saved</string>
+    <string name="empty_unread_title">All caught up</string>
+    <string name="empty_saved_title">Nothing saved yet</string>
+    <string name="empty_feed_title">No articles</string>
+    <string name="empty_unread_pull">Pull down to refresh, or add feeds under Categories.</string>
+    <string name="empty_unread_no_pull">Add feeds under Categories.</string>
+    <string name="empty_saved_body">Swipe an article left to save it for offline reading.</string>
+    <string name="empty_feed_pull">Pull down to refresh.</string>
+    <string name="empty_feed_no_pull">Nothing here yet.</string>
+
+    <!-- Reader -->
+    <string name="cd_typography">Typography</string>
+    <string name="action_save_offline">Save for offline</string>
+    <string name="share_article">Share article</string>
+    <string name="cd_share">Share</string>
+    <string name="cd_open_in_browser">Open in browser</string>
+    <string name="typeface">Typeface</string>
+    <string name="font_serif">Serif</string>
+    <string name="font_sans">Sans-serif</string>
+    <string name="font_dyslexic">OpenDyslexic</string>
+    <string name="text_size">Text size  %1$d%%</string>
+
+    <!-- Sign-in -->
+    <string name="login_title">Sign in, then save</string>
+    <string name="login_save_session">Save session</string>
+    <string name="login_no_cookies">No session cookies found yet — finish signing in first.</string>
+
+    <!-- Categories -->
+    <string name="categories_title">Categories</string>
+    <string name="cd_new_folder">New folder</string>
+    <string name="cd_more">More</string>
+    <string name="import_opml">Import OPML</string>
+    <string name="export_opml">Export OPML</string>
+    <string name="add_feed">Add feed</string>
+    <string name="no_feeds_title">No feeds yet</string>
+    <string name="no_feeds_body">Add a feed URL or import an OPML file from another reader.</string>
+    <string name="new_folder">New folder</string>
+    <string name="field_name">Name</string>
+    <string name="field_feed_url">Feed URL</string>
+    <string name="field_folder">Folder</string>
+    <string name="folder_none">None</string>
+    <string name="uncategorized">Uncategorized</string>
+    <string name="cd_delete_folder">Delete folder %1$s</string>
+    <string name="delete_folder_title">Delete “%1$s”?</string>
+    <string name="delete_folder_body">Its feeds are kept and moved to Uncategorized.</string>
+    <string name="suggested_feeds">Suggested feeds</string>
+    <string name="cd_dismiss_suggestion">Dismiss %1$s</string>
+    <string name="restore_suggestions">Show dismissed suggestions</string>
+    <string name="move_to_folder">Move to folder…</string>
+    <string name="move_feed_title">Move “%1$s” to</string>
+    <string name="cd_feed_options">Feed options</string>
+    <string name="remove_feed">Remove feed</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="section_sync">Sync</string>
+    <string name="section_reading">Reading</string>
+    <string name="section_signed_in">Signed-in sites</string>
+    <string name="section_refresh">Refresh</string>
+    <string name="section_network">Network</string>
+    <string name="nextcloud_news">Nextcloud News</string>
+    <string name="sync_now">Sync now</string>
+    <string name="syncing">Syncing…</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="local_mode">Local mode</string>
+    <string name="local_mode_body">Feeds are fetched directly. Connect Nextcloud News to sync read and saved state across devices.</string>
+    <string name="get_news_app">Get News app</string>
+    <string name="nextcloud_requirements">You\'ll need a Nextcloud server with the News app installed, and an app password (Nextcloud → Settings → Security → Devices &amp; sessions).</string>
+    <string name="last_synced_never">Not synced yet</string>
+    <string name="last_synced_now">Last synced just now</string>
+    <string name="last_synced_relative">Last synced %1$s</string>
+    <string name="signed_in_body">Log in to sites that need an account (for example lwn.net) and Forage will send that session with feed and article requests to the same host only.</string>
+    <string name="cd_forget_session">Forget session for %1$s</string>
+    <string name="log_in_to_site_button">Log in to a site…</string>
+    <string name="pull_to_refresh">Pull down to refresh</string>
+    <string name="pull_to_refresh_body">Drag down from the top of Unread or Categories to sync and fetch new articles.</string>
+    <string name="allow_local_network">Allow feeds on local network</string>
+    <string name="allow_local_network_body">Off by default. When off, feeds and articles that resolve to private or loopback addresses are refused.</string>
+    <string name="log_in_to_site_title">Log in to a site</string>
+    <string name="log_in_to_site_hint">Use the same host the feed is served from, e.g. https://lwn.net/</string>
+    <string name="field_site_url">Site URL</string>
+    <string name="connect_nextcloud_title">Connect Nextcloud</string>
+    <string name="field_server">Server (https)</string>
+    <string name="field_username">Username</string>
+    <string name="field_app_password">App password</string>
+    <string name="app_password_hint">Create an app password in Nextcloud under Settings → Security.</string>
+
+    <!-- Messages shown in snackbars -->
+    <string name="unknown_error">unknown error</string>
+    <string name="refresh_failed">Refresh failed</string>
+    <string name="sync_failed">Could not sync: %1$s</string>
+    <string name="connect_fill_in_all">Fill in server, username and app password</string>
+    <string name="connect_requires_https">Nextcloud server must use https://</string>
+    <string name="connected_to">Connected to %1$s</string>
+    <string name="enter_feed_url">Enter a feed URL</string>
+    <string name="added_feed">Added %1$s</string>
+    <string name="add_feed_failed">Could not add feed</string>
+    <string name="create_folder_failed">Could not create folder</string>
+    <string name="delete_folder_failed">Could not delete folder</string>
+    <string name="move_feed_failed">Could not move feed</string>
+    <string name="remove_feed_failed">Could not remove feed</string>
+    <string name="import_result">Imported %1$d, skipped %2$d, failed %3$d</string>
+    <string name="import_failed">Import failed</string>
+
+    <!-- Sync summary: "Synced · 2 feeds from Nextcloud · 18 new articles · …" -->
+    <string name="synced">Synced</string>
+    <string name="up_to_date">Already up to date</string>
+    <string name="n_marked_read">%1$d marked read</string>
+    <string name="n_saved">%1$d saved</string>
+    <plurals name="feeds_added_to_nextcloud">
+        <item quantity="one">%1$d feed added to Nextcloud</item>
+        <item quantity="other">%1$d feeds added to Nextcloud</item>
+    </plurals>
+    <plurals name="feeds_from_nextcloud">
+        <item quantity="one">%1$d feed from Nextcloud</item>
+        <item quantity="other">%1$d feeds from Nextcloud</item>
+    </plurals>
+    <plurals name="feeds_removed">
+        <item quantity="one">%1$d feed removed</item>
+        <item quantity="other">%1$d feeds removed</item>
+    </plurals>
+    <plurals name="new_articles">
+        <item quantity="one">%1$d new article</item>
+        <item quantity="other">%1$d new articles</item>
+    </plurals>
+    <plurals name="changes_sent">
+        <item quantity="one">%1$d change sent</item>
+        <item quantity="other">%1$d changes sent</item>
+    </plurals>
+</resources>

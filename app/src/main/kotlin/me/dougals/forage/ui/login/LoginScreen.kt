@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.ui.login
 
+import me.dougals.forage.R
+import androidx.compose.ui.res.stringResource
 import android.annotation.SuppressLint
 import android.webkit.CookieManager
 import android.webkit.WebSettings
@@ -74,6 +76,7 @@ private suspend fun clearWebSession() {
 fun LoginScreen(startUrl: String, onDone: () -> Unit, vm: LoginViewModel = hiltViewModel()) {
     var web by remember { mutableStateOf<WebView?>(null) }
     val snackbar = remember { SnackbarHostState() }
+    val noCookies = stringResource(R.string.login_no_cookies)
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(web) {
@@ -89,14 +92,14 @@ fun LoginScreen(startUrl: String, onDone: () -> Unit, vm: LoginViewModel = hiltV
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text("Sign in, then save", maxLines = 1) },
-                navigationIcon = { IconButton(onDone) { Icon(Icons.Filled.Close, "Cancel") } },
+                title = { Text(stringResource(R.string.login_title), maxLines = 1) },
+                navigationIcon = { IconButton(onDone) { Icon(Icons.Filled.Close, stringResource(R.string.action_cancel)) } },
                 actions = {
                     TextButton({
                         val url = web?.url
                         if (url != null && vm.capture(url)) onDone()
-                        else scope.launch { snackbar.showSnackbar("No session cookies found yet — finish signing in first.") }
-                    }) { Text("Save session") }
+                        else scope.launch { snackbar.showSnackbar(noCookies) }
+                    }) { Text(stringResource(R.string.login_save_session)) }
                 },
             )
         },

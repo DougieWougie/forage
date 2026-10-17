@@ -14,6 +14,8 @@ package me.dougals.forage.data.repository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.data.local.DbTestBase
+import me.dougals.forage.data.local.FeedEntity
+import me.dougals.forage.data.local.FolderEntity
 import me.dougals.forage.data.local.SyncField
 import me.dougals.forage.data.nextcloud.FeedDto
 import me.dougals.forage.data.nextcloud.NextcloudApiProvider
@@ -162,6 +164,65 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
         assertEquals(0, db.folderDao().getAll().size)
     }
 
+    @Test fun moveFeedGoesRemoteFirstThenLocal() = runTest {
+        syncedArticle()
+        val tech = repo.createFolder("Tech").getOrThrow()
+        api.calls.clear()
+        val feed = db.feedDao().getAll().single()
+        assertTrue(repo.moveFeed(feed.id, tech.id).isSuccess)
+        assertEquals(listOf("moveFeed:10:100"), api.calls)
+        assertEquals(tech.id, db.feedDao().getById(feed.id)!!.folderId)
+    }
+
+    @Test fun moveFeedToNoFolderMovesItToTheServerRoot() = runTest {
+        syncedArticle()
+        val tech = repo.createFolder("Tech").getOrThrow()
+        val feed = db.feedDao().getAll().single()
+        repo.moveFeed(feed.id, tech.id)
+        api.calls.clear()
+        assertTrue(repo.moveFeed(feed.id, null).isSuccess)
+        assertEquals(listOf("moveFeed:10:null"), api.calls)
+        assertNull(db.feedDao().getById(feed.id)!!.folderId)
+    }
+
+    @Test fun moveFeedKeepsItsFolderWhenTheServerFails() = runTest {
+        syncedArticle()
+        val tech = repo.createFolder("Tech").getOrThrow()
+        val feed = db.feedDao().getAll().single()
+        api.failOn = setOf("moveFeed:10:100")
+        assertTrue(repo.moveFeed(feed.id, tech.id).isFailure)
+        assertNull(db.feedDao().getById(feed.id)!!.folderId)
+    }
+
+    @Test fun moveFeedCreatesALocalOnlyFolderOnTheServerFirst() = runTest {
+        syncedArticle()
+        val folderId = db.folderDao().insert(FolderEntity(name = "Mine"))
+        val feed = db.feedDao().getAll().single()
+        assertTrue(repo.moveFeed(feed.id, folderId).isSuccess)
+        assertEquals(listOf("folders", "createFolder", "moveFeed:10:100"), api.calls)
+        assertEquals(100L, db.folderDao().getById(folderId)!!.remoteId)
+    }
+
+    @Test fun aFeedNotYetOnTheServerIsMovedLocallyAndPushedLater() = runTest {
+        val folderId = db.folderDao().insert(FolderEntity(name = "Mine"))
+        val feedId = db.feedDao().insert(FeedEntity(url = "https://local/feed", title = "Local"))
+        assertTrue(repo.moveFeed(feedId, folderId).isSuccess)
+        assertEquals(folderId, db.feedDao().getById(feedId)!!.folderId)
+        assertEquals(emptyList<String>(), api.calls)
+    }
+
+    @Test fun deletingAFolderMovesItsFeedsToTheRootFirstSoTheServerKeepsThem() = runTest {
+        syncedArticle()
+        val tech = repo.createFolder("Tech").getOrThrow()
+        val feed = db.feedDao().getAll().single()
+        repo.moveFeed(feed.id, tech.id)
+        api.calls.clear()
+        assertTrue(repo.deleteFolder(tech.id).isSuccess)
+        assertEquals(listOf("moveFeed:10:null", "deleteFolder:100"), api.calls)
+        assertEquals(1, api.feedList.size)
+        assertNull(db.feedDao().getById(feed.id)!!.folderId)
+    }
+
     @Test fun observeFeedsCarriesUnreadCounts() = runTest {
         api.feedList += FeedDto(10, "u", "t")
         api.itemList += item(1, 10)
@@ -244,13 +305,13 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
     @Test fun reportCountsNewArticlesPulled() = runTest {
         api.feedList += FeedDto(10, "https://lwn.net/rss", "LWN")
         api.itemList += item(1, 10); api.itemList += item(2, 10)
-        assertEquals(SyncReport(newArticles = 2), repo.refresh().getOrThrow())
+        assertEquals(SyncReport(newArticles = 2, feedsReceived = 1), repo.refresh().getOrThrow())
     }
 
     @Test fun alreadyReadItemsArePulledButNotCountedAsNew() = runTest {
         api.feedList += FeedDto(10, "https://lwn.net/rss", "LWN")
         api.itemList += item(1, 10, unread = false, starred = true)
-        assertEquals(SyncReport(), repo.refresh().getOrThrow())
+        assertEquals(SyncReport(saved = 1, feedsReceived = 1), repo.refresh().getOrThrow())
     }
 
     @Test fun reportCountsQueuedChangesSent() = runTest {

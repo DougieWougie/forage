@@ -11,16 +11,24 @@
  */
 package me.dougals.forage.presentation.categories
 
+import me.dougals.forage.domain.model.SyncReport
+import me.dougals.forage.presentation.UiText
+import me.dougals.forage.R
 import app.cash.turbine.test
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import me.dougals.forage.domain.model.AppSettings
+import me.dougals.forage.domain.repository.SettingsRepository
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.data.opml.ImportResult
 import me.dougals.forage.data.opml.OpmlTransfer
 import me.dougals.forage.domain.model.Feed
+import me.dougals.forage.domain.model.FeedSuggestion
+import me.dougals.forage.domain.suggest.SuggestionCatalogue
 import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
@@ -46,6 +54,12 @@ class CategoriesViewModelTest {
         assertEquals(listOf("Loose"), tree[3].feeds.map { it.title })
     }
 
+    @Test fun categoryCountsUnreadArticlesAndFeedsWithNewOnes() {
+        val node = CategoryNode(Folder(1, "Tech"), listOf(feed(1, "A").copy(unreadCount = 4), feed(2, "B"), feed(3, "C").copy(unreadCount = 1)))
+        assertEquals(5, node.unreadCount)
+        assertEquals(2, node.updatedFeeds)
+    }
+
     @Test fun uncategorizedGroupIsOmittedWhenEmpty() {
         assertEquals(listOf("Art"), buildCategories(listOf(Folder(1, "Art")), emptyList()).map { it.folder?.name })
     }
@@ -55,7 +69,85 @@ class CategoriesViewModelTest {
         every { it.observeFeeds() } returns flowOf(listOf(feed(1, "LWN", 1)))
     }
     private val opml = mockk<OpmlTransfer>()
-    private val vm get() = CategoriesViewModel(repo, opml)
+    private val settings = MutableStateFlow(AppSettings())
+    private val settingsRepo = mockk<SettingsRepository>(relaxed = true).also { every { it.settings } returns settings }
+    private var catalogue = listOf(
+        FeedSuggestion("LWN", "https://lwn.net/rss", "https://lwn.net/", "Linux", setOf("linux"), uk = false, featured = true),
+        FeedSuggestion("Reg", "https://reg.example/f", "https://reg.example/", "IT", setOf("technology"), uk = true, featured = true),
+    )
+    private val vm get() = CategoriesViewModel(repo, opml, settingsRepo, SuggestionCatalogue { catalogue })
+
+    @Test fun movingAFeedAsksTheRepository() = runTest {
+        vm.moveFeed(5, 2)
+        vm.moveFeed(6, null)
+        coVerify { repo.moveFeed(5, 2); repo.moveFeed(6, null) }
+    }
+
+    @Test fun aFailedMoveIsReported() = runTest {
+        coEvery { repo.moveFeed(any(), any()) } returns Result.failure(java.io.IOException("offline"))
+        val v = vm
+        v.state.test {
+            awaitItem(); v.moveFeed(1, 2)
+            assertEquals(UiText.Raw("offline"), awaitUntil { it.message != null }.message)
+        }
+    }
+
+    @Test fun suggestionsAreOfferedAndSubscribedOnesLeftOut() = runTest {
+        every { repo.observeFeeds() } returns flowOf(listOf(feed(1, "Reg", 1).copy(url = "https://reg.example/f")))
+        vm.state.test {
+            assertEquals(listOf("LWN"), awaitUntil { it.suggestions.isNotEmpty() }.suggestions.map { it.title })
+        }
+    }
+
+    @Test fun dismissedSuggestionsDisappearAndAreRemembered() = runTest {
+        val v = vm
+        v.state.test {
+            awaitUntil { it.suggestions.size == 2 }
+            v.dismissSuggestion(catalogue[0])
+            settings.value = AppSettings(dismissedSuggestions = setOf("https://lwn.net/rss"))
+            assertEquals(listOf("Reg"), awaitUntil { it.suggestions.size == 1 }.suggestions.map { it.title })
+        }
+        coVerify { settingsRepo.dismissSuggestion("https://lwn.net/rss") }
+    }
+
+    @Test fun addingASuggestionSubscribesToItsFeed() = runTest {
+        coEvery { repo.addFeed(any(), any()) } returns Result.success(feed(7, "LWN"))
+        vm.addSuggestion(catalogue[0])
+        coVerify { repo.addFeed("https://lwn.net/rss", null) }
+    }
+
+    @Test fun dismissedSuggestionsCanBeBroughtBack() = runTest {
+        vm.restoreSuggestions()
+        coVerify { settingsRepo.clearDismissedSuggestions() }
+    }
+
+    @Test fun pullToRefreshFollowsTheSetting() = runTest {
+        vm.state.test {
+            assertEquals(true, awaitUntil { it.categories.isNotEmpty() }.pullToRefresh)
+            settings.value = AppSettings(pullToRefresh = false)
+            assertEquals(false, awaitUntil { !it.pullToRefresh }.pullToRefresh)
+        }
+    }
+
+    @Test fun successfulRefreshTellsTheUserWhatChanged() = runTest {
+        coEvery { repo.refresh() } returns Result.success(me.dougals.forage.domain.model.SyncReport())
+        val v = vm
+        v.state.test {
+            awaitUntil { it.categories.isNotEmpty() }; v.refresh()
+            assertEquals(UiText.Res(R.string.up_to_date), awaitUntil { it.message != null }.message)
+        }
+    }
+
+    @Test fun refreshSyncsAndReportsFailure() = runTest {
+        coEvery { repo.refresh() } returns Result.failure(java.io.IOException("offline"))
+        val v = vm
+        v.state.test {
+            awaitUntil { it.categories.isNotEmpty() }
+            v.refresh()
+            assertEquals(UiText.Raw("offline"), awaitUntil { it.message != null }.message)
+        }
+        coVerify { repo.refresh() }
+    }
 
     @Test fun stateExposesTree() = runTest {
         vm.state.test { assertEquals("LWN", awaitUntil { it.categories.isNotEmpty() }.categories.single().feeds.single().title) }
@@ -65,7 +157,7 @@ class CategoriesViewModelTest {
         val v = vm
         v.state.test {
             awaitItem(); v.addFeed("   ", null)
-            assertEquals("Enter a feed URL", awaitUntil { it.message != null }.message)
+            assertEquals(UiText.Res(R.string.enter_feed_url), awaitUntil { it.message != null }.message)
         }
         coVerify(exactly = 0) { repo.addFeed(any(), any()) }
     }
@@ -73,7 +165,7 @@ class CategoriesViewModelTest {
     @Test fun schemeIsAddedWhenMissingAndSuccessIsAnnounced() = runTest {
         coEvery { repo.addFeed("https://example.com/feed", 1) } returns Result.success(feed(9, "Example"))
         val v = vm
-        v.state.test { awaitItem(); v.addFeed(" example.com/feed ", 1); assertEquals("Added Example", awaitUntil { it.message != null }.message) }
+        v.state.test { awaitItem(); v.addFeed(" example.com/feed ", 1); assertEquals(UiText.Res(R.string.added_feed, listOf("Example")), awaitUntil { it.message != null }.message) }
     }
 
     @Test fun explicitSchemeIsKept() = runTest {
@@ -85,7 +177,7 @@ class CategoriesViewModelTest {
     @Test fun addFailureShowsTheReason() = runTest {
         coEvery { repo.addFeed(any(), any()) } returns Result.failure(IllegalStateException("Already subscribed"))
         val v = vm
-        v.state.test { awaitItem(); v.addFeed("https://a/b", null); assertEquals("Already subscribed", awaitUntil { it.message != null }.message) }
+        v.state.test { awaitItem(); v.addFeed("https://a/b", null); assertEquals(UiText.Raw("Already subscribed"), awaitUntil { it.message != null }.message) }
     }
 
     @Test fun blankFolderNameIgnoredOtherwiseTrimmed() = runTest {
@@ -101,14 +193,14 @@ class CategoriesViewModelTest {
         val v = vm
         v.state.test {
             awaitItem(); v.importOpml(ByteArrayInputStream(ByteArray(0)))
-            assertEquals("Imported 2, skipped 1, failed 0", awaitUntil { it.message != null }.message)
+            assertEquals(UiText.Res(R.string.import_result, listOf(2, 1, 0)), awaitUntil { it.message != null }.message)
         }
     }
 
     @Test fun invalidOpmlShowsError() = runTest {
         coEvery { opml.import(any()) } returns Result.failure(IllegalArgumentException("Not a valid OPML file"))
         val v = vm
-        v.state.test { awaitItem(); v.importOpml(ByteArrayInputStream(ByteArray(0))); assertEquals("Not a valid OPML file", awaitUntil { it.message != null }.message) }
+        v.state.test { awaitItem(); v.importOpml(ByteArrayInputStream(ByteArray(0))); assertEquals(UiText.Raw("Not a valid OPML file"), awaitUntil { it.message != null }.message) }
     }
 
     @Test fun dismissClearsMessage() = runTest {

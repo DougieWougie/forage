@@ -179,7 +179,32 @@ class NextcloudSyncerTest : DbTestBase() {
     @Test fun pullReturnsHowManyUnreadArticlesWereNew() = runTest {
         serverWithOneFeed()
         api.itemList += item(1, 10); api.itemList += item(2, 10, unread = false, starred = true)
-        assertEquals(1, syncer.pull())
-        assertEquals(0, syncer.pull())
+        assertEquals(1, syncer.pull().newArticles)
+        assertEquals(0, syncer.pull().newArticles)
+    }
+
+    @Test fun pullReportsFeedsFromTheServer() = runTest {
+        serverWithOneFeed()
+        assertEquals(1, syncer.pull().feedsReceived)
+        assertEquals(0, syncer.pull().feedsReceived)
+        api.feedList.clear()
+        assertEquals(1, syncer.pull().feedsRemoved)
+    }
+
+    @Test fun feedAdoptedFromLocalIsNotReportedAsReceived() = runTest {
+        serverWithOneFeed()
+        db.feedDao().insert(FeedEntity(url = "https://lwn.net/rss", title = "LWN"))
+        assertEquals(0, syncer.pull().feedsReceived)
+    }
+
+    @Test fun pullReportsArticlesMarkedReadOrSavedElsewhere() = runTest {
+        serverWithOneFeed()
+        api.itemList += item(1, 10, lastModified = 500); api.itemList += item(2, 10, lastModified = 500)
+        syncer.pull()
+        api.itemList.replaceAll { it.copy(unread = it.id != 1L, starred = it.id == 2L, lastModified = 900) }
+        val r = syncer.pull()
+        assertEquals(1, r.markedRead)
+        assertEquals(1, r.saved)
+        assertEquals(0, r.newArticles)
     }
 }

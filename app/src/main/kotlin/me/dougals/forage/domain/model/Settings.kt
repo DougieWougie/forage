@@ -19,6 +19,10 @@ data class AppSettings(
     val fontScale: Float = 1.0f,
     /** Off by default: feeds and article pages must resolve to public addresses (SSRF guard). */
     val allowLocalNetwork: Boolean = false,
+    /** Pulling down on an article list refreshes feeds. */
+    val pullToRefresh: Boolean = true,
+    /** Feed URLs of suggestions the user waved away. */
+    val dismissedSuggestions: Set<String> = emptySet(),
 ) {
     companion object {
         const val MIN_SCALE = 0.8f

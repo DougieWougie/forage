@@ -39,6 +39,7 @@ class ModeAwareFeedRepository(
 
     override suspend fun addFeed(url: String, folderId: Long?) = current().addFeed(url, folderId)
     override suspend fun removeFeed(feedId: Long) = current().removeFeed(feedId)
+    override suspend fun moveFeed(feedId: Long, folderId: Long?) = current().moveFeed(feedId, folderId)
     override suspend fun createFolder(name: String) = current().createFolder(name)
     override suspend fun deleteFolder(folderId: Long) = current().deleteFolder(folderId)
     override suspend fun setRead(articleId: Long, read: Boolean) = current().setRead(articleId, read)

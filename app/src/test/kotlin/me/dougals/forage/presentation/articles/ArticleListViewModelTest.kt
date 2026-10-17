@@ -11,6 +11,10 @@
  */
 package me.dougals.forage.presentation.articles
 
+import me.dougals.forage.presentation.toUiText
+import me.dougals.forage.domain.model.SyncReport
+import me.dougals.forage.presentation.UiText
+import me.dougals.forage.R
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import io.mockk.coEvery
@@ -21,7 +25,9 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Feed
+import me.dougals.forage.domain.repository.SettingsRepository
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
 import me.dougals.forage.testutil.article
@@ -36,7 +42,9 @@ class ArticleListViewModelTest {
     @JvmField @RegisterExtension val main = MainDispatcherExtension()
 
     private val repo = mockk<FeedRepository>(relaxed = true)
-    private fun vm(vararg args: Pair<String, Any>) = ArticleListViewModel(SavedStateHandle(mapOf(*args)), repo)
+    private val settings = MutableStateFlow(AppSettings())
+    private val settingsRepo = mockk<SettingsRepository>(relaxed = true).also { every { it.settings } returns settings }
+    private fun vm(vararg args: Pair<String, Any>) = ArticleListViewModel(SavedStateHandle(mapOf(*args)), repo, settingsRepo)
 
     init { every { repo.observeFeeds() } returns flowOf(listOf(Feed(1, "u", "LWN", null, null, 0))) }
 
@@ -57,6 +65,22 @@ class ArticleListViewModelTest {
     @Test fun feedSourceShowsThatFeedsArticles() = runTest {
         every { repo.observeFeedArticles(3) } returns flowOf(listOf(article(4)))
         vm("source" to "feed", "feedId" to 3L).state.test { assertEquals(listOf(4L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id }) }
+    }
+
+    @Test fun pullToRefreshFollowsTheSetting() = runTest {
+        every { repo.observeUnread() } returns flowOf(emptyList())
+        vm("source" to "unread").state.test {
+            assertEquals(true, awaitUntil { it.feedTitles.isNotEmpty() }.pullToRefresh)
+            settings.value = AppSettings(pullToRefresh = false)
+            assertEquals(false, awaitUntil { !it.pullToRefresh }.pullToRefresh)
+        }
+    }
+
+    @Test fun onlyTheUnreadListPullsToRefresh() = runTest {
+        every { repo.observeSaved() } returns flowOf(emptyList())
+        every { repo.observeFeedArticles(3) } returns flowOf(emptyList())
+        vm("source" to "saved").state.test { assertEquals(false, awaitUntil { it.feedTitles.isNotEmpty() }.pullToRefresh) }
+        vm("source" to "feed", "feedId" to 3L).state.test { assertEquals(false, awaitUntil { it.feedTitles.isNotEmpty() }.pullToRefresh) }
     }
 
     @Test fun unknownSourceIsRejected() {
@@ -88,10 +112,20 @@ class ArticleListViewModelTest {
             v.refresh()
             awaitUntil { it.isRefreshing }
             gate.complete(Result.failure(IOException("offline")))
-            val s = awaitUntil { !it.isRefreshing && it.error != null }
-            assertEquals("offline", s.error)
-            v.dismissError()
-            awaitUntil { it.error == null }
+            val s = awaitUntil { !it.isRefreshing && it.message != null }
+            assertEquals(UiText.Raw("offline"), s.message)
+            v.dismissMessage()
+            awaitUntil { it.message == null }
+        }
+    }
+
+    @Test fun successfulRefreshTellsTheUserWhatChanged() = runTest {
+        every { repo.observeUnread() } returns flowOf(emptyList())
+        coEvery { repo.refresh() } returns Result.success(me.dougals.forage.domain.model.SyncReport(newArticles = 4, markedRead = 2))
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitItem(); v.refresh()
+            assertEquals(SyncReport(newArticles = 4, markedRead = 2).toUiText(), awaitUntil { it.message != null }.message)
         }
     }
 

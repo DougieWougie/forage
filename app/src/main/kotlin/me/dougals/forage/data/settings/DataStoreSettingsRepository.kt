@@ -17,6 +17,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import me.dougals.forage.domain.model.AppSettings
@@ -31,11 +32,16 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             readerFont = p[FONT]?.let { runCatching { ReaderFont.valueOf(it) }.getOrNull() } ?: ReaderFont.SERIF,
             fontScale = p[SCALE] ?: 1.0f,
             allowLocalNetwork = p[LOCAL_NET] ?: false,
+            pullToRefresh = p[PULL] ?: true,
+            dismissedSuggestions = p[DISMISSED].orEmpty(),
         )
     }
 
     override suspend fun setSyncMode(mode: SyncMode) { store.edit { it[MODE] = mode.name } }
     override suspend fun setAllowLocalNetwork(allow: Boolean) { store.edit { it[LOCAL_NET] = allow } }
+    override suspend fun setPullToRefresh(enabled: Boolean) { store.edit { it[PULL] = enabled } }
+    override suspend fun dismissSuggestion(feedUrl: String) { store.edit { it[DISMISSED] = it[DISMISSED].orEmpty() + feedUrl } }
+    override suspend fun clearDismissedSuggestions() { store.edit { it.remove(DISMISSED) } }
     override suspend fun setReaderFont(font: ReaderFont) { store.edit { it[FONT] = font.name } }
     override suspend fun setFontScale(scale: Float) {
         store.edit { it[SCALE] = scale.coerceIn(AppSettings.MIN_SCALE, AppSettings.MAX_SCALE) }
@@ -46,5 +52,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val FONT = stringPreferencesKey("reader_font")
         val SCALE = floatPreferencesKey("font_scale")
         val LOCAL_NET = booleanPreferencesKey("allow_local_network")
+        val PULL = booleanPreferencesKey("pull_to_refresh")
+        val DISMISSED = stringSetPreferencesKey("dismissed_suggestions")
     }
 }

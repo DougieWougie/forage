@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.ui.articles
 
+import me.dougals.forage.R
+import androidx.compose.ui.res.stringResource
 import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -84,6 +86,8 @@ fun SwipeableArticleCard(
     val currentArticle by rememberUpdatedState(article)
     val readAction by rememberUpdatedState(onToggleRead)
     val saveAction by rememberUpdatedState(onToggleSaved)
+    val readLabel = stringResource(if (article.isRead) R.string.action_mark_unread else R.string.action_mark_read)
+    val saveLabel = stringResource(if (article.isSaved) R.string.action_remove_saved else R.string.action_save)
 
     // Side effects must not live in confirmValueChange: it is re-evaluated while the swipe settles and
     // would fire the action several times. currentValue changes exactly once per completed swipe.
@@ -113,8 +117,8 @@ fun SwipeableArticleCard(
             article, feedTitle, onClick,
             Modifier.semantics {
                 customActions = listOf(
-                    CustomAccessibilityAction(if (article.isRead) "Mark unread" else "Mark read") { onToggleRead(); true },
-                    CustomAccessibilityAction(if (article.isSaved) "Remove from saved" else "Save") { onToggleSaved(); true },
+                    CustomAccessibilityAction(readLabel) { onToggleRead(); true },
+                    CustomAccessibilityAction(saveLabel) { onToggleSaved(); true },
                 )
             },
         )
@@ -174,10 +178,10 @@ private fun ArticleCardContent(article: Article, feedTitle: String?, onClick: ()
                 )
                 Spacer(Modifier.weight(1f))
                 if (article.hasOfflineCopy) {
-                    Icon(Icons.Filled.DownloadDone, "Available offline", Modifier.size(16.dp), MaterialTheme.colorScheme.outline)
+                    Icon(Icons.Filled.DownloadDone, stringResource(R.string.cd_available_offline), Modifier.size(16.dp), MaterialTheme.colorScheme.outline)
                 }
                 if (article.isSaved) {
-                    Icon(Icons.Filled.Bookmark, "Saved", Modifier.size(16.dp), MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Filled.Bookmark, stringResource(R.string.cd_saved), Modifier.size(16.dp), MaterialTheme.colorScheme.primary)
                 }
             }
             Spacer(Modifier.size(6.dp))

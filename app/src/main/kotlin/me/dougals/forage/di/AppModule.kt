@@ -40,6 +40,8 @@ import me.dougals.forage.data.nextcloud.RetrofitNextcloudApiProvider
 import me.dougals.forage.data.nextcloud.SyncStateStore
 import me.dougals.forage.data.nextcloud.encryptedCredentialStore
 import me.dougals.forage.data.opml.OpmlTransfer
+import me.dougals.forage.data.suggestions.AssetSuggestionCatalogue
+import me.dougals.forage.domain.suggest.SuggestionCatalogue
 import me.dougals.forage.data.remote.FeedFetcher
 import me.dougals.forage.data.remote.FeedParser
 import me.dougals.forage.data.remote.FeedSource
@@ -131,6 +133,8 @@ object AppModule {
         local = LocalFeedRepository(db, source, archive),
         nextcloud = NextcloudFeedRepository(db, api, flusher, syncer, sync, archive),
     )
+
+    @Provides @Singleton fun suggestionCatalogue(@ApplicationContext c: Context): SuggestionCatalogue = AssetSuggestionCatalogue(c)
 
     @Provides fun opmlTransfer(repo: FeedRepository) = OpmlTransfer(repo)
 

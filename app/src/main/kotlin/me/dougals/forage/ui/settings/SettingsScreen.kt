@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.ui.settings
 
+import me.dougals.forage.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -85,7 +87,7 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     var showLogin by rememberSaveable { mutableStateOf(false) }
     var scale by remember(state.settings.fontScale) { mutableFloatStateOf(state.settings.fontScale) }
 
-    LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it); vm.dismissMessage() } }
+    LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() } }
 
     // A login finishes on another screen; pick up the new session when we come back.
     val owner = LocalLifecycleOwner.current
@@ -98,55 +100,59 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbar) },
-        topBar = { TopAppBar(title = { Text("Settings", style = MaterialTheme.typography.titleLarge) }, scrollBehavior = scroll) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleLarge) }, scrollBehavior = scroll) },
     ) { inner ->
         LazyColumn(Modifier.padding(inner).fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
-            item { Section("Sync") }
+            item { Section(stringResource(R.string.section_sync)) }
             item {
                 if (state.isConnecting || state.isSyncing) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (state.settings.syncMode == SyncMode.NEXTCLOUD) {
-                    Text("Nextcloud News", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.nextcloud_news), style = MaterialTheme.typography.titleMedium)
                     Text("${state.nextcloudUser} @ ${state.nextcloudServer}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button(vm::syncNow, Modifier.padding(top = 8.dp), enabled = !state.isSyncing) {
-                        Text(if (state.isSyncing) "Syncing…" else "Sync now")
+                    Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(vm::syncNow, enabled = !state.isSyncing) {
+                            Text(stringResource(if (state.isSyncing) R.string.syncing else R.string.sync_now))
+                        }
+                        OutlinedButton(vm::disconnectNextcloud) { Text(stringResource(R.string.disconnect)) }
                     }
                     Text(
                         lastSyncedLabel(state.lastSyncedAt),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
                     )
-                    OutlinedButton(vm::disconnectNextcloud) { Text("Disconnect (use local mode)") }
                 } else {
-                    Text("Local mode", style = MaterialTheme.typography.titleMedium)
-                    Text("Feeds are fetched directly. Connect Nextcloud News to sync read and saved state across devices.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button({ showConnect = true }, Modifier.padding(top = 8.dp)) { Text("Connect Nextcloud") }
-                    OutlinedButton({ context.openInBrowser(Links.NEXTCLOUD_NEWS) }, Modifier.padding(top = 8.dp)) {
-                        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Get the Nextcloud News app")
+                    Text(stringResource(R.string.local_mode), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.local_mode_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button({ showConnect = true }) { Text(stringResource(R.string.action_connect)) }
+                        OutlinedButton({ context.openInBrowser(Links.NEXTCLOUD_NEWS) }) {
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.get_news_app))
+                        }
                     }
                     Text(
-                        "You'll need a Nextcloud server with the News app installed, and an app password " +
-                            "(Nextcloud → Settings → Security → Devices & sessions).",
+                        stringResource(R.string.nextcloud_requirements),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 }
             }
-            item { Section("Reading") }
+            item { Section(stringResource(R.string.section_reading)) }
             item {
-                Text("Typeface", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.typeface), style = MaterialTheme.typography.labelMedium)
                 Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(state.settings.readerFont == ReaderFont.SERIF, { vm.setFont(ReaderFont.SERIF) }, label = { Text("Serif") })
-                    FilterChip(state.settings.readerFont == ReaderFont.SANS, { vm.setFont(ReaderFont.SANS) }, label = { Text("Sans-serif") })
-                    FilterChip(state.settings.readerFont == ReaderFont.DYSLEXIC, { vm.setFont(ReaderFont.DYSLEXIC) }, label = { Text("OpenDyslexic") })
+                    FilterChip(state.settings.readerFont == ReaderFont.SERIF, { vm.setFont(ReaderFont.SERIF) }, label = { Text(stringResource(R.string.font_serif)) })
+                    FilterChip(state.settings.readerFont == ReaderFont.SANS, { vm.setFont(ReaderFont.SANS) }, label = { Text(stringResource(R.string.font_sans)) })
+                    FilterChip(state.settings.readerFont == ReaderFont.DYSLEXIC, { vm.setFont(ReaderFont.DYSLEXIC) }, label = { Text(stringResource(R.string.font_dyslexic)) })
                 }
-                Text("Text size  ${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.text_size, (scale * 100).toInt()), style = MaterialTheme.typography.labelMedium)
                 Slider(scale, { scale = it }, onValueChangeFinished = { vm.setFontScale(scale) }, valueRange = AppSettings.MIN_SCALE..AppSettings.MAX_SCALE)
             }
-            item { Section("Signed-in sites") }
+            item { Section(stringResource(R.string.section_signed_in)) }
             item {
                 Text(
-                    "Log in to sites that need an account (for example lwn.net) and Forage will send that session with feed and article requests to the same host only.",
+                    stringResource(R.string.signed_in_body),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -154,17 +160,30 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                 val domain = state.sessionDomains[i]
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(domain, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                    IconButton({ vm.removeSession(domain) }) { Icon(Icons.Filled.Close, "Forget session for $domain") }
+                    IconButton({ vm.removeSession(domain) }) { Icon(Icons.Filled.Close, stringResource(R.string.cd_forget_session, domain)) }
                 }
             }
-            item { OutlinedButton({ showLogin = true }, Modifier.padding(top = 8.dp)) { Text("Log in to a site…") } }
-            item { Section("Network") }
+            item { OutlinedButton({ showLogin = true }, Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.log_in_to_site_button)) } }
+            item { Section(stringResource(R.string.section_refresh)) }
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Allow feeds on local network", style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.pull_to_refresh), style = MaterialTheme.typography.titleSmall)
                         Text(
-                            "Off by default. When off, feeds and articles that resolve to private or loopback addresses are refused.",
+                            stringResource(R.string.pull_to_refresh_body),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(state.settings.pullToRefresh, vm::setPullToRefresh)
+                }
+            }
+            item { Section(stringResource(R.string.section_network)) }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.allow_local_network), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            stringResource(R.string.allow_local_network_body),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -179,15 +198,15 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
         var url by rememberSaveable { mutableStateOf("https://") }
         AlertDialog(
             onDismissRequest = { showLogin = false },
-            title = { Text("Log in to a site") },
+            title = { Text(stringResource(R.string.log_in_to_site_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Use the same host the feed is served from, e.g. https://lwn.net/", style = MaterialTheme.typography.bodySmall)
-                    OutlinedTextField(url, { url = it }, singleLine = true, label = { Text("Site URL") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+                    Text(stringResource(R.string.log_in_to_site_hint), style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(url, { url = it }, singleLine = true, label = { Text(stringResource(R.string.field_site_url)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
                 }
             },
-            confirmButton = { TextButton({ showLogin = false; onLogin(url.trim()) }, enabled = url.startsWith("https://") && url.length > 8) { Text("Open") } },
-            dismissButton = { TextButton({ showLogin = false }) { Text("Cancel") } },
+            confirmButton = { TextButton({ showLogin = false; onLogin(url.trim()) }, enabled = url.startsWith("https://") && url.length > 8) { Text(stringResource(R.string.action_open)) } },
+            dismissButton = { TextButton({ showLogin = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 }
@@ -205,29 +224,30 @@ private fun ConnectDialog(onDismiss: () -> Unit, onConnect: (String, String, Str
     var password by remember { mutableStateOf("") } // deliberately not saved across process death
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Connect Nextcloud") },
+        title = { Text(stringResource(R.string.connect_nextcloud_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(server, { server = it }, singleLine = true, label = { Text("Server (https)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
-                OutlinedTextField(user, { user = it }, singleLine = true, label = { Text("Username") })
+                OutlinedTextField(server, { server = it }, singleLine = true, label = { Text(stringResource(R.string.field_server)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+                OutlinedTextField(user, { user = it }, singleLine = true, label = { Text(stringResource(R.string.field_username)) })
                 OutlinedTextField(
-                    password, { password = it }, singleLine = true, label = { Text("App password") },
+                    password, { password = it }, singleLine = true, label = { Text(stringResource(R.string.field_app_password)) },
                     visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 )
-                Text("Create an app password in Nextcloud under Settings → Security.", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.app_password_hint), style = MaterialTheme.typography.bodySmall)
             }
         },
-        confirmButton = { TextButton({ onConnect(server, user, password) }) { Text("Connect") } },
-        dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton({ onConnect(server, user, password) }) { Text(stringResource(R.string.action_connect)) } },
+        dismissButton = { TextButton(onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
 @Composable
 private fun lastSyncedLabel(at: Long?): String {
-    if (at == null) return "Not synced yet"
+    if (at == null) return stringResource(R.string.last_synced_never)
     val now = System.currentTimeMillis()
-    if (now - at < 60_000) return "Last synced just now"
-    return "Last synced " + android.text.format.DateUtils.getRelativeTimeSpanString(
+    if (now - at < 60_000) return stringResource(R.string.last_synced_now)
+    val ago = android.text.format.DateUtils.getRelativeTimeSpanString(
         at, now, android.text.format.DateUtils.MINUTE_IN_MILLIS,
     ).toString().replaceFirstChar { it.lowercase() }
+    return stringResource(R.string.last_synced_relative, ago)
 }

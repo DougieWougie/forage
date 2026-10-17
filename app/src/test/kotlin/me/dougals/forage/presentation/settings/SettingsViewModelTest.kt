@@ -11,6 +11,9 @@
  */
 package me.dougals.forage.presentation.settings
 
+import me.dougals.forage.presentation.toUiText
+import me.dougals.forage.presentation.UiText
+import me.dougals.forage.R
 import app.cash.turbine.test
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -51,7 +54,7 @@ class SettingsViewModelTest {
         val v = vm()
         v.state.test {
             awaitItem(); v.connectNextcloud("http://cloud.example.com", "u", "p")
-            assertTrue(awaitUntil { it.message != null }.message!!.contains("https"))
+            assertEquals(UiText.Res(R.string.connect_requires_https), awaitUntil { it.message != null }.message)
         }
         assertNull(creds.value)
         coVerify(exactly = 0) { settings.setSyncMode(any()) }
@@ -76,7 +79,7 @@ class SettingsViewModelTest {
         val v = vm()
         v.state.test {
             awaitItem(); v.connectNextcloud("https://cloud.example.com", "u", "p")
-            assertTrue(awaitUntil { it.message != null }.message!!.contains("401 Unauthorized"))
+            assertEquals(UiText.Res(R.string.sync_failed, listOf(UiText.Raw("401 Unauthorized"))), awaitUntil { it.message != null }.message)
         }
         assertNull(creds.value)
         coVerify { settings.setSyncMode(SyncMode.LOCAL) }
@@ -87,7 +90,7 @@ class SettingsViewModelTest {
         val v = vm()
         v.state.test {
             awaitItem(); v.syncNow()
-            assertEquals("Already up to date", awaitUntil { it.message != null }.message)
+            assertEquals(UiText.Res(R.string.up_to_date), awaitUntil { it.message != null }.message)
         }
         coVerify(exactly = 1) { repo.refresh() }
         assertTrue(!v.state.value.isSyncing)
@@ -98,7 +101,7 @@ class SettingsViewModelTest {
         val v = vm()
         v.state.test {
             awaitItem(); v.syncNow()
-            assertEquals("Synced · 12 new articles · 3 changes sent", awaitUntil { it.message != null }.message)
+            assertEquals(SyncReport(newArticles = 12, changesSent = 3).toUiText(), awaitUntil { it.message != null }.message)
         }
     }
 
@@ -123,7 +126,7 @@ class SettingsViewModelTest {
         val v = vm()
         v.state.test {
             awaitItem(); v.syncNow()
-            assertTrue(awaitUntil { it.message != null }.message!!.contains("timeout"))
+            assertEquals(UiText.Res(R.string.sync_failed, listOf(UiText.Raw("timeout"))), awaitUntil { it.message != null }.message)
         }
         assertEquals(NextcloudCredentials("https://c", "u", "p"), creds.value)
         coVerify(exactly = 0) { settings.setSyncMode(any()) }

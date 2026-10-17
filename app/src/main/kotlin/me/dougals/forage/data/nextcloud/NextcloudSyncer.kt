@@ -19,6 +19,7 @@ import me.dougals.forage.data.local.ForageDatabase
 import me.dougals.forage.data.local.PendingChangeEntity
 import me.dougals.forage.data.local.SyncField
 import me.dougals.forage.data.work.ArchiveScheduler
+import me.dougals.forage.domain.model.SyncReport
 
 /** Pulls folders, feeds and items from Nextcloud into Room. Local unsent changes always win. */
 class NextcloudSyncer(
@@ -27,8 +28,8 @@ class NextcloudSyncer(
     private val state: SyncStateStore,
     private val archive: ArchiveScheduler,
 ) {
-    /** @return how many unread articles were new to this device */
-    suspend fun pull(): Int {
+    /** @return what came down: new unread articles, state changed elsewhere, and feeds added or removed */
+    suspend fun pull(): SyncReport {
         val api = apiProvider.api()
         val remoteFolders = api.folders().folders
         val remoteFeeds = api.feeds().feeds
@@ -39,17 +40,24 @@ class NextcloudSyncer(
             api.updatedItems(last).items
         }
 
-        val (newlySaved, newCount) = db.withTransaction {
+        lateinit var feeds: FeedsReconciled
+        val pulled = db.withTransaction {
             val folderIds = reconcileFolders(remoteFolders)
-            val feedIds = reconcileFeeds(remoteFeeds, folderIds)
-            upsertItems(items, feedIds)
+            feeds = reconcileFeeds(remoteFeeds, folderIds)
+            upsertItems(items, feeds.ids)
         }
 
         state.lastModified = maxOf(last, items.maxOfOrNull { it.lastModified } ?: last)
-        newlySaved.forEach(archive::schedule)
+        pulled.newlySaved.forEach(archive::schedule)
         state.lastSyncedAt = System.currentTimeMillis()
-        return newCount
+        return SyncReport(
+            newArticles = pulled.newUnread, markedRead = pulled.markedRead, saved = pulled.newlySaved.size,
+            feedsReceived = feeds.received, feedsRemoved = feeds.removed,
+        )
     }
+
+    private class FeedsReconciled(val ids: Map<Long, Long>, val received: Int, val removed: Int)
+    private class ItemsUpserted(val newlySaved: List<Long>, val newUnread: Int, val markedRead: Int)
 
     /** @return remote folder id -> local id */
     private suspend fun reconcileFolders(remote: List<FolderDto>): Map<Long, Long> {
@@ -71,31 +79,33 @@ class NextcloudSyncer(
         return ids
     }
 
-    /** @return remote feed id -> local id */
-    private suspend fun reconcileFeeds(remote: List<FeedDto>, folderIds: Map<Long, Long>): Map<Long, Long> {
+    private suspend fun reconcileFeeds(remote: List<FeedDto>, folderIds: Map<Long, Long>): FeedsReconciled {
         val dao = db.feedDao()
         val local = dao.getAll().filter { it.remoteId != null }.associateBy { it.remoteId!! }
         val ids = mutableMapOf<Long, Long>()
+        var received = 0
         for (r in remote) {
             val folderId = r.folderId?.let { folderIds[it] }
             val existing = local[r.id] ?: dao.getByUrl(r.url)
             ids[r.id] = if (existing == null) {
+                received++
                 dao.insert(FeedEntity(url = r.url, title = r.title, siteUrl = r.link, folderId = folderId, remoteId = r.id))
             } else {
                 dao.update(existing.copy(url = r.url, title = r.title, siteUrl = r.link ?: existing.siteUrl, folderId = folderId, remoteId = r.id))
                 existing.id
             }
         }
-        local.values.filter { it.remoteId !in ids }.forEach { dao.delete(it.id) }
-        return ids
+        val gone = local.values.filter { it.remoteId !in ids }
+        gone.forEach { dao.delete(it.id) }
+        return FeedsReconciled(ids, received, gone.size)
     }
 
-    /** @return local ids of articles that became saved and still need an offline copy, and the count of new unread ones */
-    private suspend fun upsertItems(items: List<ItemDto>, feedIds: Map<Long, Long>): Pair<List<Long>, Int> {
+    private suspend fun upsertItems(items: List<ItemDto>, feedIds: Map<Long, Long>): ItemsUpserted {
         val dao = db.articleDao()
         val pending = db.pendingChangeDao().getAll().groupBy({ it.articleId }, { it.field })
         val newlySaved = mutableListOf<Long>()
         var newUnread = 0
+        var markedRead = 0
         for (item in items) {
             val feedId = feedIds[item.feedId] ?: continue
             val existing = dao.getByRemoteId(item.id) ?: dao.getByFeedAndGuid(feedId, item.guid)
@@ -120,9 +130,10 @@ class NextcloudSyncer(
                 existing.id
             }
             if (existing == null && !isRead) newUnread++
+            if (existing != null && !existing.isRead && isRead) markedRead++
             if (isSaved && existing?.isSaved != true) newlySaved += id
         }
-        return newlySaved to newUnread
+        return ItemsUpserted(newlySaved, newUnread, markedRead)
     }
 
     private fun ItemDto.toEntity(feedId: Long, isRead: Boolean, isSaved: Boolean) = ArticleEntity(

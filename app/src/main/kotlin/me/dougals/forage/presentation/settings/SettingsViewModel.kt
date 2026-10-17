@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.dougals.forage.R
 import me.dougals.forage.data.auth.SessionStore
 import me.dougals.forage.data.nextcloud.CredentialStore
 import me.dougals.forage.data.nextcloud.NextcloudCredentials
@@ -29,6 +30,8 @@ import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
+import me.dougals.forage.presentation.UiText
+import me.dougals.forage.presentation.toUiText
 import javax.inject.Inject
 
 /** Deliberately holds no password: the app password lives only in the encrypted credential store. */
@@ -37,7 +40,7 @@ data class SettingsUiState(
     val nextcloudServer: String? = null,
     val nextcloudUser: String? = null,
     val sessionDomains: List<String> = emptyList(),
-    val message: String? = null,
+    val message: UiText? = null,
     val isConnecting: Boolean = false,
     val isSyncing: Boolean = false,
     val lastSyncedAt: Long? = null,
@@ -53,7 +56,7 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
     private val creds = MutableStateFlow(credentials.get())
     private val domains = MutableStateFlow(sessions.domains())
-    private val message = MutableStateFlow<String?>(null)
+    private val message = MutableStateFlow<UiText?>(null)
     private val connecting = MutableStateFlow(false)
     private val syncing = MutableStateFlow(false)
     private val lastSynced = MutableStateFlow(syncState.lastSyncedAt)
@@ -63,7 +66,7 @@ class SettingsViewModel @Inject constructor(
         val c = values[1] as NextcloudCredentials?
         SettingsUiState(
             values[0] as AppSettings, c?.serverUrl, c?.username, values[2] as List<String>,
-            values[3] as String?, values[4] as Boolean, values[5] as Boolean, (values[6] as Long).takeIf { it > 0 },
+            values[3] as UiText?, values[4] as Boolean, values[5] as Boolean, (values[6] as Long).takeIf { it > 0 },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -71,8 +74,8 @@ class SettingsViewModel @Inject constructor(
         val server = rawUrl.trim().trimEnd('/')
         val user = rawUser.trim()
         when {
-            server.isEmpty() || user.isEmpty() || password.isEmpty() -> message.value = "Fill in server, username and app password"
-            !server.startsWith("https://", ignoreCase = true) -> message.value = "Nextcloud server must use https://"
+            server.isEmpty() || user.isEmpty() || password.isEmpty() -> message.value = UiText.Res(R.string.connect_fill_in_all)
+            !server.startsWith("https://", ignoreCase = true) -> message.value = UiText.Res(R.string.connect_requires_https)
             else -> viewModelScope.launch {
                 connecting.value = true
                 credentials.save(NextcloudCredentials(server, user, password))
@@ -81,12 +84,12 @@ class SettingsViewModel @Inject constructor(
                 settingsRepo.setSyncMode(SyncMode.NEXTCLOUD)
                 val result = repo.refresh()
                 if (result.isSuccess) {
-                    message.value = "Connected to $server"
+                    message.value = UiText.Res(R.string.connected_to, listOf(server))
                 } else {
                     credentials.clear(); creds.value = null
                     syncState.lastModified = 0
                     settingsRepo.setSyncMode(SyncMode.LOCAL)
-                    message.value = "Could not sync: ${result.exceptionOrNull()?.message ?: "unknown error"}"
+                    message.value = syncFailed(result.exceptionOrNull())
                 }
                 connecting.value = false
             }
@@ -99,9 +102,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val result = try { repo.refresh() } finally { syncing.value = false }
             lastSynced.value = syncState.lastSyncedAt
-            message.value = if (result.isSuccess) result.getOrThrow().summary() else "Could not sync: ${result.exceptionOrNull()?.message ?: "unknown error"}"
+            message.value = result.fold({ it.toUiText() }, ::syncFailed)
         }
     }
+
+    private fun syncFailed(e: Throwable?): UiText =
+        UiText.Res(R.string.sync_failed, listOf(e?.toUiText(R.string.unknown_error) ?: UiText.Res(R.string.unknown_error)))
 
     fun disconnectNextcloud() {
         viewModelScope.launch {
@@ -113,6 +119,7 @@ class SettingsViewModel @Inject constructor(
     fun removeSession(domain: String) { sessions.remove(domain); reloadSessions() }
     fun reloadSessions() { domains.value = sessions.domains(); lastSynced.value = syncState.lastSyncedAt }
     fun setAllowLocalNetwork(allow: Boolean) { viewModelScope.launch { settingsRepo.setAllowLocalNetwork(allow) } }
+    fun setPullToRefresh(enabled: Boolean) { viewModelScope.launch { settingsRepo.setPullToRefresh(enabled) } }
     fun setFont(font: ReaderFont) { viewModelScope.launch { settingsRepo.setReaderFont(font) } }
     fun setFontScale(scale: Float) { viewModelScope.launch { settingsRepo.setFontScale(scale) } }
     fun dismissMessage() { message.value = null }

@@ -55,6 +55,22 @@ class SettingsRepositoryTest {
         assertEquals(true, r.settings.first().allowLocalNetwork)
     }
 
+    @Test fun pullToRefreshIsOnByDefaultAndPersists() = runTest {
+        val r = repo()
+        assertEquals(true, r.settings.first().pullToRefresh)
+        r.setPullToRefresh(false)
+        assertEquals(false, r.settings.first().pullToRefresh)
+    }
+
+    @Test fun dismissedSuggestionsPersistAndCanBeReset() = runTest {
+        val r = repo()
+        assertEquals(emptySet<String>(), r.settings.first().dismissedSuggestions)
+        r.dismissSuggestion("https://a.example/f"); r.dismissSuggestion("https://b.example/f")
+        assertEquals(setOf("https://a.example/f", "https://b.example/f"), r.settings.first().dismissedSuggestions)
+        r.clearDismissedSuggestions()
+        assertEquals(emptySet<String>(), r.settings.first().dismissedSuggestions)
+    }
+
     @Test fun fontScaleIsClamped() = runTest {
         val r = repo()
         r.setFontScale(9f); assertEquals(2.0f, r.settings.first().fontScale)

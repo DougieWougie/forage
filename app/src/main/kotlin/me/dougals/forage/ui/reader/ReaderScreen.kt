@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.ui.reader
 
+import me.dougals.forage.R
+import androidx.compose.ui.res.stringResource
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -90,22 +92,22 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
         topBar = {
             TopAppBar(
                 title = {},
-                navigationIcon = { IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                navigationIcon = { IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) } },
                 actions = {
                     if (article != null) {
-                        IconButton({ showType = true }) { Icon(Icons.Filled.TextFormat, "Typography") }
+                        IconButton({ showType = true }) { Icon(Icons.Filled.TextFormat, stringResource(R.string.cd_typography)) }
                         IconButton({ vm.toggleSaved() }) {
                             Icon(
                                 if (article.isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                                if (article.isSaved) "Remove from saved" else "Save for offline",
+                                stringResource(if (article.isSaved) R.string.action_remove_saved else R.string.action_save_offline),
                             )
                         }
-                        IconButton({ context.startActivity(Intent.createChooser(ShareIntents.send(article), "Share article")) }) {
-                            Icon(Icons.Filled.Share, "Share")
+                        IconButton({ context.startActivity(Intent.createChooser(ShareIntents.send(article), context.getString(R.string.share_article))) }) {
+                            Icon(Icons.Filled.Share, stringResource(R.string.cd_share))
                         }
                         if (isWebUrl(article.url)) {
                             IconButton({ context.openInBrowser(article.url) }) {
-                                Icon(Icons.AutoMirrored.Filled.OpenInNew, "Open in browser")
+                                Icon(Icons.AutoMirrored.Filled.OpenInNew, stringResource(R.string.cd_open_in_browser))
                             }
                         }
                     }
@@ -201,13 +203,13 @@ private fun TypographySheet(
     var scale by remember { mutableFloatStateOf(settings.fontScale) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Typeface", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.typeface), style = MaterialTheme.typography.labelMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(settings.readerFont == ReaderFont.SERIF, { onFont(ReaderFont.SERIF) }, label = { Text("Serif") })
-                FilterChip(settings.readerFont == ReaderFont.SANS, { onFont(ReaderFont.SANS) }, label = { Text("Sans-serif") })
-                FilterChip(settings.readerFont == ReaderFont.DYSLEXIC, { onFont(ReaderFont.DYSLEXIC) }, label = { Text("OpenDyslexic") })
+                FilterChip(settings.readerFont == ReaderFont.SERIF, { onFont(ReaderFont.SERIF) }, label = { Text(stringResource(R.string.font_serif)) })
+                FilterChip(settings.readerFont == ReaderFont.SANS, { onFont(ReaderFont.SANS) }, label = { Text(stringResource(R.string.font_sans)) })
+                FilterChip(settings.readerFont == ReaderFont.DYSLEXIC, { onFont(ReaderFont.DYSLEXIC) }, label = { Text(stringResource(R.string.font_dyslexic)) })
             }
-            Text("Text size  ${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.text_size, (scale * 100).toInt()), style = MaterialTheme.typography.labelMedium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("A", style = MaterialTheme.typography.bodySmall)
                 Slider(

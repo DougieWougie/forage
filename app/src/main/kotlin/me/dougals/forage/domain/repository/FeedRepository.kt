@@ -31,6 +31,8 @@ interface FeedRepository {
 
     suspend fun addFeed(url: String, folderId: Long? = null): Result<Feed>
     suspend fun removeFeed(feedId: Long): Result<Unit>
+    /** Files the feed under [folderId], or under no folder when null. */
+    suspend fun moveFeed(feedId: Long, folderId: Long?): Result<Unit>
     suspend fun createFolder(name: String): Result<Folder>
     suspend fun deleteFolder(folderId: Long): Result<Unit>
 

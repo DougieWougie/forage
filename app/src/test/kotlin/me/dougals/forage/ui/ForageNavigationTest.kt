@@ -36,7 +36,7 @@ class ForageNavigationTest {
         login = { _, _ -> Text("screen:login") },
     )
 
-    private fun start() = rule.setContent { ForageTheme { ForageNavScaffold(screens) } }
+    private fun start(badges: TabBadges = TabBadges()) = rule.setContent { ForageTheme { ForageNavScaffold(screens, badges) } }
     private fun tab(label: String) = rule.onNodeWithText(label).performClick().also { rule.waitForIdle() }
     private fun shows(text: String) = rule.onNodeWithText(text).assertExists()
     private fun hides(text: String) = rule.onNodeWithText(text).assertDoesNotExist()
@@ -80,5 +80,16 @@ class ForageNavigationTest {
         tab("Categories"); shows("screen:categories")
         tab("Settings"); shows("screen:settings")
         tab("Unread"); shows("list:unread")
+    }
+
+    @Test fun tabsShowCountsOfUnreadArticlesAndUpdatedFeeds() {
+        start(TabBadges(unread = 12, updatedFeeds = 3))
+        rule.onNodeWithText("12", useUnmergedTree = true).assertExists()
+        rule.onNodeWithText("3", useUnmergedTree = true).assertExists()
+    }
+
+    @Test fun tabsHaveNoBadgeWhenNothingIsNew() {
+        start()
+        rule.onNodeWithText("0", useUnmergedTree = true).assertDoesNotExist()
     }
 }

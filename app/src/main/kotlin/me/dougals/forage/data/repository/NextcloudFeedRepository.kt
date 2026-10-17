@@ -19,6 +19,7 @@ import me.dougals.forage.data.local.SyncField
 import me.dougals.forage.data.mapper.toDomain
 import me.dougals.forage.data.nextcloud.CreateFeedRequest
 import me.dougals.forage.data.nextcloud.CreateFolderRequest
+import me.dougals.forage.data.nextcloud.MoveFeedRequest
 import me.dougals.forage.data.nextcloud.NextcloudApi
 import me.dougals.forage.data.nextcloud.NextcloudApiProvider
 import me.dougals.forage.data.nextcloud.NextcloudSyncer
@@ -46,11 +47,11 @@ class NextcloudFeedRepository(
     override suspend fun refresh(): Result<SyncReport> {
         val sentFirst = flusher.flushCounting().getOrElse { return Result.failure(it) }
         var added = 0
-        var fresh = 0
-        attempt { added = pushLocalOnly(); fresh = syncer.pull() }.onFailure { return Result.failure(it) }
+        var pulled = SyncReport()
+        attempt { added = pushLocalOnly(); pulled = syncer.pull() }.onFailure { return Result.failure(it) }
         // The pull may have queued local state for articles adopted from before connecting.
         val sentAfter = flusher.flushCounting().getOrElse { return Result.failure(it) }
-        return Result.success(SyncReport(newArticles = fresh, changesSent = sentFirst + sentAfter, feedsAdded = added))
+        return Result.success(pulled.copy(changesSent = sentFirst + sentAfter, feedsAdded = added))
     }
 
     /**
@@ -103,8 +104,25 @@ class NextcloudFeedRepository(
 
     override suspend fun deleteFolder(folderId: Long): Result<Unit> = attempt {
         val remoteId = db.folderDao().getById(folderId)?.remoteId
-        if (remoteId != null) apiProvider.api().deleteFolder(remoteId)
+        if (remoteId != null) {
+            val api = apiProvider.api()
+            // The server deletes a folder's feeds with it; move them out first so only the category goes.
+            db.feedDao().getAll().filter { it.folderId == folderId }.forEach { f ->
+                f.remoteId?.let { api.moveFeed(it, MoveFeedRequest(null)) }
+            }
+            api.deleteFolder(remoteId)
+        }
         db.folderDao().delete(folderId)
+    }
+
+    override suspend fun moveFeed(feedId: Long, folderId: Long?): Result<Unit> = attempt {
+        val feed = db.feedDao().getById(feedId) ?: throw NoSuchElementException("Feed not found")
+        // A feed that isn't on the server yet is filed locally; pushing local feeds creates it in that folder.
+        feed.remoteId?.let { remoteFeed ->
+            val api = apiProvider.api()
+            api.moveFeed(remoteFeed, MoveFeedRequest(folderId?.let { remoteFolderId(api, it) }))
+        }
+        db.feedDao().update(feed.copy(folderId = folderId))
     }
 
     override suspend fun onStateChanged(articleId: Long, field: SyncField, value: Boolean) {

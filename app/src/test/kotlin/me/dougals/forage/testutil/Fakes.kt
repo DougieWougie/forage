@@ -19,6 +19,7 @@ import me.dougals.forage.data.nextcloud.FolderDto
 import me.dougals.forage.data.nextcloud.FoldersResponse
 import me.dougals.forage.data.nextcloud.ItemDto
 import me.dougals.forage.data.nextcloud.ItemIdsRequest
+import me.dougals.forage.data.nextcloud.MoveFeedRequest
 import me.dougals.forage.data.nextcloud.ItemsResponse
 import me.dougals.forage.data.nextcloud.NextcloudApi
 import me.dougals.forage.data.nextcloud.SyncStateStore
@@ -61,6 +62,11 @@ class FakeNextcloudApi : NextcloudApi {
     override suspend fun feeds() = rec("feeds") { FeedsResponse(feedList.toList()) }
     override suspend fun createFeed(body: CreateFeedRequest) = rec("createFeed:${body.url}:${body.folderId}") {
         FeedDto(nextId++, body.url, "Created", body.folderId).also { feedList += it }.let { FeedsResponse(listOf(it)) }
+    }
+    override suspend fun moveFeed(id: Long, body: MoveFeedRequest) = rec("moveFeed:$id:${body.folderId}") {
+        val i = feedList.indexOfFirst { it.id == id }
+        if (i >= 0) feedList[i] = feedList[i].copy(folderId = body.folderId)
+        Unit
     }
     override suspend fun deleteFeed(id: Long) = rec("deleteFeed:$id") { feedList.removeAll { it.id == id }; Unit }
     override suspend fun items(type: Int, getRead: Boolean, batchSize: Int, offset: Long) = rec("items:$type") {

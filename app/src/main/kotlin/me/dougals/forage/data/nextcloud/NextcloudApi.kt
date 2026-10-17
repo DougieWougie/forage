@@ -35,6 +35,8 @@ import retrofit2.http.Query
 @Serializable data class ItemsResponse(val items: List<ItemDto> = emptyList())
 @Serializable data class CreateFolderRequest(val name: String)
 @Serializable data class CreateFeedRequest(val url: String, val folderId: Long? = null)
+/** [folderId] null moves the feed to the root; the null must be written out, so no default value. */
+@Serializable data class MoveFeedRequest(val folderId: Long?)
 @Serializable data class ItemIdsRequest(val itemIds: List<Long>)
 
 /** Nextcloud News REST API v1-3, relative to `/index.php/apps/news/api/v1-3/`. */
@@ -45,6 +47,7 @@ interface NextcloudApi {
 
     @GET("feeds") suspend fun feeds(): FeedsResponse
     @POST("feeds") suspend fun createFeed(@Body body: CreateFeedRequest): FeedsResponse
+    @POST("feeds/{id}/move") suspend fun moveFeed(@Path("id") id: Long, @Body body: MoveFeedRequest)
     @DELETE("feeds/{id}") suspend fun deleteFeed(@Path("id") id: Long)
 
     /** [type]: 0 feed, 1 folder, 2 starred, 3 all. */

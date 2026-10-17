@@ -69,6 +69,12 @@ class LocalFeedRepository(
         return Result.success(Unit)
     }
 
+    override suspend fun moveFeed(feedId: Long, folderId: Long?): Result<Unit> {
+        val feed = db.feedDao().getById(feedId) ?: return Result.failure(NoSuchElementException("Feed not found"))
+        db.feedDao().update(feed.copy(folderId = folderId))
+        return Result.success(Unit)
+    }
+
     override suspend fun createFolder(name: String): Result<Folder> =
         Result.success(FolderEntity(db.folderDao().insert(FolderEntity(name = name)), name).toDomain())
 

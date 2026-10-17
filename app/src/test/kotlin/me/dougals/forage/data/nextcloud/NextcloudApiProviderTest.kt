@@ -64,6 +64,18 @@ class NextcloudApiProviderTest {
         }
     }
 
+    @Test fun movingAFeedPostsTheFolderIdWithNullMeaningRoot() = runTest {
+        val api = provider(NextcloudCredentials(server.url("/").toString(), "u", "p")).api()
+        for ((folder, body) in listOf(3L to """{"folderId":3}""", null to """{"folderId":null}""")) {
+            server.enqueue(MockResponse.Builder().build())
+            api.moveFeed(10, MoveFeedRequest(folder))
+            val req = server.takeRequest()
+            assertEquals("POST", req.method)
+            assertEquals("/index.php/apps/news/api/v1-3/feeds/10/move", req.url.encodedPath)
+            assertEquals(body, req.body?.utf8())
+        }
+    }
+
     @Test fun serverUrlWithSubpathAndNoTrailingSlash() = runTest {
         server.enqueue(MockResponse.Builder().body(foldersJson).build())
         val creds = NextcloudCredentials(server.url("/nextcloud").toString(), "u", "p")

@@ -22,8 +22,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.dougals.forage.R
 import me.dougals.forage.domain.model.Article
+import me.dougals.forage.presentation.UiText
+import me.dougals.forage.presentation.toUiText
 import me.dougals.forage.domain.repository.FeedRepository
+import me.dougals.forage.domain.repository.SettingsRepository
 import javax.inject.Inject
 
 sealed interface ListSource {
@@ -45,17 +49,19 @@ data class ArticleListState(
     val articles: List<Article> = emptyList(),
     val feedTitles: Map<Long, String> = emptyMap(),
     val isRefreshing: Boolean = false,
-    val error: String? = null,
+    val pullToRefresh: Boolean = true,
+    val message: UiText? = null,
 )
 
 @HiltViewModel
 class ArticleListViewModel @Inject constructor(
     handle: SavedStateHandle,
     private val repo: FeedRepository,
+    settingsRepo: SettingsRepository,
 ) : ViewModel() {
     val source = ListSource.from(handle)
     private val refreshing = MutableStateFlow(false)
-    private val error = MutableStateFlow<String?>(null)
+    private val message = MutableStateFlow<UiText?>(null)
 
     private val articles = when (source) {
         ListSource.Unread -> repo.observeUnread()
@@ -64,8 +70,9 @@ class ArticleListViewModel @Inject constructor(
     }
 
     val state: StateFlow<ArticleListState> = combine(
-        articles, repo.observeFeeds().map { feeds -> feeds.associate { it.id to it.title } }, refreshing, error,
-    ) { list, titles, isRefreshing, err -> ArticleListState(list, titles, isRefreshing, err) }
+        articles, repo.observeFeeds().map { feeds -> feeds.associate { it.id to it.title } }, refreshing, message,
+        settingsRepo.settings.map { it.pullToRefresh && source == ListSource.Unread },
+    ) { list, titles, isRefreshing, msg, pull -> ArticleListState(list, titles, isRefreshing, pull, msg) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
 
     fun toggleRead(article: Article) { viewModelScope.launch { repo.setRead(article.id, !article.isRead) } }
@@ -80,10 +87,12 @@ class ArticleListViewModel @Inject constructor(
         if (refreshing.value) return
         viewModelScope.launch {
             refreshing.value = true
-            repo.refresh().onFailure { error.value = it.message ?: "Refresh failed" }
+            repo.refresh()
+                .onSuccess { message.value = it.toUiText() }
+                .onFailure { message.value = it.toUiText(R.string.refresh_failed) }
             refreshing.value = false
         }
     }
 
-    fun dismissError() { error.value = null }
+    fun dismissMessage() { message.value = null }
 }

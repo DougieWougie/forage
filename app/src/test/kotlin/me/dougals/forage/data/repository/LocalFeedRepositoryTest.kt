@@ -123,6 +123,20 @@ class LocalFeedRepositoryTest : DbTestBase() {
         assertNotNull(db.feedDao().getById(feed.id))
     }
 
+    @Test fun moveFeedFilesItUnderAnotherFolderOrNone() = runTest {
+        source.feeds["https://a/feed"] = parsed("A")
+        val tech = repo.createFolder("Tech").getOrThrow()
+        val feed = repo.addFeed("https://a/feed").getOrThrow()
+        assertTrue(repo.moveFeed(feed.id, tech.id).isSuccess)
+        assertEquals(tech.id, db.feedDao().getById(feed.id)!!.folderId)
+        assertTrue(repo.moveFeed(feed.id, null).isSuccess)
+        assertNull(db.feedDao().getById(feed.id)!!.folderId)
+    }
+
+    @Test fun movingAMissingFeedFails() = runTest {
+        assertTrue(repo.moveFeed(999, null).isFailure)
+    }
+
     @Test fun removeFeedDeletesItsArticles() = runTest {
         source.feeds["https://a/feed"] = parsed("A", "1")
         val feed = repo.addFeed("https://a/feed").getOrThrow()

@@ -1,0 +1,780 @@
+{
+ "version": 1,
+ "feeds": [
+  {
+   "title": "The Register",
+   "feedUrl": "https://www.theregister.com/headlines.atom",
+   "siteUrl": "https://www.theregister.com/",
+   "description": "Biting UK-based IT news, comment and analysis.",
+   "tags": [
+    "technology",
+    "news",
+    "security"
+   ],
+   "uk": true,
+   "featured": true
+  },
+  {
+   "title": "BBC News – Technology",
+   "feedUrl": "https://feeds.bbci.co.uk/news/technology/rss.xml",
+   "siteUrl": "https://www.bbc.co.uk/news/technology",
+   "description": "Technology stories from BBC News.",
+   "tags": [
+    "technology",
+    "news"
+   ],
+   "uk": true,
+   "featured": true
+  },
+  {
+   "title": "BBC News – Science & Environment",
+   "feedUrl": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
+   "siteUrl": "https://www.bbc.co.uk/news/science_and_environment",
+   "description": "Science and environment reporting from BBC News.",
+   "tags": [
+    "science",
+    "news"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "BBC News – Top stories",
+   "feedUrl": "https://feeds.bbci.co.uk/news/rss.xml",
+   "siteUrl": "https://www.bbc.co.uk/news",
+   "description": "The main headlines from BBC News.",
+   "tags": [
+    "news"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "The Guardian – Technology",
+   "feedUrl": "https://www.theguardian.com/uk/technology/rss",
+   "siteUrl": "https://www.theguardian.com/technology",
+   "description": "Technology coverage from The Guardian.",
+   "tags": [
+    "technology",
+    "news"
+   ],
+   "uk": true,
+   "featured": true
+  },
+  {
+   "title": "The Guardian – Science",
+   "feedUrl": "https://www.theguardian.com/science/rss",
+   "siteUrl": "https://www.theguardian.com/science",
+   "description": "Science coverage from The Guardian.",
+   "tags": [
+    "science",
+    "news"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "The Guardian – UK news",
+   "feedUrl": "https://www.theguardian.com/uk/rss",
+   "siteUrl": "https://www.theguardian.com/uk-news",
+   "description": "UK news from The Guardian.",
+   "tags": [
+    "news"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Computer Weekly",
+   "feedUrl": "https://www.computerweekly.com/rss/All-Computer-Weekly-content.xml",
+   "siteUrl": "https://www.computerweekly.com/",
+   "description": "News and analysis for UK IT professionals.",
+   "tags": [
+    "technology",
+    "business"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "IT Pro",
+   "feedUrl": "https://www.itpro.com/feeds.xml",
+   "siteUrl": "https://www.itpro.com/",
+   "description": "Business technology news and reviews.",
+   "tags": [
+    "technology",
+    "business"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "TechRadar",
+   "feedUrl": "https://www.techradar.com/feeds.xml",
+   "siteUrl": "https://www.techradar.com/",
+   "description": "Gadget news, reviews and buying advice.",
+   "tags": [
+    "technology",
+    "reviews"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Trusted Reviews",
+   "feedUrl": "https://www.trustedreviews.com/feed",
+   "siteUrl": "https://www.trustedreviews.com/",
+   "description": "UK gadget and tech reviews.",
+   "tags": [
+    "technology",
+    "reviews"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Silicon UK",
+   "feedUrl": "https://www.silicon.co.uk/feed",
+   "siteUrl": "https://www.silicon.co.uk/",
+   "description": "UK technology and business news.",
+   "tags": [
+    "technology",
+    "business"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "UKTN",
+   "feedUrl": "https://www.uktech.news/feed",
+   "siteUrl": "https://www.uktech.news/",
+   "description": "News from the UK technology and startup scene.",
+   "tags": [
+    "technology",
+    "startups"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "ISPreview",
+   "feedUrl": "https://www.ispreview.co.uk/index.php/feed",
+   "siteUrl": "https://www.ispreview.co.uk/",
+   "description": "UK broadband, mobile and telecoms news.",
+   "tags": [
+    "technology",
+    "networking"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Government Digital Service",
+   "feedUrl": "https://gds.blog.gov.uk/feed/",
+   "siteUrl": "https://gds.blog.gov.uk/",
+   "description": "How the UK government builds digital services.",
+   "tags": [
+    "technology",
+    "government"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "NCSC",
+   "feedUrl": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml",
+   "siteUrl": "https://www.ncsc.gov.uk/",
+   "description": "National Cyber Security Centre guidance and news.",
+   "tags": [
+    "security",
+    "government"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Graham Cluley",
+   "feedUrl": "https://grahamcluley.com/feed/",
+   "siteUrl": "https://grahamcluley.com/",
+   "description": "Veteran UK security commentator.",
+   "tags": [
+    "security"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Open Rights Group",
+   "feedUrl": "https://www.openrightsgroup.org/rss.xml",
+   "siteUrl": "https://www.openrightsgroup.org/",
+   "description": "UK campaign group for digital rights.",
+   "tags": [
+    "privacy",
+    "opensource"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Privacy International",
+   "feedUrl": "https://privacyinternational.org/rss.xml",
+   "siteUrl": "https://privacyinternational.org/",
+   "description": "Surveillance and privacy campaigning.",
+   "tags": [
+    "privacy",
+    "security"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Big Brother Watch",
+   "feedUrl": "https://bigbrotherwatch.org.uk/feed/",
+   "siteUrl": "https://bigbrotherwatch.org.uk/",
+   "description": "UK civil liberties and privacy campaign.",
+   "tags": [
+    "privacy"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "OMG! Ubuntu!",
+   "feedUrl": "https://www.omgubuntu.co.uk/feed",
+   "siteUrl": "https://www.omgubuntu.co.uk/",
+   "description": "Ubuntu and Linux desktop news from the UK.",
+   "tags": [
+    "linux",
+    "ubuntu"
+   ],
+   "uk": true,
+   "featured": true
+  },
+  {
+   "title": "Ubuntu Blog",
+   "feedUrl": "https://ubuntu.com/blog/feed",
+   "siteUrl": "https://ubuntu.com/blog",
+   "description": "News from Canonical, the company behind Ubuntu.",
+   "tags": [
+    "linux",
+    "ubuntu",
+    "opensource"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Late Night Linux",
+   "feedUrl": "https://latenightlinux.com/feed/",
+   "siteUrl": "https://latenightlinux.com/",
+   "description": "UK Linux and free software podcasts.",
+   "tags": [
+    "linux",
+    "podcast"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Gaming on Linux",
+   "feedUrl": "https://www.gamingonlinux.com/article_rss.php",
+   "siteUrl": "https://www.gamingonlinux.com/",
+   "description": "News about gaming on Linux and Steam Deck.",
+   "tags": [
+    "linux",
+    "gaming"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "LWN.net",
+   "feedUrl": "https://lwn.net/headlines/rss",
+   "siteUrl": "https://lwn.net/",
+   "description": "In-depth Linux and free software news.",
+   "tags": [
+    "linux",
+    "opensource",
+    "programming"
+   ],
+   "uk": false,
+   "featured": true
+  },
+  {
+   "title": "Phoronix",
+   "feedUrl": "https://www.phoronix.com/rss.php",
+   "siteUrl": "https://www.phoronix.com/",
+   "description": "Linux hardware and performance news.",
+   "tags": [
+    "linux",
+    "hardware",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "9to5Linux",
+   "feedUrl": "https://9to5linux.com/feed",
+   "siteUrl": "https://9to5linux.com/",
+   "description": "Linux and open source news.",
+   "tags": [
+    "linux",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "It's FOSS",
+   "feedUrl": "https://feed.itsfoss.com/",
+   "siteUrl": "https://itsfoss.com/",
+   "description": "Linux news, tutorials and tips.",
+   "tags": [
+    "linux",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Fedora Magazine",
+   "feedUrl": "https://fedoramagazine.org/feed/",
+   "siteUrl": "https://fedoramagazine.org/",
+   "description": "Guides and news for Fedora users.",
+   "tags": [
+    "linux",
+    "fedora",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Arch Linux News",
+   "feedUrl": "https://archlinux.org/feeds/news/",
+   "siteUrl": "https://archlinux.org/",
+   "description": "Announcements from Arch Linux.",
+   "tags": [
+    "linux",
+    "arch"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "openSUSE News",
+   "feedUrl": "https://news.opensuse.org/feed.xml",
+   "siteUrl": "https://news.opensuse.org/",
+   "description": "News from the openSUSE project.",
+   "tags": [
+    "linux",
+    "opensuse",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Debian Project News",
+   "feedUrl": "https://www.debian.org/News/news",
+   "siteUrl": "https://www.debian.org/News/",
+   "description": "Announcements from Debian.",
+   "tags": [
+    "linux",
+    "debian",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Planet KDE",
+   "feedUrl": "https://planet.kde.org/index.xml",
+   "siteUrl": "https://planet.kde.org/",
+   "description": "Blog posts from the KDE community.",
+   "tags": [
+    "linux",
+    "kde",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "selfh.st",
+   "feedUrl": "https://selfh.st/rss/",
+   "siteUrl": "https://selfh.st/",
+   "description": "Weekly news for self-hosters.",
+   "tags": [
+    "selfhosting",
+    "linux",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": true
+  },
+  {
+   "title": "Raspberry Pi News",
+   "feedUrl": "https://www.raspberrypi.com/news/feed/",
+   "siteUrl": "https://www.raspberrypi.com/news/",
+   "description": "News from the Raspberry Pi Foundation, Cambridge.",
+   "tags": [
+    "raspberrypi",
+    "hardware",
+    "linux"
+   ],
+   "uk": true,
+   "featured": true
+  },
+  {
+   "title": "The MagPi",
+   "feedUrl": "https://magazine.raspberrypi.com/feed",
+   "siteUrl": "https://magpi.raspberrypi.com/",
+   "description": "The official Raspberry Pi magazine.",
+   "tags": [
+    "raspberrypi",
+    "hardware"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Hackaday",
+   "feedUrl": "https://hackaday.com/blog/feed/",
+   "siteUrl": "https://hackaday.com/",
+   "description": "Hacks, mods and projects.",
+   "tags": [
+    "hardware",
+    "maker",
+    "technology"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Hacker News",
+   "feedUrl": "https://news.ycombinator.com/rss",
+   "siteUrl": "https://news.ycombinator.com/",
+   "description": "The front page of Hacker News.",
+   "tags": [
+    "technology",
+    "programming",
+    "news"
+   ],
+   "uk": false,
+   "featured": true
+  },
+  {
+   "title": "Lobsters",
+   "feedUrl": "https://lobste.rs/rss",
+   "siteUrl": "https://lobste.rs/",
+   "description": "A computing-focused link aggregator.",
+   "tags": [
+    "technology",
+    "programming"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "OSnews",
+   "feedUrl": "https://www.osnews.com/feed/",
+   "siteUrl": "https://www.osnews.com/",
+   "description": "Operating systems and computing news.",
+   "tags": [
+    "technology",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Ars Technica",
+   "feedUrl": "https://feeds.arstechnica.com/arstechnica/index",
+   "siteUrl": "https://arstechnica.com/",
+   "description": "Technology news and analysis.",
+   "tags": [
+    "technology",
+    "science",
+    "news"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Android Developers Blog",
+   "feedUrl": "https://developer.android.com/static/blog/atom.xml",
+   "siteUrl": "https://android-developers.googleblog.com/",
+   "description": "Official news for Android developers.",
+   "tags": [
+    "android",
+    "programming"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Android Police",
+   "feedUrl": "https://www.androidpolice.com/feed/",
+   "siteUrl": "https://www.androidpolice.com/",
+   "description": "Android news and reviews.",
+   "tags": [
+    "android",
+    "mobile",
+    "reviews"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Android Authority",
+   "feedUrl": "https://www.androidauthority.com/feed/",
+   "siteUrl": "https://www.androidauthority.com/",
+   "description": "Android news, reviews and how-tos.",
+   "tags": [
+    "android",
+    "mobile",
+    "reviews"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Kotlin Blog",
+   "feedUrl": "https://blog.jetbrains.com/kotlin/feed/",
+   "siteUrl": "https://blog.jetbrains.com/kotlin/",
+   "description": "News from the Kotlin team at JetBrains.",
+   "tags": [
+    "programming",
+    "android"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Rust Blog",
+   "feedUrl": "https://blog.rust-lang.org/feed.xml",
+   "siteUrl": "https://blog.rust-lang.org/",
+   "description": "Official blog of the Rust language.",
+   "tags": [
+    "programming"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Simon Willison",
+   "feedUrl": "https://simonwillison.net/atom/everything/",
+   "siteUrl": "https://simonwillison.net/",
+   "description": "Prolific notes on web development, data and AI.",
+   "tags": [
+    "programming",
+    "ai"
+   ],
+   "uk": true,
+   "featured": true
+  },
+  {
+   "title": "Terence Eden",
+   "feedUrl": "https://shkspr.mobi/blog/feed/",
+   "siteUrl": "https://shkspr.mobi/blog/",
+   "description": "Open data, standards and gadgets from a UK technologist.",
+   "tags": [
+    "technology",
+    "opensource"
+   ],
+   "uk": true,
+   "featured": true
+  },
+  {
+   "title": "Jeremy Keith – Adactio",
+   "feedUrl": "https://adactio.com/rss/",
+   "siteUrl": "https://adactio.com/",
+   "description": "Web design and development thoughts from Brighton.",
+   "tags": [
+    "web"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Rachel Andrew",
+   "feedUrl": "https://rachelandrew.co.uk/feed/",
+   "siteUrl": "https://rachelandrew.co.uk/",
+   "description": "CSS and web platform writing.",
+   "tags": [
+    "web",
+    "programming"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Pluralistic",
+   "feedUrl": "https://pluralistic.net/feed/",
+   "siteUrl": "https://pluralistic.net/",
+   "description": "Cory Doctorow on tech, power and the internet.",
+   "tags": [
+    "technology",
+    "privacy"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Julia Evans",
+   "feedUrl": "https://jvns.ca/atom.xml",
+   "siteUrl": "https://jvns.ca/",
+   "description": "Friendly explanations of how computers work.",
+   "tags": [
+    "programming",
+    "linux"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Schneier on Security",
+   "feedUrl": "https://www.schneier.com/feed/atom/",
+   "siteUrl": "https://www.schneier.com/",
+   "description": "Bruce Schneier on security and technology.",
+   "tags": [
+    "security",
+    "privacy"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Krebs on Security",
+   "feedUrl": "https://krebsonsecurity.com/feed/",
+   "siteUrl": "https://krebsonsecurity.com/",
+   "description": "In-depth security reporting.",
+   "tags": [
+    "security"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "EFF Updates",
+   "feedUrl": "https://www.eff.org/rss/updates.xml",
+   "siteUrl": "https://www.eff.org/",
+   "description": "Digital rights news from the EFF.",
+   "tags": [
+    "privacy",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "FSFE News",
+   "feedUrl": "https://fsfe.org/news/news.en.rss",
+   "siteUrl": "https://fsfe.org/",
+   "description": "Free Software Foundation Europe news.",
+   "tags": [
+    "opensource",
+    "privacy"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Mozilla Hacks",
+   "feedUrl": "https://hacks.mozilla.org/feed/",
+   "siteUrl": "https://hacks.mozilla.org/",
+   "description": "Web platform news from Mozilla.",
+   "tags": [
+    "web",
+    "programming",
+    "opensource"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "MDN Blog",
+   "feedUrl": "https://developer.mozilla.org/en-US/blog/rss.xml",
+   "siteUrl": "https://developer.mozilla.org/en-US/blog/",
+   "description": "Updates from MDN Web Docs.",
+   "tags": [
+    "web",
+    "programming"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "Smashing Magazine",
+   "feedUrl": "https://www.smashingmagazine.com/feed/",
+   "siteUrl": "https://www.smashingmagazine.com/",
+   "description": "Web design and development articles.",
+   "tags": [
+    "web",
+    "programming"
+   ],
+   "uk": false,
+   "featured": false
+  },
+  {
+   "title": "New Scientist",
+   "feedUrl": "https://www.newscientist.com/feed/",
+   "siteUrl": "https://www.newscientist.com/",
+   "description": "Science and technology news from London.",
+   "tags": [
+    "science"
+   ],
+   "uk": true,
+   "featured": true
+  },
+  {
+   "title": "The Conversation UK",
+   "feedUrl": "https://theconversation.com/uk/articles.atom",
+   "siteUrl": "https://theconversation.com/uk",
+   "description": "Academic expertise on the news.",
+   "tags": [
+    "science",
+    "news"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Eurogamer",
+   "feedUrl": "https://www.eurogamer.net/feed",
+   "siteUrl": "https://www.eurogamer.net/",
+   "description": "Video game news and reviews.",
+   "tags": [
+    "gaming"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Rock Paper Shotgun",
+   "feedUrl": "https://www.rockpapershotgun.com/feed",
+   "siteUrl": "https://www.rockpapershotgun.com/",
+   "description": "PC gaming news and reviews.",
+   "tags": [
+    "gaming"
+   ],
+   "uk": true,
+   "featured": false
+  },
+  {
+   "title": "Linux Matters",
+   "feedUrl": "https://linuxmatters.sh/episode/index.xml",
+   "siteUrl": "https://linuxmatters.sh/",
+   "description": "A UK podcast about Linux and open source (formerly the Ubuntu Podcast).",
+   "tags": [
+    "linux",
+    "ubuntu",
+    "podcast"
+   ],
+   "uk": true,
+   "featured": false
+  }
+ ]
+}

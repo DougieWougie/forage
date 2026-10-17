@@ -11,7 +11,12 @@
  */
 package me.dougals.forage.ui.articles
 
+import androidx.compose.ui.platform.LocalContext
+import me.dougals.forage.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,14 +62,15 @@ fun ArticleListScreen(
     val snackbar = remember { SnackbarHostState() }
     val scroll = TopAppBarDefaults.pinnedScrollBehavior()
 
-    LaunchedEffect(state.error) {
-        state.error?.let { snackbar.showSnackbar(it); vm.dismissError() }
+    val context = LocalContext.current
+    LaunchedEffect(state.message) {
+        state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() }
     }
 
     val title = when (val s = vm.source) {
-        ListSource.Unread -> "Unread"
-        ListSource.Saved -> "Saved"
-        is ListSource.Feed -> state.feedTitles[s.feedId] ?: "Feed"
+        ListSource.Unread -> stringResource(R.string.title_unread)
+        ListSource.Saved -> stringResource(R.string.title_saved)
+        is ListSource.Feed -> state.feedTitles[s.feedId] ?: stringResource(R.string.title_feed_fallback)
     }
 
     Scaffold(
@@ -74,24 +80,20 @@ fun ArticleListScreen(
             TopAppBar(
                 title = { Text(title, style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
-                    if (onBack != null) IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    if (onBack != null) IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) }
                 },
                 actions = {
                     if (vm.source != ListSource.Saved && state.articles.isNotEmpty()) {
-                        IconButton(vm::markAllRead) { Icon(Icons.Filled.DoneAll, "Mark all as read") }
+                        IconButton(vm::markAllRead) { Icon(Icons.Filled.DoneAll, stringResource(R.string.action_mark_all_read)) }
                     }
                 },
                 scrollBehavior = scroll,
             )
         },
     ) { inner ->
-        PullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = vm::refresh,
-            modifier = Modifier.padding(inner).fillMaxSize(),
-        ) {
+        val content: @Composable () -> Unit = {
             if (state.articles.isEmpty()) {
-                EmptyState(vm.source)
+                EmptyState(vm.source, state.pullToRefresh)
             } else {
                 LazyColumn(Modifier.fillMaxSize()) {
                     items(state.articles, key = { it.id }) { article ->
@@ -107,26 +109,35 @@ fun ArticleListScreen(
                 }
             }
         }
+        if (state.pullToRefresh) {
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = vm::refresh,
+                modifier = Modifier.padding(inner).fillMaxSize(),
+            ) { content() }
+        } else {
+            Box(Modifier.padding(inner).fillMaxSize()) { content() }
+        }
     }
 }
 
 @Composable
-private fun EmptyState(source: ListSource) {
-    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+internal fun EmptyState(source: ListSource, canPull: Boolean) {
+    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 when (source) {
-                    ListSource.Unread -> "All caught up"
-                    ListSource.Saved -> "Nothing saved yet"
-                    is ListSource.Feed -> "No articles"
+                    ListSource.Unread -> stringResource(R.string.empty_unread_title)
+                    ListSource.Saved -> stringResource(R.string.empty_saved_title)
+                    is ListSource.Feed -> stringResource(R.string.empty_feed_title)
                 },
                 style = MaterialTheme.typography.headlineSmall,
             )
             Text(
                 when (source) {
-                    ListSource.Unread -> "Pull down to refresh, or add feeds under Categories."
-                    ListSource.Saved -> "Swipe an article left to save it for offline reading."
-                    is ListSource.Feed -> "Pull down to refresh."
+                    ListSource.Unread -> if (canPull) stringResource(R.string.empty_unread_pull) else stringResource(R.string.empty_unread_no_pull)
+                    ListSource.Saved -> stringResource(R.string.empty_saved_body)
+                    is ListSource.Feed -> if (canPull) stringResource(R.string.empty_feed_pull) else stringResource(R.string.empty_feed_no_pull)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

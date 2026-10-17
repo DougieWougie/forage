@@ -20,6 +20,9 @@ interface SettingsRepository {
     val settings: Flow<AppSettings>
     suspend fun setSyncMode(mode: SyncMode)
     suspend fun setAllowLocalNetwork(allow: Boolean)
+    suspend fun setPullToRefresh(enabled: Boolean)
+    suspend fun dismissSuggestion(feedUrl: String)
+    suspend fun clearDismissedSuggestions()
     suspend fun setReaderFont(font: ReaderFont)
     /** Clamped to [AppSettings.MIN_SCALE]..[AppSettings.MAX_SCALE]. */
     suspend fun setFontScale(scale: Float)
