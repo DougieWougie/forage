@@ -25,6 +25,9 @@ object ReaderFonts {
 
     private val assets = mapOf(REGULAR_URL to "fonts/opendyslexic-400.woff2", BOLD_URL to "fonts/opendyslexic-700.woff2")
 
+    /** The page's origin is the article's site, so the font request is cross-origin and needs CORS. */
+    val RESPONSE_HEADERS = mapOf("Access-Control-Allow-Origin" to "*")
+
     fun assetFor(url: String): String? = assets[url]
 }
 
@@ -48,11 +51,13 @@ object ReaderHtml {
             html { font-size: $percent%; }
             body { margin: 0; padding: 20px 20px 48px; background: ${style.background}; color: ${style.text};
                    font-family: $family; line-height: 1.65; overflow-wrap: anywhere; }
+            /* The reader's typeface wins over inline styles and <font face> that feeds ship with. */
+            body * { font-family: inherit !important; }
             h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 .4em; }
-            .byline { font-size: .8rem; opacity: .7; margin: 0 0 1.6em; font-family: system-ui, Roboto, sans-serif; }
+            .byline { font-size: .8rem; opacity: .7; margin: 0 0 1.6em; font-family: system-ui, Roboto, sans-serif !important; }
             a { color: ${style.link}; }
             img, video { max-width: 100%; height: auto; border-radius: 8px; }
-            pre, code { font-family: ui-monospace, monospace; font-size: .85em; }
+            pre, code { font-family: ui-monospace, monospace !important; font-size: .85em; }
             pre { overflow-x: auto; padding: 12px; background: rgba(127,127,127,.15); border-radius: 8px; }
             blockquote { margin: 1em 0; padding-left: 1em; border-left: 3px solid rgba(127,127,127,.5); opacity: .9; }
             </style></head><body>

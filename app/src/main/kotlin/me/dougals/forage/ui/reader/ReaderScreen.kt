@@ -154,7 +154,7 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, modifier: Modif
                         val scheme = request.url.scheme
                         if (scheme != "http" && scheme != "https") return null
                         ReaderFonts.assetFor(request.url.toString())?.let { path ->
-                            return WebResourceResponse("font/woff2", null, ctx.assets.open(path))
+                            return WebResourceResponse("font/woff2", null, 200, "OK", ReaderFonts.RESPONSE_HEADERS, ctx.assets.open(path))
                         }
                         val image = if (request.method == "GET") {
                             runBlocking { images.fetch(request.url.toString(), allowLocal) }.getOrNull()

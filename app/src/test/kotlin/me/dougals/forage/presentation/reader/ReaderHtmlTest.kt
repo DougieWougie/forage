@@ -67,6 +67,25 @@ class ReaderHtmlTest {
         ).forEach { assertNull(ReaderFonts.assetFor(it), it) }
     }
 
+    @Test fun fontResponsesAreCorsReadableBecauseThePageIsCrossOrigin() {
+        assertEquals("*", ReaderFonts.RESPONSE_HEADERS["Access-Control-Allow-Origin"])
+    }
+
+    @Test fun chosenFontBeatsInlineStylesAndFontTagsFromFeeds() {
+        val body = """<p style="font-family: Comic Sans MS">hi</p><font face="Arial">x</font>"""
+        listOf(ReaderFont.SERIF, ReaderFont.SANS, ReaderFont.DYSLEXIC).forEach { f ->
+            val h = page(body = body, s = style.copy(font = f))
+            assertTrue(h.contains("font-family: inherit !important"), f.name)
+        }
+    }
+
+    @Test fun codeKeepsMonospaceEvenWithTheForcedFont() {
+        val css = page().substringAfter("<style>").substringBefore("</style>")
+        val forced = css.indexOf("font-family: inherit !important")
+        val mono = css.indexOf("pre, code")
+        assertTrue(forced in 0 until mono)
+    }
+
     @Test fun fontScaleBecomesPercentage() {
         assertTrue(page(s = style.copy(fontScale = 1.25f)).contains("font-size: 125%"))
         assertTrue(page(s = style.copy(fontScale = 0.8f)).contains("font-size: 80%"))
