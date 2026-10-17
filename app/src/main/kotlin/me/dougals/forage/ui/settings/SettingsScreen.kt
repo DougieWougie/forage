@@ -13,6 +13,8 @@ package me.dougals.forage.ui.settings
 
 import me.dougals.forage.R
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -103,7 +105,14 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
         topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleLarge) }, scrollBehavior = scroll) },
     ) { inner ->
         LazyColumn(Modifier.padding(inner).fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
-            item { Section(stringResource(R.string.section_reading)) }
+            item {
+                Image(
+                    painterResource(R.drawable.logo_wordmark),
+                    contentDescription = stringResource(R.string.app_name),
+                    modifier = Modifier.padding(vertical = 8.dp).width(160.dp),
+                )
+            }
+            item { Section(stringResource(R.string.section_reading), divider = false) }
             item {
                 Text(stringResource(R.string.typeface), style = MaterialTheme.typography.labelMedium)
                 Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -212,9 +221,9 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
 }
 
 @Composable
-private fun Section(title: String) {
-    HorizontalDivider(Modifier.padding(top = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
-    Text(title.uppercase(), Modifier.padding(top = 12.dp, bottom = 8.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+private fun Section(title: String, divider: Boolean = true) {
+    if (divider) HorizontalDivider(Modifier.padding(top = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+    Text(title.uppercase(), Modifier.padding(top = if (divider) 12.dp else 4.dp, bottom = 8.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
 }
 
 @Composable
