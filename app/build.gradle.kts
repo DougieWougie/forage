@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.androidx.security.crypto)
 
     implementation(libs.okhttp)
+    implementation(libs.jsoup)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.kotlinx.serialization.json)
