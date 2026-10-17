@@ -1,0 +1,48 @@
+package me.dougals.forage.data.local
+
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+@RunWith(RobolectricTestRunner::class)
+class PendingChangeDaoTest : DbTestBase() {
+    private val dao get() = db.pendingChangeDao()
+
+    private suspend fun articleId(): Long {
+        val feed = newFeed()
+        return db.articleDao().insertIgnore(listOf(article(feed, "a"))).single()
+    }
+
+    @Test fun laterToggleOfSameFieldReplacesEarlier() = runTest {
+        val id = articleId()
+        dao.enqueue(PendingChangeEntity(id, SyncField.READ, true, createdAt = 1))
+        dao.enqueue(PendingChangeEntity(id, SyncField.READ, false, createdAt = 2))
+        val all = dao.getAll()
+        assertEquals(1, all.size)
+        assertEquals(false, all.single().value)
+    }
+
+    @Test fun differentFieldsAreKeptSeparately() = runTest {
+        val id = articleId()
+        dao.enqueue(PendingChangeEntity(id, SyncField.READ, true, createdAt = 1))
+        dao.enqueue(PendingChangeEntity(id, SyncField.STARRED, true, createdAt = 2))
+        assertEquals(2, dao.getAll().size)
+    }
+
+    @Test fun getAllIsOldestFirst() = runTest {
+        val feed = newFeed()
+        val ids = db.articleDao().insertIgnore(listOf(article(feed, "a"), article(feed, "b")))
+        dao.enqueue(PendingChangeEntity(ids[1], SyncField.READ, true, createdAt = 5))
+        dao.enqueue(PendingChangeEntity(ids[0], SyncField.READ, true, createdAt = 2))
+        assertEquals(listOf(ids[0], ids[1]), dao.getAll().map { it.articleId })
+    }
+
+    @Test fun deleteRemovesFlushedChanges() = runTest {
+        val id = articleId()
+        dao.enqueue(PendingChangeEntity(id, SyncField.READ, true, createdAt = 1))
+        dao.delete(dao.getAll())
+        assertEquals(0, dao.getAll().size)
+    }
+}
