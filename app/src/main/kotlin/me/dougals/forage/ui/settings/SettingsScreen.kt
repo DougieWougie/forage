@@ -103,6 +103,30 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
         topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleLarge) }, scrollBehavior = scroll) },
     ) { inner ->
         LazyColumn(Modifier.padding(inner).fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)) {
+            item { Section(stringResource(R.string.section_reading)) }
+            item {
+                Text(stringResource(R.string.typeface), style = MaterialTheme.typography.labelMedium)
+                Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(state.settings.readerFont == ReaderFont.SERIF, { vm.setFont(ReaderFont.SERIF) }, label = { Text(stringResource(R.string.font_serif)) })
+                    FilterChip(state.settings.readerFont == ReaderFont.SANS, { vm.setFont(ReaderFont.SANS) }, label = { Text(stringResource(R.string.font_sans)) })
+                    FilterChip(state.settings.readerFont == ReaderFont.DYSLEXIC, { vm.setFont(ReaderFont.DYSLEXIC) }, label = { Text(stringResource(R.string.font_dyslexic)) })
+                }
+                Text(stringResource(R.string.text_size, (scale * 100).toInt()), style = MaterialTheme.typography.labelMedium)
+                Slider(scale, { scale = it }, onValueChangeFinished = { vm.setFontScale(scale) }, valueRange = AppSettings.MIN_SCALE..AppSettings.MAX_SCALE)
+            }
+            item { Section(stringResource(R.string.section_refresh)) }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.pull_to_refresh), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            stringResource(R.string.pull_to_refresh_body),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(state.settings.pullToRefresh, vm::setPullToRefresh)
+                }
+            }
             item { Section(stringResource(R.string.section_sync)) }
             item {
                 if (state.isConnecting || state.isSyncing) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -138,17 +162,6 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                     )
                 }
             }
-            item { Section(stringResource(R.string.section_reading)) }
-            item {
-                Text(stringResource(R.string.typeface), style = MaterialTheme.typography.labelMedium)
-                Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(state.settings.readerFont == ReaderFont.SERIF, { vm.setFont(ReaderFont.SERIF) }, label = { Text(stringResource(R.string.font_serif)) })
-                    FilterChip(state.settings.readerFont == ReaderFont.SANS, { vm.setFont(ReaderFont.SANS) }, label = { Text(stringResource(R.string.font_sans)) })
-                    FilterChip(state.settings.readerFont == ReaderFont.DYSLEXIC, { vm.setFont(ReaderFont.DYSLEXIC) }, label = { Text(stringResource(R.string.font_dyslexic)) })
-                }
-                Text(stringResource(R.string.text_size, (scale * 100).toInt()), style = MaterialTheme.typography.labelMedium)
-                Slider(scale, { scale = it }, onValueChangeFinished = { vm.setFontScale(scale) }, valueRange = AppSettings.MIN_SCALE..AppSettings.MAX_SCALE)
-            }
             item { Section(stringResource(R.string.section_signed_in)) }
             item {
                 Text(
@@ -164,19 +177,6 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                 }
             }
             item { OutlinedButton({ showLogin = true }, Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.log_in_to_site_button)) } }
-            item { Section(stringResource(R.string.section_refresh)) }
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.pull_to_refresh), style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            stringResource(R.string.pull_to_refresh_body),
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(state.settings.pullToRefresh, vm::setPullToRefresh)
-                }
-            }
             item { Section(stringResource(R.string.section_network)) }
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
