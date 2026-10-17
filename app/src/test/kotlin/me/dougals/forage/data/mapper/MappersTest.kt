@@ -22,11 +22,15 @@ class MappersTest {
     private val entity = ArticleEntity(
         id = 7, feedId = 2, guid = "g", title = "Title", url = "https://x/a", author = "Ann",
         summary = "sum", contentHtml = "<p>full</p>", publishedAt = 1000, isRead = true,
-        isSaved = true, offlineHtml = "<p>clean</p>",
+        isSaved = true, offlineHtml = "<p>clean</p>", imageUrl = "https://x/a.jpg",
     )
 
     @Test fun articleRoundTripsThroughDomain() {
         assertEquals(entity, entity.toDomain().toEntity())
+    }
+
+    @Test fun imageUrlSurvivesTheMapping() {
+        assertEquals("https://x/a.jpg", entity.toDomain().imageUrl)
     }
 
     @Test fun hasOfflineCopyReflectsOfflineHtml() {

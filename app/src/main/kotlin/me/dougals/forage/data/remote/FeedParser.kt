@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.remote
 
+import me.dougals.forage.data.content.ArticleImages
 import me.dougals.forage.data.xml.XmlNode
 import me.dougals.forage.data.xml.XmlParseException
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -30,6 +31,7 @@ data class ParsedItem(
     val summary: String?,
     val contentHtml: String?,
     val publishedAt: Long,
+    val imageUrl: String? = null,
 )
 
 data class ParsedFeed(val title: String, val siteUrl: String?, val items: List<ParsedItem>)
@@ -76,6 +78,7 @@ class FeedParser {
             summary = n.childText("description"),
             contentHtml = n.childText("encoded"),
             publishedAt = parseDate(n.childText("pubDate") ?: n.childText("date")),
+            imageUrl = imageOf(n, base, n.childText("encoded"), n.childText("description")),
         )
     }
 
@@ -93,6 +96,7 @@ class FeedParser {
                 summary = e.childText("summary"),
                 contentHtml = e.childText("content"),
                 publishedAt = parseDate(e.childText("published") ?: e.childText("updated")),
+                imageUrl = imageOf(e, base, e.childText("content"), e.childText("summary")),
             )
         },
     )
@@ -102,9 +106,32 @@ class FeedParser {
             .firstOrNull { (it.attrs["rel"] ?: "alternate") == "alternate" && it.attrs["href"] != null }
             ?.attrs?.get("href")?.let { resolve(base, it) }
 
+    /** Media RSS thumbnail or image, then an image enclosure, then the first `<img>` in the item's HTML. */
+    private fun imageOf(item: XmlNode, base: String, vararg html: String?): String? {
+        val media = item.children + item.children("group").flatMap { it.children }
+        val declared = media.firstNotNullOfOrNull { n ->
+            val url = n.attrs["url"] ?: n.attrs["href"].takeIf { n.name == "link" && n.attrs["rel"] == "enclosure" }
+            when {
+                url == null -> null
+                n.name == "thumbnail" -> url
+                n.name in MEDIA_OR_ENCLOSURE && isImage(n) -> url
+                else -> null
+            }
+        }
+        return ArticleImages.httpUrl(declared, base)
+            ?: html.firstNotNullOfOrNull { ArticleImages.firstInHtml(it, base) }
+    }
+
+    private fun isImage(n: XmlNode): Boolean =
+        n.attrs["medium"] == "image" || (n.attrs["type"] ?: "").startsWith("image/")
+
     private fun resolve(base: String, link: String): String {
         val trimmed = link.trim()
         return base.toHttpUrlOrNull()?.resolve(trimmed)?.toString() ?: trimmed
+    }
+
+    private companion object {
+        val MEDIA_OR_ENCLOSURE = setOf("content", "enclosure", "link")
     }
 
     private fun parseDate(raw: String?): Long {

@@ -35,6 +35,8 @@ data class Article(
     val isRead: Boolean,
     val isSaved: Boolean,
     val offlineHtml: String?,
+    /** Thumbnail for the article list; null when the article has no usable image. */
+    val imageUrl: String? = null,
 ) {
     val hasOfflineCopy: Boolean get() = offlineHtml != null
 

@@ -58,6 +58,7 @@ data class ArticleEntity(
     val isSaved: Boolean = false,
     val offlineHtml: String? = null,
     val remoteId: Long? = null,
+    val imageUrl: String? = null,
 )
 
 @Entity(

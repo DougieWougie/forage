@@ -95,6 +95,15 @@
     <string name="settings_title">Settings</string>
     <string name="section_sync">Sync</string>
     <string name="section_reading">Reading</string>
+    <string name="section_article_list">Article list</string>
+    <string name="thumbnails">Thumbnails</string>
+    <string name="thumbnails_body">Show a small picture beside articles that have one.</string>
+    <string name="thumbnails_always">Always</string>
+    <string name="thumbnails_wifi">Wi-Fi only</string>
+    <string name="thumbnails_off">Off</string>
+    <string name="thumbnail_side">Thumbnail position</string>
+    <string name="thumbnail_side_left">Left</string>
+    <string name="thumbnail_side_right">Right</string>
     <string name="section_signed_in">Signed-in sites</string>
     <string name="section_refresh">Refresh</string>
     <string name="section_network">Network</string>

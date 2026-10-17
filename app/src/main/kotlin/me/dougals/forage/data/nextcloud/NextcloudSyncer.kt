@@ -12,6 +12,7 @@
 package me.dougals.forage.data.nextcloud
 
 import androidx.room.withTransaction
+import me.dougals.forage.data.content.ArticleImages
 import me.dougals.forage.data.local.ArticleEntity
 import me.dougals.forage.data.local.FeedEntity
 import me.dougals.forage.data.local.FolderEntity
@@ -127,6 +128,7 @@ class NextcloudSyncer(
                 dao.insertIgnore(listOf(item.toEntity(feedId, isRead, isSaved))).single().takeIf { it != -1L } ?: continue
             } else {
                 dao.updateRemoteState(existing.id, item.id, isRead, isSaved)
+                item.toEntity(feedId, isRead, isSaved).imageUrl?.let { dao.fillImageUrl(feedId, existing.guid, it) }
                 existing.id
             }
             if (existing == null && !isRead) newUnread++
@@ -139,5 +141,6 @@ class NextcloudSyncer(
     private fun ItemDto.toEntity(feedId: Long, isRead: Boolean, isSaved: Boolean) = ArticleEntity(
         feedId = feedId, guid = guid, title = title.orEmpty(), url = url.orEmpty(), author = author,
         contentHtml = body, publishedAt = (pubDate ?: 0) * 1000, isRead = isRead, isSaved = isSaved, remoteId = id,
+        imageUrl = ArticleImages.httpUrl(mediaThumbnail, url) ?: ArticleImages.firstInHtml(body, url),
     )
 }

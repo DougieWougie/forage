@@ -75,7 +75,8 @@ import javax.inject.Singleton
 object AppModule {
     @Provides @Singleton
     fun database(@ApplicationContext c: Context): ForageDatabase =
-        Room.databaseBuilder(c, ForageDatabase::class.java, "forage.db").build()
+        Room.databaseBuilder(c, ForageDatabase::class.java, "forage.db")
+            .addMigrations(ForageDatabase.MIGRATION_1_2).build()
 
     @Provides @Singleton fun sessionStore(@ApplicationContext c: Context): SessionStore = encryptedSessionStore(c)
     @Provides @Singleton fun credentialStore(@ApplicationContext c: Context): CredentialStore = encryptedCredentialStore(c)

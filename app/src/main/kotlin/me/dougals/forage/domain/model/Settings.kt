@@ -13,6 +13,12 @@ package me.dougals.forage.domain.model
 
 enum class ReaderFont { SERIF, SANS, DYSLEXIC }
 
+/** When the article list shows thumbnails. [WIFI_ONLY] still shows ones already downloaded on a metered connection. */
+enum class ThumbnailMode { ALWAYS, WIFI_ONLY, OFF }
+
+/** Which side of the article card the thumbnail sits on. */
+enum class ThumbnailSide { START, END }
+
 data class AppSettings(
     val syncMode: SyncMode = SyncMode.LOCAL,
     val readerFont: ReaderFont = ReaderFont.SERIF,
@@ -21,6 +27,8 @@ data class AppSettings(
     val allowLocalNetwork: Boolean = false,
     /** Pulling down on an article list refreshes feeds. */
     val pullToRefresh: Boolean = true,
+    val thumbnails: ThumbnailMode = ThumbnailMode.ALWAYS,
+    val thumbnailSide: ThumbnailSide = ThumbnailSide.END,
     /** Feed URLs of suggestions the user waved away. */
     val dismissedSuggestions: Set<String> = emptySet(),
 ) {

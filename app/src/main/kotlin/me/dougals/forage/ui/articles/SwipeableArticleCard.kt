@@ -52,6 +52,15 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +76,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.dougals.forage.domain.model.Article
+import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.articles.ArticleSnippet
 
 /**
@@ -81,6 +91,9 @@ fun SwipeableArticleCard(
     onToggleRead: () -> Unit,
     onToggleSaved: () -> Unit,
     modifier: Modifier = Modifier,
+    showThumbnail: Boolean = false,
+    thumbnailFromCacheOnly: Boolean = false,
+    thumbnailSide: ThumbnailSide = ThumbnailSide.END,
 ) {
     val haptics = LocalHapticFeedback.current
     val currentArticle by rememberUpdatedState(article)
@@ -114,7 +127,7 @@ fun SwipeableArticleCard(
         backgroundContent = { SwipeBackground(state.dismissDirection, state.targetValue, article) },
     ) {
         ArticleCardContent(
-            article, feedTitle, onClick,
+            article, feedTitle, onClick, showThumbnail, thumbnailFromCacheOnly, thumbnailSide,
             Modifier.semantics {
                 customActions = listOf(
                     CustomAccessibilityAction(readLabel) { onToggleRead(); true },
@@ -163,39 +176,71 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue, target: SwipeToDi
 }
 
 @Composable
-private fun ArticleCardContent(article: Article, feedTitle: String?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ArticleCardContent(
+    article: Article,
+    feedTitle: String?,
+    onClick: () -> Unit,
+    showThumbnail: Boolean,
+    thumbnailFromCacheOnly: Boolean,
+    thumbnailSide: ThumbnailSide,
+    modifier: Modifier = Modifier,
+) {
     Surface(color = MaterialTheme.colorScheme.surface, modifier = modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp).alpha(if (article.isRead) 0.62f else 1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (!article.isRead) {
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+        Row(
+            Modifier.padding(horizontal = 20.dp, vertical = 16.dp).alpha(if (article.isRead) 0.62f else 1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            val image = article.imageUrl.takeIf { showThumbnail }
+            if (image != null && thumbnailSide == ThumbnailSide.START) Thumbnail(image, thumbnailFromCacheOnly)
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!article.isRead) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                    }
+                    Text(
+                        listOfNotNull(feedTitle?.uppercase(), relativeTime(article.publishedAt)).joinToString("  ·  "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Spacer(Modifier.weight(1f))
+                    if (article.hasOfflineCopy) {
+                        Icon(Icons.Filled.DownloadDone, stringResource(R.string.cd_available_offline), Modifier.size(16.dp), MaterialTheme.colorScheme.outline)
+                    }
+                    if (article.isSaved) {
+                        Icon(Icons.Filled.Bookmark, stringResource(R.string.cd_saved), Modifier.size(16.dp), MaterialTheme.colorScheme.primary)
+                    }
                 }
-                Text(
-                    listOfNotNull(feedTitle?.uppercase(), relativeTime(article.publishedAt)).joinToString("  ·  "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
-                )
-                Spacer(Modifier.weight(1f))
-                if (article.hasOfflineCopy) {
-                    Icon(Icons.Filled.DownloadDone, stringResource(R.string.cd_available_offline), Modifier.size(16.dp), MaterialTheme.colorScheme.outline)
-                }
-                if (article.isSaved) {
-                    Icon(Icons.Filled.Bookmark, stringResource(R.string.cd_saved), Modifier.size(16.dp), MaterialTheme.colorScheme.primary)
-                }
-            }
-            Spacer(Modifier.size(6.dp))
-            Text(article.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            val snippet = ArticleSnippet.of(article)
-            if (snippet.isNotEmpty()) {
                 Spacer(Modifier.size(6.dp))
-                Text(
-                    snippet, style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(article.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                val snippet = ArticleSnippet.of(article)
+                if (snippet.isNotEmpty()) {
+                    Spacer(Modifier.size(6.dp))
+                    Text(
+                        snippet, style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
+            if (image != null && thumbnailSide == ThumbnailSide.END) Thumbnail(image, thumbnailFromCacheOnly)
         }
     }
+}
+
+/** Decorative: the title beside it already says what the article is. Drops out of the layout if the image fails. */
+@Composable
+private fun Thumbnail(url: String, fromCacheOnly: Boolean) {
+    var failed by remember(url) { mutableStateOf(false) }
+    if (failed) return
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current).data(url)
+            .networkCachePolicy(if (fromCacheOnly) CachePolicy.DISABLED else CachePolicy.ENABLED)
+            .build(),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        onError = { failed = true },
+        modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+    )
 }
 
 private fun relativeTime(millis: Long): String? =

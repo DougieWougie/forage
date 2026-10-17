@@ -48,7 +48,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.articles.ArticleListViewModel
+import me.dougals.forage.ui.rememberMeteredConnection
 import me.dougals.forage.presentation.articles.ListSource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,6 +98,7 @@ fun ArticleListScreen(
             if (state.articles.isEmpty()) {
                 EmptyState(vm.source, state.pullToRefresh)
             } else {
+                val metered = rememberMeteredConnection()
                 LazyColumn(Modifier.fillMaxSize()) {
                     items(state.articles, key = { it.id }) { article ->
                         SwipeableArticleCard(
@@ -103,6 +107,9 @@ fun ArticleListScreen(
                             onClick = { onOpenArticle(article.id) },
                             onToggleRead = { vm.toggleRead(article) },
                             onToggleSaved = { vm.toggleSaved(article) },
+                            thumbnailSide = state.thumbnailSide,
+                            showThumbnail = state.thumbnails != ThumbnailMode.OFF,
+                            thumbnailFromCacheOnly = state.thumbnails == ThumbnailMode.WIFI_ONLY && metered,
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }

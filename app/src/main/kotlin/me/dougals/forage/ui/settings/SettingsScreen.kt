@@ -76,6 +76,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
+import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.settings.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,6 +124,26 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                 }
                 Text(stringResource(R.string.text_size, (scale * 100).toInt()), style = MaterialTheme.typography.labelMedium)
                 Slider(scale, { scale = it }, onValueChangeFinished = { vm.setFontScale(scale) }, valueRange = AppSettings.MIN_SCALE..AppSettings.MAX_SCALE)
+            }
+            item { Section(stringResource(R.string.section_article_list)) }
+            item {
+                Text(stringResource(R.string.thumbnails), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.thumbnails_body),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(state.settings.thumbnails == ThumbnailMode.ALWAYS, { vm.setThumbnails(ThumbnailMode.ALWAYS) }, label = { Text(stringResource(R.string.thumbnails_always)) })
+                    FilterChip(state.settings.thumbnails == ThumbnailMode.WIFI_ONLY, { vm.setThumbnails(ThumbnailMode.WIFI_ONLY) }, label = { Text(stringResource(R.string.thumbnails_wifi)) })
+                    FilterChip(state.settings.thumbnails == ThumbnailMode.OFF, { vm.setThumbnails(ThumbnailMode.OFF) }, label = { Text(stringResource(R.string.thumbnails_off)) })
+                }
+            }
+            item {
+                Text(stringResource(R.string.thumbnail_side), style = MaterialTheme.typography.titleSmall)
+                Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(state.settings.thumbnailSide == ThumbnailSide.START, { vm.setThumbnailSide(ThumbnailSide.START) }, label = { Text(stringResource(R.string.thumbnail_side_left)) })
+                    FilterChip(state.settings.thumbnailSide == ThumbnailSide.END, { vm.setThumbnailSide(ThumbnailSide.END) }, label = { Text(stringResource(R.string.thumbnail_side_right)) })
+                }
             }
             item { Section(stringResource(R.string.section_refresh)) }
             item {

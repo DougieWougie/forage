@@ -57,6 +57,9 @@ interface ArticleDao {
     @Query("SELECT COUNT(*) FROM articles WHERE feedId = :feedId AND isRead = 0") suspend fun unreadCount(feedId: Long): Int
     @Query("UPDATE articles SET remoteId = :remoteId, isRead = :read, isSaved = :saved WHERE id = :id")
     suspend fun updateRemoteState(id: Long, remoteId: Long, read: Boolean, saved: Boolean)
+    /** Backfills articles stored before thumbnails existed; never replaces one already set. */
+    @Query("UPDATE articles SET imageUrl = :url WHERE feedId = :feedId AND guid = :guid AND imageUrl IS NULL")
+    suspend fun fillImageUrl(feedId: Long, guid: String, url: String)
     @Query("UPDATE articles SET offlineHtml = NULL WHERE id = :id") suspend fun clearOfflineHtml(id: Long)
     @Query("SELECT * FROM articles WHERE isRead = 0 ORDER BY publishedAt DESC")
     fun observeUnread(): Flow<List<ArticleEntity>>

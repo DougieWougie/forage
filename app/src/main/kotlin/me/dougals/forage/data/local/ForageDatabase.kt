@@ -13,14 +13,25 @@ package me.dougals.forage.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [FolderEntity::class, FeedEntity::class, ArticleEntity::class, PendingChangeEntity::class],
-    version = 1,
+    version = 2,
 )
 abstract class ForageDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
     abstract fun feedDao(): FeedDao
     abstract fun articleDao(): ArticleDao
     abstract fun pendingChangeDao(): PendingChangeDao
+
+    companion object {
+        /** Adds the list thumbnail; articles stored before this have none until they are fetched again. */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE articles ADD COLUMN imageUrl TEXT")
+            }
+        }
+    }
 }
