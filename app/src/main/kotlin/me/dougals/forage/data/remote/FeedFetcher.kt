@@ -9,8 +9,12 @@ import java.io.IOException
 class FeedFetchException(message: String, val httpCode: Int? = null, cause: Throwable? = null) :
     Exception(message, cause)
 
-class FeedFetcher(private val client: OkHttpClient, private val parser: FeedParser) {
-    suspend fun fetch(url: String): ParsedFeed = withContext(Dispatchers.IO) {
+fun interface FeedSource {
+    suspend fun fetch(url: String): ParsedFeed
+}
+
+class FeedFetcher(private val client: OkHttpClient, private val parser: FeedParser) : FeedSource {
+    override suspend fun fetch(url: String): ParsedFeed = withContext(Dispatchers.IO) {
         val request = try {
             Request.Builder().url(url).build()
         } catch (e: IllegalArgumentException) {

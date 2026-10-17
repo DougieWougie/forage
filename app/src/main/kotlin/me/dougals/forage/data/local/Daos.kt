@@ -1,10 +1,10 @@
 package me.dougals.forage.data.local
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 data class UnreadCount(val feedId: Long, val count: Int)
@@ -13,6 +13,9 @@ data class UnreadCount(val feedId: Long, val count: Int)
 interface FolderDao {
     @Insert suspend fun insert(folder: FolderEntity): Long
     @Query("DELETE FROM folders WHERE id = :id") suspend fun delete(id: Long)
+    @Update suspend fun update(folder: FolderEntity)
+    @Query("SELECT * FROM folders WHERE id = :id") suspend fun getById(id: Long): FolderEntity?
+    @Query("SELECT * FROM folders") suspend fun getAll(): List<FolderEntity>
     @Query("SELECT * FROM folders ORDER BY name") fun observeAll(): Flow<List<FolderEntity>>
 }
 
@@ -21,7 +24,10 @@ interface FeedDao {
     @Insert suspend fun insert(feed: FeedEntity): Long
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertIgnore(feed: FeedEntity): Long
     @Query("DELETE FROM feeds WHERE id = :id") suspend fun delete(id: Long)
+    @Update suspend fun update(feed: FeedEntity)
     @Query("SELECT * FROM feeds WHERE id = :id") suspend fun getById(id: Long): FeedEntity?
+    @Query("SELECT * FROM feeds WHERE url = :url") suspend fun getByUrl(url: String): FeedEntity?
+    @Query("SELECT * FROM feeds") suspend fun getAll(): List<FeedEntity>
     @Query("SELECT * FROM feeds ORDER BY title") fun observeAll(): Flow<List<FeedEntity>>
     @Query("SELECT * FROM feeds WHERE folderId = :folderId ORDER BY title")
     fun observeByFolder(folderId: Long): Flow<List<FeedEntity>>
@@ -32,6 +38,15 @@ interface ArticleDao {
     /** Returns -1 for rows skipped because (feedId, guid) already exists, preserving user state. */
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertIgnore(articles: List<ArticleEntity>): List<Long>
     @Query("SELECT * FROM articles WHERE id = :id") suspend fun getById(id: Long): ArticleEntity?
+    @Query("SELECT * FROM articles") suspend fun getAll(): List<ArticleEntity>
+    @Query("SELECT * FROM articles WHERE remoteId = :remoteId") suspend fun getByRemoteId(remoteId: Long): ArticleEntity?
+    @Query("SELECT * FROM articles WHERE feedId = :feedId AND guid = :guid")
+    suspend fun getByFeedAndGuid(feedId: Long, guid: String): ArticleEntity?
+    @Query("SELECT id FROM articles WHERE feedId = :feedId AND isRead = 0") suspend fun unreadIds(feedId: Long): List<Long>
+    @Query("SELECT COUNT(*) FROM articles WHERE feedId = :feedId AND isRead = 0") suspend fun unreadCount(feedId: Long): Int
+    @Query("UPDATE articles SET remoteId = :remoteId, isRead = :read, isSaved = :saved WHERE id = :id")
+    suspend fun updateRemoteState(id: Long, remoteId: Long, read: Boolean, saved: Boolean)
+    @Query("UPDATE articles SET offlineHtml = NULL WHERE id = :id") suspend fun clearOfflineHtml(id: Long)
     @Query("SELECT * FROM articles WHERE isRead = 0 ORDER BY publishedAt DESC")
     fun observeUnread(): Flow<List<ArticleEntity>>
     @Query("SELECT * FROM articles WHERE isSaved = 1 ORDER BY publishedAt DESC")
@@ -48,5 +63,7 @@ interface ArticleDao {
 interface PendingChangeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun enqueue(change: PendingChangeEntity)
     @Query("SELECT * FROM pending_changes ORDER BY createdAt") suspend fun getAll(): List<PendingChangeEntity>
-    @Delete suspend fun delete(changes: List<PendingChangeEntity>)
+    /** Only removes the row if it is still the exact change that was flushed, not a newer replacement. */
+    @Query("DELETE FROM pending_changes WHERE articleId = :articleId AND field = :field AND createdAt = :createdAt AND value = :value")
+    suspend fun deleteIfUnchanged(articleId: Long, field: SyncField, createdAt: Long, value: Boolean)
 }

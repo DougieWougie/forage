@@ -39,10 +39,20 @@ class PendingChangeDaoTest : DbTestBase() {
         assertEquals(listOf(ids[0], ids[1]), dao.getAll().map { it.articleId })
     }
 
-    @Test fun deleteRemovesFlushedChanges() = runTest {
+    @Test fun deleteIfUnchangedRemovesFlushedChange() = runTest {
         val id = articleId()
-        dao.enqueue(PendingChangeEntity(id, SyncField.READ, true, createdAt = 1))
-        dao.delete(dao.getAll())
+        val change = PendingChangeEntity(id, SyncField.READ, true, createdAt = 1)
+        dao.enqueue(change)
+        dao.deleteIfUnchanged(change.articleId, change.field, change.createdAt, change.value)
         assertEquals(0, dao.getAll().size)
+    }
+
+    @Test fun deleteIfUnchangedKeepsAChangeThatWasReplacedMeanwhile() = runTest {
+        val id = articleId()
+        val flushed = PendingChangeEntity(id, SyncField.READ, true, createdAt = 1)
+        dao.enqueue(flushed)
+        dao.enqueue(PendingChangeEntity(id, SyncField.READ, false, createdAt = 2))
+        dao.deleteIfUnchanged(flushed.articleId, flushed.field, flushed.createdAt, flushed.value)
+        assertEquals(false, dao.getAll().single().value)
     }
 }

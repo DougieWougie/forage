@@ -16,9 +16,9 @@ interface FeedRepository {
     fun observeFeeds(): Flow<List<Feed>>
 
     suspend fun addFeed(url: String, folderId: Long? = null): Result<Feed>
-    suspend fun removeFeed(feedId: Long)
-    suspend fun createFolder(name: String): Folder
-    suspend fun deleteFolder(folderId: Long)
+    suspend fun removeFeed(feedId: Long): Result<Unit>
+    suspend fun createFolder(name: String): Result<Folder>
+    suspend fun deleteFolder(folderId: Long): Result<Unit>
 
     suspend fun setRead(articleId: Long, read: Boolean)
     suspend fun setSaved(articleId: Long, saved: Boolean)
