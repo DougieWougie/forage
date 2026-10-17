@@ -71,4 +71,19 @@ class OpmlTransferTest {
             Opml.parse(xml.byteInputStream()),
         )
     }
+
+    @Test fun nonHttpUrlsAreRejectedBeforeTouchingTheRepository() = runTest {
+        setup()
+        val hostile = """
+            <opml version="2.0"><body>
+              <outline text="a" xmlUrl="file:///etc/passwd"/>
+              <outline text="b" xmlUrl="javascript:alert(1)"/>
+              <outline text="c" xmlUrl="ftp://example.com/feed"/>
+              <outline text="d" xmlUrl="not a url"/>
+              <outline text="ok" xmlUrl="HTTPS://example.com/feed"/>
+            </body></opml>""".trimIndent()
+        val result = OpmlTransfer(repo).import(hostile.byteInputStream()).getOrThrow()
+        assertEquals(ImportResult(added = 1, skipped = 0, failed = 4), result)
+        coVerify(exactly = 1) { repo.addFeed(any(), any()) }
+    }
 }

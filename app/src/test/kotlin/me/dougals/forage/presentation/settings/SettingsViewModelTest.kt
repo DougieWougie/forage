@@ -107,6 +107,11 @@ class SettingsViewModelTest {
         }
     }
 
+    @Test fun localNetworkTogglePassesThrough() = runTest {
+        vm().setAllowLocalNetwork(true)
+        coVerify { settings.setAllowLocalNetwork(true) }
+    }
+
     @Test fun typographyPassThrough() = runTest {
         val v = vm()
         v.setFont(me.dougals.forage.domain.model.ReaderFont.SANS)

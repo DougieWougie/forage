@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import me.dougals.forage.data.xml.XmlParseException
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import me.dougals.forage.domain.repository.FeedRepository
 import java.io.InputStream
 
@@ -24,6 +25,8 @@ class OpmlTransfer(private val repo: FeedRepository) {
         var added = 0; var skipped = 0; var failed = 0
 
         for (f in feeds) {
+            // Feed files are untrusted: only real http(s) URLs ever reach the repository.
+            if (f.xmlUrl.toHttpUrlOrNull() == null) { failed++; continue }
             if (!known.add(f.xmlUrl)) { skipped++; continue }
             val key = f.folder?.lowercase()
             val folderId = when {

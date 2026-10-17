@@ -1,10 +1,13 @@
 package me.dougals.forage.data.remote
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import me.dougals.forage.data.net.GuardedHttp
+import me.dougals.forage.data.net.HttpStatusException
+import me.dougals.forage.data.net.isPublicAddress
+import me.dougals.forage.data.net.readBytesBounded
 import okhttp3.OkHttpClient
-import okhttp3.Request
+import java.io.ByteArrayInputStream
 import java.io.IOException
+import java.net.InetAddress
 
 class FeedFetchException(message: String, val httpCode: Int? = null, cause: Throwable? = null) :
     Exception(message, cause)
@@ -13,20 +16,26 @@ fun interface FeedSource {
     suspend fun fetch(url: String): ParsedFeed
 }
 
-class FeedFetcher(private val client: OkHttpClient, private val parser: FeedParser) : FeedSource {
-    override suspend fun fetch(url: String): ParsedFeed = withContext(Dispatchers.IO) {
-        val request = try {
-            Request.Builder().url(url).build()
-        } catch (e: IllegalArgumentException) {
-            throw FeedFetchException("Invalid URL: $url", cause = e)
+/**
+ * Feed URLs arrive via OPML files, user input and redirects, so they get the same SSRF guard as article pages
+ * unless the user has opted in to local-network feeds ([allowLocalNetwork]).
+ */
+class FeedFetcher(
+    client: OkHttpClient,
+    private val parser: FeedParser,
+    private val allowLocalNetwork: suspend () -> Boolean = { false },
+    private val maxBytes: Long = 10_000_000,
+    addressPolicy: (InetAddress) -> Boolean = ::isPublicAddress,
+) : FeedSource {
+    private val http = GuardedHttp(client, addressPolicy)
+
+    override suspend fun fetch(url: String): ParsedFeed = try {
+        http.get(url, allowLocalNetwork()) { r ->
+            parser.parse(ByteArrayInputStream(r.readBytesBounded(maxBytes)), r.request.url.toString())
         }
-        try {
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw FeedFetchException("HTTP ${response.code}", response.code)
-                parser.parse(response.body.byteStream(), response.request.url.toString())
-            }
-        } catch (e: IOException) {
-            throw FeedFetchException(e.message ?: "Network error", cause = e)
-        }
+    } catch (e: HttpStatusException) {
+        throw FeedFetchException("HTTP ${e.code}", e.code, e)
+    } catch (e: IOException) {
+        throw FeedFetchException(e.message ?: "Network error", cause = e)
     }
 }

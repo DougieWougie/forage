@@ -31,6 +31,13 @@ class SettingsRepositoryTest {
         assertEquals(AppSettings(SyncMode.NEXTCLOUD, ReaderFont.SANS, 1.5f), r.settings.first())
     }
 
+    @Test fun localNetworkAccessIsOffByDefaultAndPersists() = runTest {
+        val r = repo()
+        assertEquals(false, r.settings.first().allowLocalNetwork)
+        r.setAllowLocalNetwork(true)
+        assertEquals(true, r.settings.first().allowLocalNetwork)
+    }
+
     @Test fun fontScaleIsClamped() = runTest {
         val r = repo()
         r.setFontScale(9f); assertEquals(2.0f, r.settings.first().fontScale)

@@ -2,6 +2,8 @@ package me.dougals.forage.data.content
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import me.dougals.forage.data.net.PublicOnlyDns
+import me.dougals.forage.data.net.isPublicAddress
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Dns
@@ -16,7 +18,7 @@ import java.net.UnknownHostException
 
 class PageFetcherTest {
     private fun fetcher(allowPrivate: Boolean = true, maxBytes: Long = 1_000_000) =
-        OkHttpPageFetcher(OkHttpClient(), allowPrivateNetworks = allowPrivate, maxBytes = maxBytes)
+        OkHttpPageFetcher(OkHttpClient(), allowPrivateNetworks = { allowPrivate }, maxBytes = maxBytes)
 
     @Test fun returnsBodyText() = runTest {
         MockWebServer().use { s ->

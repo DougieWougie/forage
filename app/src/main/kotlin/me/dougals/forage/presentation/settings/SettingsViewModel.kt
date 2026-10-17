@@ -82,6 +82,7 @@ class SettingsViewModel @Inject constructor(
 
     fun removeSession(domain: String) { sessions.remove(domain); reloadSessions() }
     fun reloadSessions() { domains.value = sessions.domains() }
+    fun setAllowLocalNetwork(allow: Boolean) { viewModelScope.launch { settingsRepo.setAllowLocalNetwork(allow) } }
     fun setFont(font: ReaderFont) { viewModelScope.launch { settingsRepo.setReaderFont(font) } }
     fun setFontScale(scale: Float) { viewModelScope.launch { settingsRepo.setFontScale(scale) } }
     fun dismissMessage() { message.value = null }
