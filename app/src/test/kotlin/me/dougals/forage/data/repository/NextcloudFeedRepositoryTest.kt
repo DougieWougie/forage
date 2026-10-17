@@ -134,6 +134,16 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
         assertNotNull(db.articleDao().getByRemoteId(1))
     }
 
+    @Test fun addFeedToALocalOnlyFolderCreatesTheFolderOnTheServerFirst() = runTest {
+        val mine = db.folderDao().insert(FolderEntity(name = "Mine"))
+
+        val feed = repo.addFeed("https://new/feed", mine).getOrThrow()
+
+        assertEquals(listOf("folders", "createFolder", "createFeed:https://new/feed:100"), api.calls.take(3))
+        assertEquals(100L, db.folderDao().getById(mine)!!.remoteId)
+        assertEquals(mine, feed.folderId)
+    }
+
     @Test fun addFeedFailureLeavesNothingLocal() = runTest {
         api.failOn = setOf("createFeed:https://new/feed:null")
         assertTrue(repo.addFeed("https://new/feed").isFailure)
