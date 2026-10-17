@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
+import me.dougals.forage.domain.model.ThumbnailMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -40,6 +41,13 @@ class SettingsRepositoryTest {
         r.setReaderFont(ReaderFont.SANS)
         r.setFontScale(1.5f)
         assertEquals(AppSettings(SyncMode.NEXTCLOUD, ReaderFont.SANS, 1.5f), r.settings.first())
+    }
+
+    @Test fun thumbnailsDefaultToAlwaysAndPersist() = runTest {
+        val r = repo()
+        assertEquals(ThumbnailMode.ALWAYS, r.settings.first().thumbnails)
+        r.setThumbnails(ThumbnailMode.WIFI_ONLY)
+        assertEquals(ThumbnailMode.WIFI_ONLY, r.settings.first().thumbnails)
     }
 
     @Test fun dyslexicFontPersists() = runTest {
