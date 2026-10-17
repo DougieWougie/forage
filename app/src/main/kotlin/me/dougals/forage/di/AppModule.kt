@@ -95,7 +95,7 @@ object AppModule {
         OkHttpPageFetcher(client, allowPrivateNetworks = { settings.settings.first().allowLocalNetwork })
 
     @Provides @Singleton
-    fun imageFetcher(@WebClient client: OkHttpClient): ImageResourceFetcher = ImageResourceFetcher(client)
+    fun imageFetcher(@ApiClient client: OkHttpClient): ImageResourceFetcher = ImageResourceFetcher(client)
 
     @Provides @Singleton fun schedulers(@ApplicationContext c: Context) = WorkManagerSchedulers(c)
     @Provides fun syncScheduler(s: WorkManagerSchedulers): SyncScheduler = s
