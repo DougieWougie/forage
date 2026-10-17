@@ -1,10 +1,14 @@
 package me.dougals.forage.ui.reader
 
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.text.format.DateFormat
+import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -36,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +58,11 @@ import me.dougals.forage.presentation.reader.ReaderHtml
 import me.dougals.forage.presentation.reader.ReaderStyle
 import me.dougals.forage.presentation.reader.ReaderViewModel
 import me.dougals.forage.presentation.reader.ShareIntents
+import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.runBlocking
+import me.dougals.forage.data.net.isWebUrl
+import me.dougals.forage.di.ReaderEntryPoint
+import java.io.ByteArrayInputStream
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,8 +90,10 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
                         IconButton({ context.startActivity(Intent.createChooser(ShareIntents.send(article), "Share article")) }) {
                             Icon(Icons.Filled.Share, "Share")
                         }
-                        IconButton({ context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(article.url))) }) {
-                            Icon(Icons.AutoMirrored.Filled.OpenInNew, "Open in browser")
+                        if (isWebUrl(article.url)) {
+                            IconButton({ context.openInBrowser(article.url) }) {
+                                Icon(Icons.AutoMirrored.Filled.OpenInNew, "Open in browser")
+                            }
                         }
                     }
                 },
@@ -112,6 +124,11 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, modifier: Modif
     }
     val html = remember(article.id, article.readerHtml, style, byline) { ReaderHtml.wrap(article.title, byline, article.readerHtml, style) }
 
+    val images = remember {
+        EntryPointAccessors.fromApplication(context.applicationContext, ReaderEntryPoint::class.java).imageFetcher()
+    }
+    val allowLocal by rememberUpdatedState(prefs.allowLocalNetwork)
+
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
@@ -121,12 +138,27 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, modifier: Modif
                 settings.allowContentAccess = false
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                 settings.setSupportZoom(false)
+                settings.setGeolocationEnabled(false)
+                CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                        if (request.url.scheme in listOf("http", "https")) {
-                            ctx.startActivity(Intent(Intent.ACTION_VIEW, request.url))
-                        }
+                        if (isWebUrl(request.url.toString())) ctx.openInBrowser(request.url.toString())
                         return true
+                    }
+
+                    // The WebView never touches the network itself: every http(s) subresource is fetched here,
+                    // through the same SSRF guard as feeds and pages, and only images are let through.
+                    override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                        val scheme = request.url.scheme
+                        if (scheme != "http" && scheme != "https") return null
+                        val image = if (request.method == "GET") {
+                            runBlocking { images.fetch(request.url.toString(), allowLocal) }.getOrNull()
+                        } else null
+                        return if (image != null) {
+                            WebResourceResponse(image.mimeType, null, ByteArrayInputStream(image.bytes))
+                        } else {
+                            WebResourceResponse("text/plain", "utf-8", 403, "Blocked", emptyMap(), ByteArrayInputStream(ByteArray(0)))
+                        }
                     }
                 }
             }
@@ -138,7 +170,17 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, modifier: Modif
                 web.loadDataWithBaseURL(article.url, html, "text/html", "utf-8", null)
             }
         },
+        onRelease = { it.destroy() },
     )
+}
+
+private fun Context.openInBrowser(url: String) {
+    if (!isWebUrl(url)) return
+    try {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: ActivityNotFoundException) {
+        // no browser installed; nothing sensible to do
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
