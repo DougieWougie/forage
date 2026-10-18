@@ -21,8 +21,8 @@ fun SyncReport.toUiText(): UiText {
         if (feedsReceived > 0) add(UiText.Plural(R.plurals.feeds_from_nextcloud, feedsReceived))
         if (feedsRemoved > 0) add(UiText.Plural(R.plurals.feeds_removed, feedsRemoved))
         if (newArticles > 0) add(UiText.Plural(R.plurals.new_articles, newArticles))
-        if (markedRead > 0) add(UiText.Res(R.string.n_marked_read, listOf(markedRead)))
-        if (saved > 0) add(UiText.Res(R.string.n_saved, listOf(saved)))
+        if (markedRead > 0) add(UiText.Plural(R.plurals.n_marked_read, markedRead))
+        if (saved > 0) add(UiText.Plural(R.plurals.n_saved, saved))
         if (changesSent > 0) add(UiText.Plural(R.plurals.changes_sent, changesSent))
     }
     return if (parts.isEmpty()) UiText.Res(R.string.up_to_date) else UiText.Joined(listOf(UiText.Res(R.string.synced)) + parts, " · ")

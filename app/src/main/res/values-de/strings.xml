@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Startup -->
+    <string name="splash_updating">Feeds werden aktualisiert…</string>
+    <string name="splash_no_new">Keine neuen Artikel</string>
+    <string name="splash_update_failed">Feeds konnten nicht aktualisiert werden</string>
+    <string name="splash_tap_to_continue">Zum Fortfahren tippen</string>
+    <plurals name="splash_new_articles">
+        <item quantity="one">%1$d neuer Artikel</item>
+        <item quantity="other">%1$d neue Artikel</item>
+    </plurals>
+    <string name="splash_updating_progress">Feed %1$d von %2$d wird aktualisiert</string>
+
+    <!-- Navigation -->
+    <string name="tab_unread">Ungelesen</string>
+    <string name="tab_categories">Kategorien</string>
+    <string name="tab_saved">Gespeichert</string>
+    <string name="tab_settings">Einstellungen</string>
+
+    <!-- Shared -->
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_back">Zurück</string>
+    <string name="action_delete">Löschen</string>
+    <string name="action_create">Erstellen</string>
+    <string name="action_add">Hinzufügen</string>
+    <string name="action_open">Öffnen</string>
+    <string name="action_connect">Verbinden</string>
+    <string name="action_mark_all_read">Alle als gelesen markieren</string>
+    <string name="action_mark_read">Als gelesen markieren</string>
+    <string name="action_mark_older_read">Ältere als gelesen markieren</string>
+    <string name="action_undo">Rückgängig</string>
+    <string name="action_search">Suchen</string>
+    <string name="search_hint">Artikel durchsuchen</string>
+    <string name="search_clear">Suche löschen</string>
+    <string name="search_empty_title">Durchsuche deine Artikel</string>
+    <string name="search_empty_body">Durchsucht Titel, Autoren und Artikeltext.</string>
+    <string name="search_no_results_title">Keine Treffer</string>
+    <string name="search_no_results_body">Nichts gefunden für „%1$s“.</string>
+    <string name="toggled_read">Als gelesen markiert</string>
+    <string name="toggled_unread">Als ungelesen markiert</string>
+    <string name="toggled_saved">Gespeichert</string>
+    <string name="toggled_unsaved">Aus Gespeichert entfernt</string>
+    <string name="dialog_mark_older_read">Alle älteren ungelesenen Artikel dieses Feeds als gelesen markieren?</string>
+    <plurals name="articles_marked_read">
+        <item quantity="one">%1$d Artikel als gelesen markiert</item>
+        <item quantity="other">%1$d Artikel als gelesen markiert</item>
+    </plurals>
+    <string name="action_mark_unread">Als ungelesen markieren</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_remove_saved">Aus Gespeichert entfernen</string>
+    <string name="cd_saved">Gespeichert</string>
+    <string name="cd_available_offline">Offline verfügbar</string>
+
+    <!-- Article lists -->
+    <string name="title_feed_fallback">Feed</string>
+    <string name="title_unread">Ungelesen</string>
+    <string name="title_saved">Gespeichert</string>
+    <string name="empty_unread_title">Alles gelesen</string>
+    <string name="empty_saved_title">Noch nichts gespeichert</string>
+    <string name="filter_all">Alle</string>
+    <string name="filter_unread">Ungelesen</string>
+    <string name="filter_read">Gelesen</string>
+    <string name="filter_uncategorised">Ohne Kategorie</string>
+    <string name="empty_filter">Keine Artikel entsprechen diesem Filter.</string>
+    <string name="empty_feed_title">Keine Artikel</string>
+    <string name="empty_unread_pull">Zum Aktualisieren nach unten ziehen oder unter Kategorien Feeds hinzufügen.</string>
+    <string name="empty_unread_no_pull">Füge unter Kategorien Feeds hinzu.</string>
+    <string name="empty_saved_body">Wische einen Artikel nach links, um ihn für das Offline-Lesen zu speichern.</string>
+    <string name="empty_feed_pull">Zum Aktualisieren nach unten ziehen.</string>
+    <string name="empty_feed_no_pull">Hier ist noch nichts.</string>
+
+    <!-- Reader -->
+    <string name="cd_typography">Typografie</string>
+    <string name="action_save_offline">Für Offline-Lesen speichern</string>
+    <string name="share_article">Artikel teilen</string>
+    <string name="cd_share">Teilen</string>
+    <string name="cd_open_in_browser">Im Browser öffnen</string>
+    <string name="typeface">Schriftart</string>
+    <string name="font_serif">Serif</string>
+    <string name="font_sans">Serifenlos</string>
+    <string name="text_size">Textgröße  %1$d%%</string>
+
+    <!-- Sign-in -->
+    <string name="login_title">Anmelden, dann speichern</string>
+    <string name="login_save_session">Sitzung speichern</string>
+    <string name="login_no_cookies">Noch keine Sitzungs-Cookies gefunden — schließe zuerst die Anmeldung ab.</string>
+
+    <!-- Categories -->
+    <string name="categories_title">Kategorien</string>
+    <string name="cd_new_folder">Neuer Ordner</string>
+    <string name="cd_more">Mehr</string>
+    <string name="import_opml">OPML importieren</string>
+    <string name="export_opml">OPML exportieren</string>
+    <string name="add_feed">Feed hinzufügen</string>
+    <string name="no_feeds_title">Noch keine Feeds</string>
+    <string name="no_feeds_body">Füge eine Feed-URL hinzu oder importiere eine OPML-Datei aus einem anderen Reader.</string>
+    <string name="new_folder">Neuer Ordner</string>
+    <string name="field_name">Name</string>
+    <string name="field_feed_url">Feed-URL</string>
+    <string name="field_folder">Ordner</string>
+    <string name="folder_none">Keiner</string>
+    <string name="uncategorized">Ohne Kategorie</string>
+    <string name="cd_delete_folder">Ordner %1$s löschen</string>
+    <string name="delete_folder_title">„%1$s“ löschen?</string>
+    <string name="delete_folder_body">Die Feeds bleiben erhalten und werden nach „Ohne Kategorie“ verschoben.</string>
+    <string name="suggested_feeds">Vorgeschlagene Feeds</string>
+    <string name="cd_dismiss_suggestion">%1$s ausblenden</string>
+    <string name="restore_suggestions">Ausgeblendete Vorschläge anzeigen</string>
+    <string name="move_to_folder">In Ordner verschieben…</string>
+    <string name="move_feed_title">„%1$s“ verschieben nach</string>
+    <string name="cd_feed_options">Feed-Optionen</string>
+    <string name="remove_feed">Feed entfernen</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="section_sync">Synchronisierung</string>
+    <string name="section_reading">Lesen</string>
+    <string name="section_article_list">Artikelliste</string>
+    <string name="thumbnails">Vorschaubilder</string>
+    <string name="thumbnails_body">Zeigt neben Artikeln mit Bild ein kleines Vorschaubild an.</string>
+    <string name="thumbnails_always">Immer</string>
+    <string name="thumbnails_wifi">Nur WLAN</string>
+    <string name="thumbnails_off">Aus</string>
+    <string name="thumbnail_side">Position des Vorschaubilds</string>
+    <string name="thumbnail_side_left">Links</string>
+    <string name="thumbnail_side_right">Rechts</string>
+    <string name="section_signed_in">Angemeldete Websites</string>
+    <string name="section_refresh">Aktualisierung</string>
+    <string name="section_network">Netzwerk</string>
+    <string name="sync_now">Jetzt synchronisieren</string>
+    <string name="syncing">Synchronisiere…</string>
+    <string name="disconnect">Trennen</string>
+    <string name="local_mode">Lokaler Modus</string>
+    <string name="local_mode_body">Feeds werden direkt abgerufen. Verbinde Nextcloud News, um den Gelesen- und Gespeichert-Status geräteübergreifend zu synchronisieren.</string>
+    <string name="get_news_app">News-App holen</string>
+    <string name="nextcloud_requirements">Du benötigst einen Nextcloud-Server mit installierter News-App und meldest dich dann über den Browser an.</string>
+    <string name="last_synced_never">Noch nicht synchronisiert</string>
+    <string name="last_synced_now">Gerade eben synchronisiert</string>
+    <string name="last_synced_relative">Zuletzt synchronisiert: %1$s</string>
+    <string name="signed_in_body">Melde dich bei Websites an, die ein Konto erfordern (zum Beispiel lwn.net), und Forage sendet diese Sitzung nur an denselben Host mit Feed- und Artikelanfragen.</string>
+    <string name="cd_forget_session">Sitzung für %1$s vergessen</string>
+    <string name="log_in_to_site_button">Bei einer Website anmelden…</string>
+    <string name="background_refresh">Hintergrundaktualisierung</string>
+    <string name="background_refresh_body">Wie oft Forage neue Artikel abruft, während die App geschlossen ist.</string>
+    <string name="refresh_off">Aus</string>
+    <string name="refresh_1h">1 Std.</string>
+    <string name="refresh_3h">3 Std.</string>
+    <string name="refresh_6h">6 Std.</string>
+    <string name="refresh_12h">12 Std.</string>
+    <string name="refresh_wifi_only">Nur WLAN</string>
+    <string name="refresh_wifi_only_body">Hintergrundaktualisierungen bei mobilen Daten und anderen getakteten Verbindungen überspringen.</string>
+    <string name="pull_to_refresh">Zum Aktualisieren nach unten ziehen</string>
+    <string name="pull_to_refresh_body">Ziehe oben in Ungelesen oder Kategorien nach unten, um zu synchronisieren und neue Artikel abzurufen.</string>
+    <string name="allow_local_network">Feeds im lokalen Netzwerk erlauben</string>
+    <string name="allow_local_network_body">Standardmäßig aus. Wenn aus, werden Feeds und Artikel abgelehnt, die auf private oder Loopback-Adressen verweisen.</string>
+    <string name="log_in_to_site_title">Bei einer Website anmelden</string>
+    <string name="log_in_to_site_hint">Verwende denselben Host, von dem der Feed stammt, z. B. https://lwn.net/</string>
+    <string name="field_site_url">Website-URL</string>
+    <string name="connect_nextcloud_title">Nextcloud verbinden</string>
+    <string name="field_server">Server (https)</string>
+    <string name="field_username">Benutzername</string>
+    <string name="field_app_password">App-Passwort</string>
+    <string name="app_password_hint">Erstelle in Nextcloud unter Einstellungen → Sicherheit ein App-Passwort.</string>
+    <string name="log_in_with_browser_hint">Du meldest dich auf der Seite deines Servers im Browser an, und Forage erhält ein eigenes App-Passwort.</string>
+    <string name="action_log_in">Anmelden</string>
+    <string name="use_app_password">Stattdessen App-Passwort verwenden</string>
+    <string name="use_browser_login">Stattdessen über den Browser anmelden</string>
+    <string name="login_waiting">Schließe die Anmeldung bei Nextcloud in deinem Browser ab.</string>
+    <string name="login_open_again">Erneut öffnen</string>
+
+    <!-- Messages shown in snackbars -->
+    <string name="unknown_error">unbekannter Fehler</string>
+    <string name="refresh_failed">Aktualisierung fehlgeschlagen</string>
+    <string name="sync_failed">Synchronisierung nicht möglich: %1$s</string>
+    <string name="connect_fill_in_all">Server, Benutzername und App-Passwort ausfüllen</string>
+    <string name="connect_requires_https">Der Nextcloud-Server muss https:// verwenden</string>
+    <string name="connect_enter_server">Gib deinen Nextcloud-Server ein</string>
+    <string name="login_failed">Anmeldung nicht möglich: %1$s</string>
+    <string name="login_timed_out">Zeitüberschreitung bei der Anmeldung; versuche es erneut</string>
+    <string name="connected_to">Verbunden mit %1$s</string>
+    <string name="enter_feed_url">Gib eine Feed-URL ein</string>
+    <string name="added_feed">%1$s hinzugefügt</string>
+    <string name="add_feed_failed">Feed konnte nicht hinzugefügt werden</string>
+    <string name="create_folder_failed">Ordner konnte nicht erstellt werden</string>
+    <string name="delete_folder_failed">Ordner konnte nicht gelöscht werden</string>
+    <string name="move_feed_failed">Feed konnte nicht verschoben werden</string>
+    <string name="remove_feed_failed">Feed konnte nicht entfernt werden</string>
+    <string name="import_result">%1$d importiert, %2$d übersprungen, %3$d fehlgeschlagen</string>
+    <string name="import_failed">Import fehlgeschlagen</string>
+
+    <!-- Sync summary -->
+    <string name="synced">Synchronisiert</string>
+    <string name="up_to_date">Bereits auf dem neuesten Stand</string>
+    <plurals name="n_marked_read">
+        <item quantity="one">%1$d als gelesen markiert</item>
+        <item quantity="other">%1$d als gelesen markiert</item>
+    </plurals>
+    <plurals name="n_saved">
+        <item quantity="one">%1$d gespeichert</item>
+        <item quantity="other">%1$d gespeichert</item>
+    </plurals>
+    <plurals name="feeds_added_to_nextcloud">
+        <item quantity="one">%1$d Feed zu Nextcloud hinzugefügt</item>
+        <item quantity="other">%1$d Feeds zu Nextcloud hinzugefügt</item>
+    </plurals>
+    <plurals name="feeds_from_nextcloud">
+        <item quantity="one">%1$d Feed von Nextcloud</item>
+        <item quantity="other">%1$d Feeds von Nextcloud</item>
+    </plurals>
+    <plurals name="feeds_removed">
+        <item quantity="one">%1$d Feed entfernt</item>
+        <item quantity="other">%1$d Feeds entfernt</item>
+    </plurals>
+    <plurals name="new_articles">
+        <item quantity="one">%1$d neuer Artikel</item>
+        <item quantity="other">%1$d neue Artikel</item>
+    </plurals>
+    <plurals name="changes_sent">
+        <item quantity="one">%1$d Änderung gesendet</item>
+        <item quantity="other">%1$d Änderungen gesendet</item>
+    </plurals>
+</resources>

@@ -13,6 +13,7 @@ Local-first, no accounts, no tracking.
 - **Swipe cards:** swipe right to toggle read, left to toggle saved, with haptics and an undo snackbar.
 - **Mark older as read:** long-press a card to mark every older unread article in the same feed as read, with an undo snackbar.
 - **Background refresh:** hourly by default; choose 1, 3, 6 or 12 hours, or off, and optionally Wi-Fi only.
+- **Languages:** English, German, French and Spanish, following the system language (per-app language on Android 13+).
 - **Tabs:** Unread, Categories, Saved, Settings.
 - **Reader:** Serif, Sans or OpenDyslexic (reader only) with adjustable text size. Scripts are off and
   images are fetched by the app, not the page.
@@ -81,8 +82,9 @@ The project was built test-first. Tests use JUnit 5, MockK, Turbine, MockWebServ
 
 ## Status
 
-Early (0.1.0). Not yet verified against a wide range of Nextcloud versions. Known gaps: strings are
-English only, swipe cards snap back without animation, and there is no release signing config.
+Early (0.1.0). Not yet verified against a wide range of Nextcloud versions. Known gaps: the German, French
+and Spanish translations have not had a native-speaker review, swipe cards snap back without animation,
+and there is no release signing config.
 
 ## License
 

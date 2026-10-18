@@ -22,6 +22,10 @@ android {
     namespace = "me.dougals.forage"
     compileSdk = 37
 
+    androidResources {
+        generateLocaleConfig = true
+    }
+
     defaultConfig {
         applicationId = "me.dougals.forage"
         minSdk = 26

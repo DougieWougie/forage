@@ -34,7 +34,7 @@ class UiTextTest {
     @Test fun rawTextPassesThrough() = assertEquals("offline", UiText.Raw("offline").resolve(context))
 
     @Test fun partsAreJoinedWithTheSeparator() =
-        assertEquals("Synced · 2 saved", UiText.Joined(listOf(UiText.Res(R.string.synced), UiText.Res(R.string.n_saved, listOf(2))), " · ").resolve(context))
+        assertEquals("Synced · 2 saved", UiText.Joined(listOf(UiText.Res(R.string.synced), UiText.Plural(R.plurals.n_saved, 2)), " · ").resolve(context))
 
     @Test fun argumentsMayThemselvesBeText() =
         assertEquals("Could not sync: unknown error", UiText.Res(R.string.sync_failed, listOf(UiText.Res(R.string.unknown_error))).resolve(context))
