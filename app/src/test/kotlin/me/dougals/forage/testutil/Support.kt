@@ -17,9 +17,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import me.dougals.forage.data.auth.SessionStore
-import me.dougals.forage.data.nextcloud.CredentialStore
-import me.dougals.forage.data.nextcloud.NextcloudCredentials
+import me.dougals.forage.domain.auth.SessionStore
+import me.dougals.forage.domain.nextcloud.CredentialStore
+import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import me.dougals.forage.domain.model.Article
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback

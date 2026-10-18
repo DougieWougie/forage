@@ -59,14 +59,17 @@ Single `app` module, MVVM with a clean-architecture split under `me.dougals.fora
 
 | Package | Contents |
 | --- | --- |
-| `domain` | Models and the `FeedRepository` / `SettingsRepository` interfaces |
-| `data` | Room, DataStore, feed parsing, OPML, the Nextcloud client, WorkManager workers, the HTTP security layer |
+| `domain` | Models and the interfaces the UI layers depend on (`FeedRepository`, `SettingsRepository`, the credential and session stores, `OpmlExchange`) |
+| `data` | Implementations of those interfaces: Room, DataStore, feed parsing, OPML, the Nextcloud client, WorkManager workers, the HTTP security layer |
 | `presentation` | ViewModels and UI state |
 | `ui` | Jetpack Compose screens and navigation |
 | `di` | Hilt modules |
 
 Room is always the source of truth for the UI. A mode-aware repository sends writes to the local or
 Nextcloud implementation, and Nextcloud changes go through a pending-change queue flushed by WorkManager.
+
+More detail: [architecture](docs/architecture.md), [Nextcloud sync](docs/sync.md), [security model](docs/security.md)
+and [decision records](docs/adr/README.md).
 
 Stack: Kotlin, coroutines and Flow, Compose with Material 3, Hilt, Room, DataStore, OkHttp, Retrofit,
 kotlinx-serialization, WorkManager, EncryptedSharedPreferences.

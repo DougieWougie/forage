@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.data.nextcloud
 
+import me.dougals.forage.domain.nextcloud.CredentialStore
+import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals

@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.data.nextcloud
 
+import me.dougals.forage.domain.nextcloud.CredentialStore
+import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer

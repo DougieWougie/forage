@@ -24,8 +24,8 @@ import kotlinx.coroutines.flow.flowOf
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.repository.SettingsRepository
 import kotlinx.coroutines.test.runTest
-import me.dougals.forage.data.opml.ImportResult
-import me.dougals.forage.data.opml.OpmlTransfer
+import me.dougals.forage.domain.opml.ImportResult
+import me.dougals.forage.domain.opml.OpmlExchange
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.FeedSuggestion
 import me.dougals.forage.domain.suggest.SuggestionCatalogue
@@ -68,7 +68,7 @@ class CategoriesViewModelTest {
         every { it.observeFolders() } returns flowOf(listOf(Folder(1, "Tech")))
         every { it.observeFeeds() } returns flowOf(listOf(feed(1, "LWN", 1)))
     }
-    private val opml = mockk<OpmlTransfer>()
+    private val opml = mockk<OpmlExchange>()
     private val settings = MutableStateFlow(AppSettings())
     private val settingsRepo = mockk<SettingsRepository>(relaxed = true).also { every { it.settings } returns settings }
     private var catalogue = listOf(

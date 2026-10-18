@@ -48,7 +48,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import me.dougals.forage.data.auth.SessionCapture
+import me.dougals.forage.domain.auth.SessionCapture
 import javax.inject.Inject
 
 @HiltViewModel

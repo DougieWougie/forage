@@ -9,9 +9,10 @@
  * of the License, or (at your option) any later version. It is distributed WITHOUT ANY WARRANTY;
  * see the LICENSE file for details.
  */
-package me.dougals.forage.data.net
+package me.dougals.forage.domain.nextcloud
 
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-
-/** True only for real http(s) URLs with a host. Gate for anything handed to an intent or fetched on a feed's say-so. */
-fun isWebUrl(url: String): Boolean = url.trim().toHttpUrlOrNull() != null
+interface SyncStateStore {
+    var lastModified: Long
+    /** Wall-clock time of the last successful pull, 0 if never. */
+    var lastSyncedAt: Long
+}

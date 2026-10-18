@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant R as NextcloudFeedRepository.refresh
+    participant F as PendingChangeFlusher
+    participant S as Nextcloud server
+    participant Y as NextcloudSyncer
+    participant DB as Room
+
+    R->>F: flushCounting (push queued changes first)
+    F->>S: batched state changes
+    R->>S: create feeds that only exist locally (remoteId null)
+    R->>Y: pull
+    Y->>S: folders, feeds, items (full on first run, then updatedItems since lastModified)
+    Y->>DB: one transaction: reconcile folders, reconcile feeds, upsert items
+    Note over Y,DB: a pending change for an article wins over the server's state
+    R->>F: flushCounting again
+    Note over R,F: pull can queue state for articles adopted from before connecting
+    R-->>R: SyncReport

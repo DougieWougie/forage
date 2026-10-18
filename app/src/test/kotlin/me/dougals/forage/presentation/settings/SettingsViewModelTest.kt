@@ -22,9 +22,9 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import me.dougals.forage.data.nextcloud.LoginFlowSession
-import me.dougals.forage.data.nextcloud.NextcloudCredentials
-import me.dougals.forage.data.nextcloud.NextcloudLoginFlow
+import me.dougals.forage.domain.nextcloud.LoginFlowSession
+import me.dougals.forage.domain.nextcloud.NextcloudCredentials
+import me.dougals.forage.domain.nextcloud.NextcloudLoginFlow
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.SyncReport

@@ -9,7 +9,7 @@
  * of the License, or (at your option) any later version. It is distributed WITHOUT ANY WARRANTY;
  * see the LICENSE file for details.
  */
-package me.dougals.forage.data.auth
+package me.dougals.forage.domain.auth
 
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 

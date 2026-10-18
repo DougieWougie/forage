@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.opml
 
+import me.dougals.forage.domain.opml.ImportResult
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

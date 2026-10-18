@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.auth
 
+import me.dougals.forage.domain.auth.SessionStore
 import okhttp3.Interceptor
 import okhttp3.Response
 

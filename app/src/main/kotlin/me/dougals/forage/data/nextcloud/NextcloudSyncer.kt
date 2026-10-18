@@ -20,6 +20,7 @@ import me.dougals.forage.data.local.ForageDatabase
 import me.dougals.forage.data.local.PendingChangeEntity
 import me.dougals.forage.data.local.SyncField
 import me.dougals.forage.data.work.ArchiveScheduler
+import me.dougals.forage.domain.nextcloud.SyncStateStore
 import me.dougals.forage.domain.model.SyncReport
 
 /** Pulls folders, feeds and items from Nextcloud into Room. Local unsent changes always win. */

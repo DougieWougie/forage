@@ -22,26 +22,27 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import me.dougals.forage.data.auth.SessionCapture
+import me.dougals.forage.domain.auth.SessionCapture
 import me.dougals.forage.data.auth.SessionCookieInterceptor
-import me.dougals.forage.data.auth.SessionStore
+import me.dougals.forage.domain.auth.SessionStore
 import me.dougals.forage.data.auth.encryptedSessionStore
 import me.dougals.forage.data.content.ImageResourceFetcher
 import me.dougals.forage.data.content.OfflineArchiver
 import me.dougals.forage.data.content.OkHttpPageFetcher
 import me.dougals.forage.data.content.PageFetcher
 import me.dougals.forage.data.local.ForageDatabase
-import me.dougals.forage.data.nextcloud.CredentialStore
+import me.dougals.forage.domain.nextcloud.CredentialStore
 import me.dougals.forage.data.nextcloud.NextcloudApiProvider
-import me.dougals.forage.data.nextcloud.NextcloudLoginFlow
+import me.dougals.forage.domain.nextcloud.NextcloudLoginFlow
 import me.dougals.forage.data.nextcloud.NextcloudSyncer
 import me.dougals.forage.data.nextcloud.OkHttpNextcloudLoginFlow
 import me.dougals.forage.data.nextcloud.PendingChangeFlusher
 import me.dougals.forage.data.nextcloud.PrefsSyncStateStore
 import me.dougals.forage.data.nextcloud.RetrofitNextcloudApiProvider
-import me.dougals.forage.data.nextcloud.SyncStateStore
+import me.dougals.forage.domain.nextcloud.SyncStateStore
 import me.dougals.forage.data.nextcloud.encryptedCredentialStore
 import me.dougals.forage.data.opml.OpmlTransfer
+import me.dougals.forage.domain.opml.OpmlExchange
 import me.dougals.forage.data.suggestions.AssetSuggestionCatalogue
 import me.dougals.forage.domain.suggest.SuggestionCatalogue
 import me.dougals.forage.data.remote.FeedFetcher
@@ -146,7 +147,7 @@ object AppModule {
 
     @Provides @Singleton fun suggestionCatalogue(@ApplicationContext c: Context): SuggestionCatalogue = AssetSuggestionCatalogue(c)
 
-    @Provides fun opmlTransfer(repo: FeedRepository) = OpmlTransfer(repo)
+    @Provides fun opmlExchange(repo: FeedRepository): OpmlExchange = OpmlTransfer(repo)
 
     @Provides
     fun sessionCapture(store: SessionStore) = SessionCapture({ url -> CookieManager.getInstance().getCookie(url) }, store)
