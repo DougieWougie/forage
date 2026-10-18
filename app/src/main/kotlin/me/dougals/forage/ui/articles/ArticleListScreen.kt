@@ -78,11 +78,12 @@ fun ArticleListScreen(
         state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() }
     }
 
+    val undoLabel = stringResource(R.string.action_undo)
     LaunchedEffect(state.markedOlder) {
         if (state.markedOlder.isEmpty()) return@LaunchedEffect
         val result = snackbar.showSnackbar(
             UiText.Plural(R.plurals.articles_marked_read, state.markedOlder.size).resolve(context),
-            actionLabel = context.getString(R.string.action_undo),
+            actionLabel = undoLabel,
             duration = SnackbarDuration.Long,
         )
         if (result == SnackbarResult.ActionPerformed) vm.undoMarkOlderRead() else vm.dismissMarkedOlder()
