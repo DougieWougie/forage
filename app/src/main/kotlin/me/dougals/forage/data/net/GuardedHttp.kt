@@ -68,13 +68,6 @@ class GuardedHttp(
     private companion object { const val MAX_REDIRECTS = 10 }
 }
 
-fun Response.readBytesBounded(maxBytes: Long): ByteArray {
-    val source = body.source()
-    source.request(maxBytes + 1)
-    if (source.buffer.size > maxBytes) throw IOException("Response larger than $maxBytes bytes")
-    return source.readByteArray()
-}
-
 class PublicOnlyDns(
     private val delegate: Dns = Dns.SYSTEM,
     private val policy: (InetAddress) -> Boolean = ::isPublicAddress,

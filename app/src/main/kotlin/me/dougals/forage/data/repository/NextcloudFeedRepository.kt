@@ -11,7 +11,6 @@
  */
 package me.dougals.forage.data.repository
 
-import kotlinx.coroutines.CancellationException
 import me.dougals.forage.data.local.FolderEntity
 import me.dougals.forage.data.local.ForageDatabase
 import me.dougals.forage.data.local.PendingChangeEntity
@@ -131,12 +130,4 @@ class NextcloudFeedRepository(
     }
 
     override fun onWritesDone() = sync.scheduleFlush()
-
-    private inline fun <T> attempt(block: () -> T): Result<T> = try {
-        Result.success(block())
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Result.failure(e)
-    }
 }

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -70,35 +71,32 @@ class SettingsViewModel @Inject constructor(
     private val repo: FeedRepository,
     private val loginFlow: NextcloudLoginFlow,
 ) : ViewModel() {
-    private val creds = MutableStateFlow(credentials.get())
-    private val domains = MutableStateFlow(sessions.domains())
-    private val message = MutableStateFlow<UiText?>(null)
-    private val connecting = MutableStateFlow(false)
-    private val syncing = MutableStateFlow(false)
-    private val lastSynced = MutableStateFlow(syncState.lastSyncedAt)
-    private val loginUrl = MutableStateFlow<String?>(null)
+    /** Everything but [SettingsUiState.settings], which is merged in from the settings store. */
+    private val ui = MutableStateFlow(
+        SettingsUiState(sessionDomains = sessions.domains(), lastSyncedAt = syncState.lastSyncedAt.takeIf { it > 0 })
+            .withCredentials(credentials.get()),
+    )
     private var loginJob: Job? = null
 
-    val state: StateFlow<SettingsUiState> = combine(settingsRepo.settings, creds, domains, message, connecting, syncing, lastSynced, loginUrl) { values ->
-        @Suppress("UNCHECKED_CAST")
-        val c = values[1] as NextcloudCredentials?
-        SettingsUiState(
-            values[0] as AppSettings, c?.serverUrl, c?.username, values[2] as List<String>,
-            values[3] as UiText?, values[4] as Boolean, values[5] as Boolean, (values[6] as Long).takeIf { it > 0 },
-            values[7] as String?,
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+    val state: StateFlow<SettingsUiState> = combine(settingsRepo.settings, ui) { settings, rest -> rest.copy(settings = settings) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    private fun SettingsUiState.withCredentials(c: NextcloudCredentials?) = copy(nextcloudServer = c?.serverUrl, nextcloudUser = c?.username)
+    private fun showMessage(text: UiText?) = ui.update { it.copy(message = text) }
+    private fun setConnecting(on: Boolean) = ui.update { it.copy(isConnecting = on) }
+    private fun setLoginUrl(url: String?) = ui.update { it.copy(loginUrl = url) }
+    private fun refreshLastSynced() = ui.update { it.copy(lastSyncedAt = syncState.lastSyncedAt.takeIf { t -> t > 0 }) }
 
     fun connectNextcloud(rawUrl: String, rawUser: String, password: String) {
         val server = rawUrl.trim().trimEnd('/')
         val user = rawUser.trim()
         when {
-            server.isEmpty() || user.isEmpty() || password.isEmpty() -> message.value = UiText.Res(R.string.connect_fill_in_all)
-            !server.startsWith("https://", ignoreCase = true) -> message.value = UiText.Res(R.string.connect_requires_https)
+            server.isEmpty() || user.isEmpty() || password.isEmpty() -> showMessage(UiText.Res(R.string.connect_fill_in_all))
+            !server.startsWith("https://", ignoreCase = true) -> showMessage(UiText.Res(R.string.connect_requires_https))
             else -> viewModelScope.launch {
-                connecting.value = true
+                setConnecting(true)
                 connect(NextcloudCredentials(server, user, password))
-                connecting.value = false
+                setConnecting(false)
             }
         }
     }
@@ -108,25 +106,25 @@ class SettingsViewModel @Inject constructor(
         val typed = rawUrl.trim()
         val server = typed.trimEnd('/')
         when {
-            !typed.startsWith("https://", ignoreCase = true) -> message.value = UiText.Res(R.string.connect_requires_https)
-            server.length <= "https://".length -> message.value = UiText.Res(R.string.connect_enter_server)
+            !typed.startsWith("https://", ignoreCase = true) -> showMessage(UiText.Res(R.string.connect_requires_https))
+            server.length <= "https://".length -> showMessage(UiText.Res(R.string.connect_enter_server))
             else -> {
                 loginJob?.cancel()
                 loginJob = viewModelScope.launch {
-                    connecting.value = true
+                    setConnecting(true)
                     try {
                         val session = loginFlow.start(server)
-                        loginUrl.value = session.loginUrl
+                        setLoginUrl(session.loginUrl)
                         val granted = withTimeoutOrNull(LOGIN_TIMEOUT) { awaitGrant(session) }
-                        loginUrl.value = null
-                        if (granted == null) message.value = UiText.Res(R.string.login_timed_out) else connect(granted)
+                        setLoginUrl(null)
+                        if (granted == null) showMessage(UiText.Res(R.string.login_timed_out)) else connect(granted)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        message.value = UiText.Res(R.string.login_failed, listOf(e.toUiText(R.string.unknown_error)))
+                        showMessage(UiText.Res(R.string.login_failed, listOf(e.toUiText(R.string.unknown_error))))
                     } finally {
-                        loginUrl.value = null
-                        connecting.value = false
+                        setLoginUrl(null)
+                        setConnecting(false)
                     }
                 }
             }
@@ -148,17 +146,17 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun connect(c: NextcloudCredentials) {
         credentials.save(c)
-        creds.value = credentials.get()
+        ui.update { it.withCredentials(credentials.get()) }
         syncState.lastModified = 0 // always start from a full pull
         settingsRepo.setSyncMode(SyncMode.NEXTCLOUD)
         val result = repo.refresh()
         if (result.isSuccess) {
-            message.value = UiText.Res(R.string.connected_to, listOf(c.serverUrl))
+            showMessage(UiText.Res(R.string.connected_to, listOf(c.serverUrl)))
         } else {
-            credentials.clear(); creds.value = null
+            credentials.clear(); ui.update { it.withCredentials(null) }
             syncState.lastModified = 0
             settingsRepo.setSyncMode(SyncMode.LOCAL)
-            message.value = syncFailed(result.exceptionOrNull())
+            showMessage(syncFailed(result.exceptionOrNull()))
             revoke(c) // e.g. the News app isn't installed: don't leave an unused app password behind
         }
     }
@@ -171,11 +169,13 @@ class SettingsViewModel @Inject constructor(
 
     /** Flushes queued local changes, then pulls. Failures leave the connection intact. */
     fun syncNow() {
-        if (!syncing.compareAndSet(expect = false, update = true)) return
+        var claimed = false
+        ui.update { claimed = !it.isSyncing; it.copy(isSyncing = true) }
+        if (!claimed) return
         viewModelScope.launch {
-            val result = try { repo.refresh() } finally { syncing.value = false }
-            lastSynced.value = syncState.lastSyncedAt
-            message.value = result.fold({ it.toUiText() }, ::syncFailed)
+            val result = try { repo.refresh() } finally { ui.update { it.copy(isSyncing = false) } }
+            refreshLastSynced()
+            showMessage(result.fold({ it.toUiText() }, ::syncFailed))
         }
     }
 
@@ -185,21 +185,23 @@ class SettingsViewModel @Inject constructor(
     fun disconnectNextcloud() {
         viewModelScope.launch {
             val c = credentials.get()
-            credentials.clear(); creds.value = null
+            credentials.clear(); ui.update { it.withCredentials(null) }
             settingsRepo.setSyncMode(SyncMode.LOCAL)
             c?.let { revoke(it) }
         }
     }
 
     fun removeSession(domain: String) { sessions.remove(domain); reloadSessions() }
-    fun reloadSessions() { domains.value = sessions.domains(); lastSynced.value = syncState.lastSyncedAt }
-    fun setAllowLocalNetwork(allow: Boolean) { viewModelScope.launch { settingsRepo.setAllowLocalNetwork(allow) } }
-    fun setPullToRefresh(enabled: Boolean) { viewModelScope.launch { settingsRepo.setPullToRefresh(enabled) } }
-    fun setThumbnails(mode: ThumbnailMode) { viewModelScope.launch { settingsRepo.setThumbnails(mode) } }
-    fun setThumbnailSide(side: ThumbnailSide) { viewModelScope.launch { settingsRepo.setThumbnailSide(side) } }
-    fun setFont(font: ReaderFont) { viewModelScope.launch { settingsRepo.setReaderFont(font) } }
-    fun setFontScale(scale: Float) { viewModelScope.launch { settingsRepo.setFontScale(scale) } }
-    fun dismissMessage() { message.value = null }
+    fun reloadSessions() { ui.update { it.copy(sessionDomains = sessions.domains()) }; refreshLastSynced() }
+    fun setAllowLocalNetwork(allow: Boolean) = change { setAllowLocalNetwork(allow) }
+    fun setPullToRefresh(enabled: Boolean) = change { setPullToRefresh(enabled) }
+    fun setThumbnails(mode: ThumbnailMode) = change { setThumbnails(mode) }
+    fun setThumbnailSide(side: ThumbnailSide) = change { setThumbnailSide(side) }
+    fun setFont(font: ReaderFont) = change { setReaderFont(font) }
+    fun setFontScale(scale: Float) = change { setFontScale(scale) }
+    private fun change(block: suspend SettingsRepository.() -> Unit) { viewModelScope.launch { settingsRepo.block() } }
+
+    fun dismissMessage() { showMessage(null) }
 
     private companion object {
         val POLL_INTERVAL = 2.seconds

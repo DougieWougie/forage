@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.dougals.forage.data.content.ImageResourceFetcher
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ReaderFont
@@ -35,6 +36,8 @@ class ReaderViewModel @Inject constructor(
     handle: SavedStateHandle,
     private val repo: FeedRepository,
     private val settingsRepo: SettingsRepository,
+    /** Fetches reader images; the WebView itself never touches the network. */
+    val images: ImageResourceFetcher,
 ) : ViewModel() {
     private val articleId: Long = requireNotNull(handle.get<Long>("articleId")) { "articleId required" }
     private val article = repo.observeArticle(articleId)

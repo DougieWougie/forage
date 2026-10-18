@@ -9,16 +9,14 @@
  * of the License, or (at your option) any later version. It is distributed WITHOUT ANY WARRANTY;
  * see the LICENSE file for details.
  */
-package me.dougals.forage.di
+package me.dougals.forage.data.net
 
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-import me.dougals.forage.data.content.ImageResourceFetcher
+import okhttp3.Response
+import java.io.IOException
 
-/** Lets the reader WebView client (not Hilt-managed) reach the guarded image fetcher. */
-@EntryPoint
-@InstallIn(SingletonComponent::class)
-interface ReaderEntryPoint {
-    fun imageFetcher(): ImageResourceFetcher
+fun Response.readBytesBounded(maxBytes: Long): ByteArray {
+    val source = body.source()
+    source.request(maxBytes + 1)
+    if (source.buffer.size > maxBytes) throw IOException("Response larger than $maxBytes bytes")
+    return source.readByteArray()
 }

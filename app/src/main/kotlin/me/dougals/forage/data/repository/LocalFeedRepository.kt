@@ -37,17 +37,13 @@ class LocalFeedRepository(
     override suspend fun addFeed(url: String, folderId: Long?): Result<Feed> {
         val trimmed = url.trim()
         if (db.feedDao().getByUrl(trimmed) != null) return Result.failure(IllegalStateException("Already subscribed"))
-        return try {
+        return attempt {
             val parsed = source.fetch(trimmed)
             val id = db.feedDao().insert(
                 FeedEntity(url = trimmed, title = parsed.title.ifBlank { trimmed }, siteUrl = parsed.siteUrl, folderId = folderId),
             )
             store(id, parsed.items)
-            Result.success(feedWithCount(id)!!)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Result.failure(e)
+            feedWithCount(id)!!
         }
     }
 

@@ -53,10 +53,7 @@ import me.dougals.forage.data.repository.ModeAwareFeedRepository
 import me.dougals.forage.data.repository.NextcloudFeedRepository
 import me.dougals.forage.data.settings.DataStoreSettingsRepository
 import me.dougals.forage.data.settings.settingsDataStore
-import me.dougals.forage.data.work.ArchiveAction
 import me.dougals.forage.data.work.ArchiveScheduler
-import me.dougals.forage.data.work.FlushAction
-import me.dougals.forage.data.work.RefreshAction
 import me.dougals.forage.data.work.SyncScheduler
 import me.dougals.forage.data.work.WorkManagerSchedulers
 import me.dougals.forage.domain.model.RefreshProgress
@@ -127,10 +124,6 @@ object AppModule {
     fun syncer(db: ForageDatabase, api: NextcloudApiProvider, state: SyncStateStore, archive: ArchiveScheduler) =
         NextcloudSyncer(db, api, state, archive)
     @Provides @Singleton fun archiver(db: ForageDatabase, fetcher: PageFetcher) = OfflineArchiver(db, fetcher)
-
-    @Provides fun flushAction(f: PendingChangeFlusher): FlushAction = f
-    @Provides fun archiveAction(a: OfflineArchiver): ArchiveAction = a
-    @Provides fun refreshAction(repo: FeedRepository): RefreshAction = RefreshAction { repo.refresh().map { } }
 
     @Provides @Singleton fun refreshProgress() = RefreshProgress()
 

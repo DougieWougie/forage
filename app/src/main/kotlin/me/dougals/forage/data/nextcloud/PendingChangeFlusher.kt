@@ -15,20 +15,19 @@ import kotlinx.coroutines.CancellationException
 import me.dougals.forage.data.local.ForageDatabase
 import me.dougals.forage.data.local.PendingChangeEntity
 import me.dougals.forage.data.local.SyncField
-import me.dougals.forage.data.work.FlushAction
 
 /** Pushes queued read/starred changes to Nextcloud in batches; stops at the first failing batch. */
 class PendingChangeFlusher(
     private val db: ForageDatabase,
     private val apiProvider: NextcloudApiProvider,
-) : FlushAction {
+) {
     private class Batch(
         val field: SyncField,
         val value: Boolean,
         val send: suspend (NextcloudApi, ItemIdsRequest) -> Unit,
     ) { val changes = mutableListOf<Pair<PendingChangeEntity, Long>>() }
 
-    override suspend fun flush(): Result<Unit> = flushCounting().map { }
+    suspend fun flush(): Result<Unit> = flushCounting().map { }
 
     /** @return how many changes were delivered to the server */
     suspend fun flushCounting(): Result<Int> {

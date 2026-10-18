@@ -27,7 +27,4 @@ class PrefsSessionStore(private val prefs: SharedPreferences) : SessionStore {
     }
 
     override fun domains(): List<String> = prefs.all.keys.sorted()
-
-    override fun findForHost(host: String): String? =
-        SessionStore.matchHost(prefs.all.mapNotNull { (k, v) -> (v as? String)?.let { k to it } }.toMap(), host)
 }
