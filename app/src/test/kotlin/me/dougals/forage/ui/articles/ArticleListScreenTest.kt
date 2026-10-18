@@ -35,6 +35,7 @@ import me.dougals.forage.presentation.articles.ArticleListState
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.presentation.articles.ListSource
 import me.dougals.forage.presentation.articles.ReadFilter
+import me.dougals.forage.presentation.articles.ToggleUndo
 import me.dougals.forage.testutil.article
 import me.dougals.forage.ui.theme.ForageTheme
 import org.junit.Assert.assertEquals
@@ -201,6 +202,28 @@ class ArticleListScreenTest {
         rule.onNodeWithText("1 article marked read").assertDoesNotExist()
         verify { vm.dismissMarkedOlder() }
         verify(exactly = 0) { vm.undoMarkOlderRead() }
+    }
+
+    @Test fun aSwipeToggleOffersUndo() {
+        show(dated.copy(toggled = ToggleUndo(1, ToggleUndo.Field.READ, true)))
+        rule.onNodeWithText("Marked read").assertExists()
+        rule.onNodeWithText("Undo").performClick(); rule.waitForIdle()
+        verify { vm.undoToggle() }
+        verify(exactly = 0) { vm.dismissToggle() }
+    }
+
+    @Test fun savedToggleNamesTheDirection() {
+        show(dated.copy(toggled = ToggleUndo(1, ToggleUndo.Field.SAVED, false)))
+        rule.onNodeWithText("Removed from saved").assertExists()
+    }
+
+    @Test fun aToggleIsForgottenOnceTheSnackbarTimesOut() {
+        show(dated.copy(toggled = ToggleUndo(1, ToggleUndo.Field.READ, false)))
+        rule.onNodeWithText("Marked unread").assertExists()
+        rule.mainClock.advanceTimeBy(15_000)
+        rule.onNodeWithText("Marked unread").assertDoesNotExist()
+        verify { vm.dismissToggle() }
+        verify(exactly = 0) { vm.undoToggle() }
     }
 
     // Read filter

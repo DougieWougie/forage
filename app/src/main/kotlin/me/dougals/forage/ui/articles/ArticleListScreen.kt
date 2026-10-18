@@ -61,6 +61,7 @@ import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.ui.rememberMeteredConnection
 import me.dougals.forage.presentation.articles.ListSource
 import me.dougals.forage.presentation.articles.ReadFilter
+import me.dougals.forage.presentation.articles.ToggleUndo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +88,16 @@ fun ArticleListScreen(
             duration = SnackbarDuration.Long,
         )
         if (result == SnackbarResult.ActionPerformed) vm.undoMarkOlderRead() else vm.dismissMarkedOlder()
+    }
+
+    LaunchedEffect(state.toggled) {
+        val toggle = state.toggled ?: return@LaunchedEffect
+        val message = when (toggle.field) {
+            ToggleUndo.Field.READ -> if (toggle.value) R.string.toggled_read else R.string.toggled_unread
+            ToggleUndo.Field.SAVED -> if (toggle.value) R.string.toggled_saved else R.string.toggled_unsaved
+        }
+        val result = snackbar.showSnackbar(context.getString(message), actionLabel = undoLabel, duration = SnackbarDuration.Short)
+        if (result == SnackbarResult.ActionPerformed) vm.undoToggle() else vm.dismissToggle()
     }
 
     // Oldest unread per feed: an article has something older to mark only when that is earlier than its own date.

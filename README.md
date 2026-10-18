@@ -9,7 +9,7 @@ Local-first, no accounts, no tracking.
 
 - **Feeds:** RSS 2.0, RDF and Atom. OPML import and export. Folders.
 - **Suggested feeds:** a bundled, UK-leaning catalogue of technology and Linux feeds (`app/src/main/assets/suggestions.json`), ranked on-device by what you already follow. Nothing is sent anywhere.
-- **Swipe cards:** swipe right to toggle read, left to toggle saved, with haptics.
+- **Swipe cards:** swipe right to toggle read, left to toggle saved, with haptics and an undo snackbar.
 - **Mark older as read:** long-press a card to mark every older unread article in the same feed as read, with an undo snackbar.
 - **Tabs:** Unread, Categories, Saved, Settings.
 - **Reader:** Serif, Sans or OpenDyslexic (reader only) with adjustable text size. Scripts are off and
@@ -80,7 +80,7 @@ The project was built test-first. Tests use JUnit 5, MockK, Turbine, MockWebServ
 ## Status
 
 Early (0.1.0). Not yet verified against a wide range of Nextcloud versions. Known gaps: strings are
-English only, swipe cards snap back without animation or undo, and there is no release signing config.
+English only, swipe cards snap back without animation, and there is no release signing config.
 
 ## License
 

@@ -84,6 +84,7 @@ import me.dougals.forage.presentation.articles.ArticleSnippet
 /**
  * Swipe right: toggle read/unread. Swipe left: toggle saved (bookmark + offline copy).
  * The card always snaps back after firing; whether it leaves the list is up to the list's own filter.
+ * The list offers an undo snackbar for each toggle.
  */
 @Composable
 fun SwipeableArticleCard(
