@@ -59,8 +59,8 @@ Single `app` module, MVVM with a clean-architecture split under `me.dougals.fora
 
 | Package | Contents |
 | --- | --- |
-| `domain` | Models and the `FeedRepository` / `SettingsRepository` interfaces |
-| `data` | Room, DataStore, feed parsing, OPML, the Nextcloud client, WorkManager workers, the HTTP security layer |
+| `domain` | Models and the interfaces the UI layers depend on (`FeedRepository`, `SettingsRepository`, the credential and session stores, `OpmlExchange`) |
+| `data` | Implementations of those interfaces: Room, DataStore, feed parsing, OPML, the Nextcloud client, WorkManager workers, the HTTP security layer |
 | `presentation` | ViewModels and UI state |
 | `ui` | Jetpack Compose screens and navigation |
 | `di` | Hilt modules |

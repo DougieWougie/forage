@@ -21,4 +21,4 @@ reach other hosts, including through redirects, and the app also fetches attacke
 
 - Users must sign in from the host that serves the feed.
 - A redirect to another host never receives the original host's credentials.
-- `EncryptedSessionStore` needs a real Keystore, so tests use `PrefsSessionStore` and the encrypted wrapper is not unit-tested.
+- The Keystore-backed factories (`encryptedSessionStore`, `encryptedCredentialStore`) need a real device, so tests use `PrefsSessionStore` and `PrefsCredentialStore`; the encrypted wrappers are not unit-tested.
