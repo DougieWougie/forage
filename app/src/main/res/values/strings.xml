@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Forage</string>
+    <string name="app_name" translatable="false">Forage</string>
 
     <!-- Startup -->
     <string name="splash_updating">Updating feeds…</string>
@@ -8,8 +8,8 @@
     <string name="splash_update_failed">Couldn\'t update feeds</string>
     <string name="splash_tap_to_continue">Tap to continue</string>
     <plurals name="splash_new_articles">
-        <item quantity="one">%d new article</item>
-        <item quantity="other">%d new articles</item>
+        <item quantity="one">%1$d new article</item>
+        <item quantity="other">%1$d new articles</item>
     </plurals>
     <string name="splash_updating_progress">Updating feed %1$d of %2$d</string>
 
@@ -44,8 +44,8 @@
     <string name="toggled_unsaved">Removed from saved</string>
     <string name="dialog_mark_older_read">Mark every older unread article in this feed as read?</string>
     <plurals name="articles_marked_read">
-        <item quantity="one">%d article marked read</item>
-        <item quantity="other">%d articles marked read</item>
+        <item quantity="one">%1$d article marked read</item>
+        <item quantity="other">%1$d articles marked read</item>
     </plurals>
     <string name="action_mark_unread">Mark unread</string>
     <string name="action_save">Save</string>
@@ -80,7 +80,7 @@
     <string name="typeface">Typeface</string>
     <string name="font_serif">Serif</string>
     <string name="font_sans">Sans-serif</string>
-    <string name="font_dyslexic">OpenDyslexic</string>
+    <string name="font_dyslexic" translatable="false">OpenDyslexic</string>
     <string name="text_size">Text size  %1$d%%</string>
 
     <!-- Sign-in -->
@@ -130,7 +130,7 @@
     <string name="section_signed_in">Signed-in sites</string>
     <string name="section_refresh">Refresh</string>
     <string name="section_network">Network</string>
-    <string name="nextcloud_news">Nextcloud News</string>
+    <string name="nextcloud_news" translatable="false">Nextcloud News</string>
     <string name="sync_now">Sync now</string>
     <string name="syncing">Syncing…</string>
     <string name="disconnect">Disconnect</string>
@@ -195,8 +195,14 @@
     <!-- Sync summary: "Synced · 2 feeds from Nextcloud · 18 new articles · …" -->
     <string name="synced">Synced</string>
     <string name="up_to_date">Already up to date</string>
-    <string name="n_marked_read">%1$d marked read</string>
-    <string name="n_saved">%1$d saved</string>
+    <plurals name="n_marked_read">
+        <item quantity="one">%1$d marked read</item>
+        <item quantity="other">%1$d marked read</item>
+    </plurals>
+    <plurals name="n_saved">
+        <item quantity="one">%1$d saved</item>
+        <item quantity="other">%1$d saved</item>
+    </plurals>
     <plurals name="feeds_added_to_nextcloud">
         <item quantity="one">%1$d feed added to Nextcloud</item>
         <item quantity="other">%1$d feeds added to Nextcloud</item>
