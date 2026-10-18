@@ -74,9 +74,8 @@ import me.dougals.forage.presentation.reader.ReaderHtml
 import me.dougals.forage.presentation.reader.ReaderStyle
 import me.dougals.forage.presentation.reader.ReaderViewModel
 import me.dougals.forage.presentation.reader.ShareIntents
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.runBlocking
-import me.dougals.forage.di.ReaderEntryPoint
+import me.dougals.forage.data.content.ImageResourceFetcher
 import java.io.ByteArrayInputStream
 import java.util.Date
 
@@ -117,7 +116,7 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
         },
     ) { inner ->
         if (article != null) {
-            ArticleWebView(article, state.settings, Modifier.padding(inner).fillMaxSize())
+            ArticleWebView(article, state.settings, vm.images, Modifier.padding(inner).fillMaxSize())
         }
     }
 
@@ -128,7 +127,7 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun ArticleWebView(article: Article, prefs: AppSettings, modifier: Modifier) {
+private fun ArticleWebView(article: Article, prefs: AppSettings, images: ImageResourceFetcher, modifier: Modifier) {
     val scheme = MaterialTheme.colorScheme
     val style = ReaderStyle(prefs.readerFont, prefs.fontScale, scheme.background.css(), scheme.onBackground.css(), scheme.primary.css())
     val context = LocalContext.current
@@ -140,9 +139,6 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, modifier: Modif
     }
     val html = remember(article.id, article.readerHtml, style, byline) { ReaderHtml.wrap(article.title, byline, article.readerHtml, style) }
 
-    val images = remember {
-        EntryPointAccessors.fromApplication(context.applicationContext, ReaderEntryPoint::class.java).imageFetcher()
-    }
     val allowLocal by rememberUpdatedState(prefs.allowLocalNetwork)
 
     AndroidView(

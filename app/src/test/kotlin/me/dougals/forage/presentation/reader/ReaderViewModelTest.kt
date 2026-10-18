@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.presentation.reader
 
+import me.dougals.forage.data.content.ImageResourceFetcher
+import okhttp3.OkHttpClient
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import io.mockk.coVerify
@@ -39,7 +41,7 @@ class ReaderViewModelTest {
     }
     private fun vm(a: me.dougals.forage.domain.model.Article) = run {
         every { repo.observeArticle(a.id) } returns MutableStateFlow(a)
-        ReaderViewModel(SavedStateHandle(mapOf("articleId" to a.id)), repo, settings)
+        ReaderViewModel(SavedStateHandle(mapOf("articleId" to a.id)), repo, settings, ImageResourceFetcher(OkHttpClient()))
     }
 
     @Test fun exposesArticleAndReaderSettings() = runTest {

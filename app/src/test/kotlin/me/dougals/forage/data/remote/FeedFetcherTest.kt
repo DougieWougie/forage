@@ -35,7 +35,6 @@ class FeedFetcherTest {
             override fun get(domain: String) = map[domain]
             override fun remove(domain: String) { map.remove(domain) }
             override fun domains() = map.keys.sorted()
-            override fun findForHost(host: String) = SessionStore.matchHost(map, host)
         }
         val client = OkHttpClient.Builder()
             .addNetworkInterceptor(SessionCookieInterceptor(store, allowInsecure = true)).build()

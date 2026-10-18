@@ -26,7 +26,7 @@ class SessionCookieInterceptor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         if (request.header("Cookie") != null || !(request.url.isHttps || allowInsecure)) return chain.proceed(request)
-        val cookies = store.findForHost(request.url.host) ?: return chain.proceed(request)
+        val cookies = store.get(request.url.host) ?: return chain.proceed(request)
         return chain.proceed(request.newBuilder().header("Cookie", cookies).build())
     }
 }

@@ -57,14 +57,14 @@ class SessionStoreTest {
         assertEquals(listOf("a.com", "b.com"), s.domains())
     }
 
-    @Test fun findForHostIsExactAndNeverWidensToSubdomainsOrParents() {
+    @Test fun getIsExactAndNeverWidensToSubdomainsOrParents() {
         val s = store()
         s.save("lwn.net", "a=1")
-        assertEquals("a=1", s.findForHost("lwn.net"))
-        assertNull(s.findForHost("www.lwn.net"))
-        assertNull(s.findForHost("user-content.lwn.net"))
-        assertEquals("a=1", s.findForHost("LWN.net"))
-        assertNull(s.findForHost("evil-lwn.net"))
-        assertNull(s.findForHost("net"))
+        assertEquals("a=1", s.get("lwn.net"))
+        assertNull(s.get("www.lwn.net"))
+        assertNull(s.get("user-content.lwn.net"))
+        assertEquals("a=1", s.get("LWN.net"))
+        assertNull(s.get("evil-lwn.net"))
+        assertNull(s.get("net"))
     }
 }

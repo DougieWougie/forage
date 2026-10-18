@@ -26,7 +26,6 @@ class SessionCaptureTest {
         override fun get(domain: String) = map[domain.lowercase()]
         override fun remove(domain: String) { map.remove(domain.lowercase()) }
         override fun domains() = map.keys.sorted()
-        override fun findForHost(host: String) = SessionStore.matchHost(map, host)
     }
 
     @Test fun storesCookiesUnderTheHostOfTheLoginUrl() {

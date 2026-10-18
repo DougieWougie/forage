@@ -27,6 +27,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import me.dougals.forage.data.content.ImageResourceFetcher
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ReaderFont
@@ -37,6 +38,7 @@ import me.dougals.forage.testutil.article
 import me.dougals.forage.ui.theme.ForageTheme
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import okhttp3.OkHttpClient
 import okio.Buffer
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -58,7 +60,10 @@ class ReaderScreenTest {
 
     private val story = article(1).copy(title = "Hello reader", author = "Ann", contentHtml = "<p>Body text</p>")
     private val state = MutableStateFlow(ReaderState())
-    private val vm = mockk<ReaderViewModel>(relaxed = true).also { every { it.state } returns state }
+    private val vm = mockk<ReaderViewModel>(relaxed = true).also {
+        every { it.state } returns state
+        every { it.images } returns ImageResourceFetcher(OkHttpClient())
+    }
     private var backs = 0
     private val png = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47)
 
