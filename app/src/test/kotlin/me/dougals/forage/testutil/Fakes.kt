@@ -22,7 +22,7 @@ import me.dougals.forage.data.nextcloud.ItemIdsRequest
 import me.dougals.forage.data.nextcloud.MoveFeedRequest
 import me.dougals.forage.data.nextcloud.ItemsResponse
 import me.dougals.forage.data.nextcloud.NextcloudApi
-import me.dougals.forage.data.nextcloud.SyncStateStore
+import me.dougals.forage.domain.nextcloud.SyncStateStore
 import me.dougals.forage.data.remote.FeedSource
 import me.dougals.forage.data.remote.ParsedFeed
 import me.dougals.forage.data.work.ArchiveScheduler

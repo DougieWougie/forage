@@ -68,6 +68,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.presentation.reader.ReaderFonts
+import me.dougals.forage.ui.isWebUrl
 import me.dougals.forage.ui.openInBrowser
 import me.dougals.forage.presentation.reader.ReaderHtml
 import me.dougals.forage.presentation.reader.ReaderStyle
@@ -75,7 +76,6 @@ import me.dougals.forage.presentation.reader.ReaderViewModel
 import me.dougals.forage.presentation.reader.ShareIntents
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.runBlocking
-import me.dougals.forage.data.net.isWebUrl
 import me.dougals.forage.di.ReaderEntryPoint
 import java.io.ByteArrayInputStream
 import java.util.Date

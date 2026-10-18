@@ -22,25 +22,10 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import me.dougals.forage.domain.nextcloud.LoginFlowSession
+import me.dougals.forage.domain.nextcloud.NextcloudCredentials
+import me.dougals.forage.domain.nextcloud.NextcloudLoginFlow
 import java.io.IOException
-
-/** [loginUrl] is opened in the browser; [pollToken] is a secret, so this is never persisted. */
-data class LoginFlowSession(val serverUrl: String, val loginUrl: String, val pollEndpoint: String, val pollToken: String) {
-    override fun toString() = "LoginFlowSession($serverUrl)"
-}
-
-/**
- * Nextcloud Login Flow v2: the user logs in on their server's own web page (so 2FA and SSO work) and
- * the server hands back an app password created for this device.
- * See https://docs.nextcloud.com/server/stable/developer_manual/client_apis/LoginFlow/
- */
-interface NextcloudLoginFlow {
-    suspend fun start(serverUrl: String): LoginFlowSession
-    /** null until the user has granted access in the browser. */
-    suspend fun poll(session: LoginFlowSession): NextcloudCredentials?
-    /** Deletes the app password on the server, removing it from Devices & sessions. */
-    suspend fun revoke(credentials: NextcloudCredentials)
-}
 
 class OkHttpNextcloudLoginFlow(
     private val client: OkHttpClient,

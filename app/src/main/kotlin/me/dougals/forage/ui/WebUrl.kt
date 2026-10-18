@@ -9,8 +9,9 @@
  * of the License, or (at your option) any later version. It is distributed WITHOUT ANY WARRANTY;
  * see the LICENSE file for details.
  */
-package me.dougals.forage.data.net
+package me.dougals.forage.ui
 
-object Links {
-    const val NEXTCLOUD_NEWS = "https://apps.nextcloud.com/apps/news"
-}
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+
+/** True only for real http(s) URLs with a host. Gate for anything handed to an intent or fetched on a feed's say-so. */
+fun isWebUrl(url: String): Boolean = url.trim().toHttpUrlOrNull() != null

@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.data.auth
 
+import me.dougals.forage.domain.auth.SessionCapture
+import me.dougals.forage.domain.auth.SessionStore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull

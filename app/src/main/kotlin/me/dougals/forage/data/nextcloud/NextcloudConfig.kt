@@ -14,6 +14,9 @@ package me.dougals.forage.data.nextcloud
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import me.dougals.forage.domain.nextcloud.CredentialStore
+import me.dougals.forage.domain.nextcloud.NextcloudCredentials
+import me.dougals.forage.domain.nextcloud.SyncStateStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.serialization.json.Json
@@ -27,23 +30,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 class NextcloudNotConfiguredException(cause: Throwable? = null) : Exception("Nextcloud is not configured", cause)
-
-/**
- * [appPassword] is a Nextcloud app password, never the account password. [fromLoginFlow] marks one the
- * server created for Forage, which is safe to revoke on disconnect; one the user pasted in may be shared.
- */
-data class NextcloudCredentials(
-    val serverUrl: String,
-    val username: String,
-    val appPassword: String,
-    val fromLoginFlow: Boolean = false,
-)
-
-interface CredentialStore {
-    fun get(): NextcloudCredentials?
-    fun save(credentials: NextcloudCredentials)
-    fun clear()
-}
 
 class PrefsCredentialStore(private val prefs: SharedPreferences) : CredentialStore {
     override fun get(): NextcloudCredentials? {
@@ -124,12 +110,6 @@ class RetrofitNextcloudApiProvider(
         cached = c to api
         return api
     }
-}
-
-interface SyncStateStore {
-    var lastModified: Long
-    /** Wall-clock time of the last successful pull, 0 if never. */
-    var lastSyncedAt: Long
 }
 
 class PrefsSyncStateStore(private val prefs: SharedPreferences) : SyncStateStore {

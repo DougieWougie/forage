@@ -16,14 +16,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import me.dougals.forage.data.xml.XmlParseException
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import me.dougals.forage.domain.opml.ImportResult
+import me.dougals.forage.domain.opml.OpmlExchange
 import me.dougals.forage.domain.repository.FeedRepository
 import java.io.InputStream
 
-data class ImportResult(val added: Int, val skipped: Int, val failed: Int)
-
 /** OPML import/export on top of [FeedRepository], so it works in both sync modes. */
-class OpmlTransfer(private val repo: FeedRepository) {
-    suspend fun import(input: InputStream): Result<ImportResult> {
+class OpmlTransfer(private val repo: FeedRepository) : OpmlExchange {
+    override suspend fun import(input: InputStream): Result<ImportResult> {
         val feeds = try {
             withContext(Dispatchers.IO) { Opml.parse(input) }
         } catch (e: XmlParseException) {
@@ -50,7 +50,7 @@ class OpmlTransfer(private val repo: FeedRepository) {
         return Result.success(ImportResult(added, skipped, failed))
     }
 
-    suspend fun export(): String {
+    override suspend fun export(): String {
         val folders = repo.observeFolders().first().associate { it.id to it.name }
         return Opml.export(repo.observeFeeds().first().map { OpmlFeed(it.title, it.url, it.folderId?.let(folders::get)) })
     }

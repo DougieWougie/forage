@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.auth
 
+import me.dougals.forage.domain.auth.SessionStore
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals

@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.auth
 
+import me.dougals.forage.domain.auth.SessionStore
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient

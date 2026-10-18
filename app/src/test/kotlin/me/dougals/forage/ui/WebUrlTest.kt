@@ -9,7 +9,7 @@
  * of the License, or (at your option) any later version. It is distributed WITHOUT ANY WARRANTY;
  * see the LICENSE file for details.
  */
-package me.dougals.forage.data.net
+package me.dougals.forage.ui
 
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

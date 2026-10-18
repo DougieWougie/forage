@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.dougals.forage.R
-import me.dougals.forage.data.opml.OpmlTransfer
+import me.dougals.forage.domain.opml.OpmlExchange
 import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.toUiText
 import me.dougals.forage.domain.model.Feed
@@ -65,7 +65,7 @@ fun buildCategories(folders: List<Folder>, feeds: List<Feed>): List<CategoryNode
 @HiltViewModel
 class CategoriesViewModel @Inject constructor(
     private val repo: FeedRepository,
-    private val opml: OpmlTransfer,
+    private val opml: OpmlExchange,
     private val settingsRepo: SettingsRepository,
     catalogue: SuggestionCatalogue,
 ) : ViewModel() {

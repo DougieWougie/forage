@@ -57,7 +57,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalContext
-import me.dougals.forage.data.net.Links
+import me.dougals.forage.ui.Links
 import me.dougals.forage.ui.openInBrowser
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
