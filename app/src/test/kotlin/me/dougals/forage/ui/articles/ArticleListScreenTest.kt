@@ -11,6 +11,8 @@
  */
 package me.dougals.forage.ui.articles
 
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -30,6 +32,7 @@ import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.articles.ArticleListState
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.presentation.articles.ListSource
+import me.dougals.forage.presentation.articles.ReadFilter
 import me.dougals.forage.testutil.article
 import me.dougals.forage.ui.theme.ForageTheme
 import org.junit.Assert.assertEquals
@@ -141,6 +144,46 @@ class ArticleListScreenTest {
         rule.mainClock.advanceTimeBy(10_000)
         rule.onNodeWithText("Refreshed").assertDoesNotExist()
         verify { vm.dismissMessage() }
+    }
+
+    // Read filter
+
+    private val feedList = list.copy(hasArticles = true)
+
+    @Test fun feedListsOfferAReadFilter() {
+        show(feedList, source = ListSource.Feed(10))
+        listOf("All", "Unread", "Read").forEach { rule.onNodeWithText(it).assertExists() }
+    }
+
+    @Test fun otherListsHaveNoReadFilter() {
+        show(feedList, source = ListSource.Saved)
+        rule.onNodeWithText("All").assertDoesNotExist()
+        rule.onNodeWithText("Read").assertDoesNotExist()
+    }
+
+    @Test fun anEmptyFeedHasNoReadFilter() {
+        show(ArticleListState(), source = ListSource.Feed(10))
+        rule.onNodeWithText("All").assertDoesNotExist()
+    }
+
+    @Test fun tappingAChipChoosesThatFilter() {
+        show(feedList, source = ListSource.Feed(10))
+        rule.onNodeWithText("Unread").performClick(); rule.waitForIdle()
+        rule.onNodeWithText("Read").performClick(); rule.waitForIdle()
+        verify { vm.setFilter(ReadFilter.UNREAD); vm.setFilter(ReadFilter.READ) }
+    }
+
+    @Test fun theChosenFilterIsSelected() {
+        show(feedList.copy(filter = ReadFilter.UNREAD), source = ListSource.Feed(10))
+        rule.onNodeWithText("Unread").assertIsSelected()
+        rule.onNodeWithText("All").assertIsNotSelected()
+    }
+
+    @Test fun aFilterMatchingNothingKeepsTheChipsAndSaysSo() {
+        show(ArticleListState(filter = ReadFilter.READ, hasArticles = true), source = ListSource.Feed(10))
+        rule.onNodeWithText("No articles match this filter.").assertExists()
+        rule.onNodeWithText("No articles").assertDoesNotExist()
+        rule.onNodeWithText("All").assertExists()
     }
 
     // Pull to refresh

@@ -47,8 +47,12 @@ sealed interface ListSource {
     }
 }
 
+enum class ReadFilter { ALL, UNREAD, READ }
+
 data class ArticleListState(
     val articles: List<Article> = emptyList(),
+    val filter: ReadFilter = ReadFilter.ALL,
+    val hasArticles: Boolean = false,
     val feedTitles: Map<Long, String> = emptyMap(),
     val isRefreshing: Boolean = false,
     val pullToRefresh: Boolean = true,
@@ -66,6 +70,7 @@ class ArticleListViewModel @Inject constructor(
     val source = ListSource.from(handle)
     private val refreshing = MutableStateFlow(false)
     private val message = MutableStateFlow<UiText?>(null)
+    private val filter = MutableStateFlow(ReadFilter.ALL)
 
     private val articles = when (source) {
         ListSource.Unread -> repo.observeUnread()
@@ -73,15 +78,31 @@ class ArticleListViewModel @Inject constructor(
         is ListSource.Feed -> repo.observeFeedArticles(source.feedId)
     }
 
+    private class Shown(val all: List<Article>, val shown: List<Article>, val filter: ReadFilter)
+
+    private val shownArticles = combine(articles, filter) { list, readFilter ->
+        Shown(
+            list,
+            when (readFilter) {
+                ReadFilter.ALL -> list
+                ReadFilter.UNREAD -> list.filterNot { it.isRead }
+                ReadFilter.READ -> list.filter { it.isRead }
+            },
+            readFilter,
+        )
+    }
+
     val state: StateFlow<ArticleListState> = combine(
-        articles, repo.observeFeeds().map { feeds -> feeds.associate { it.id to it.title } }, refreshing, message,
+        shownArticles, repo.observeFeeds().map { feeds -> feeds.associate { it.id to it.title } }, refreshing, message,
         settingsRepo.settings,
     ) { list, titles, isRefreshing, msg, settings ->
         ArticleListState(
-            list, titles, isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg,
+            list.shown, list.filter, list.all.isNotEmpty(), titles, isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
+
+    fun setFilter(value: ReadFilter) { filter.value = value }
 
     fun toggleRead(article: Article) { viewModelScope.launch { repo.setRead(article.id, !article.isRead) } }
     fun toggleSaved(article: Article) { viewModelScope.launch { repo.setSaved(article.id, !article.isSaved) } }
