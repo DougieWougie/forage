@@ -65,6 +65,8 @@ data class ArticleListState(
     val thumbnails: ThumbnailMode = ThumbnailMode.ALWAYS,
     val thumbnailSide: ThumbnailSide = ThumbnailSide.END,
     val message: UiText? = null,
+    /** Articles just bulk-marked read by "mark older as read", kept so the snackbar can undo it. */
+    val markedOlder: List<Long> = emptyList(),
 )
 
 @HiltViewModel
@@ -76,6 +78,7 @@ class ArticleListViewModel @Inject constructor(
     val source = ListSource.from(handle)
     private val refreshing = MutableStateFlow(false)
     private val message = MutableStateFlow<UiText?>(null)
+    private val markedOlder = MutableStateFlow<List<Long>>(emptyList())
     private val filter = MutableStateFlow(ReadFilter.ALL)
     private val folderChoice = MutableStateFlow<Set<Long>>(emptySet())
 
@@ -117,10 +120,10 @@ class ArticleListViewModel @Inject constructor(
         )
     }
 
-    val state: StateFlow<ArticleListState> = combine(shownArticles, refreshing, message, settingsRepo.settings) { list, isRefreshing, msg, settings ->
+    val state: StateFlow<ArticleListState> = combine(shownArticles, refreshing, message, settingsRepo.settings, markedOlder) { list, isRefreshing, msg, settings, marked ->
         ArticleListState(
             list.shown, list.filter, list.all.isNotEmpty(), list.folders, list.hasUncategorised, list.folderIds, list.titles,
-            isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg,
+            isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg, marked,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
@@ -136,6 +139,21 @@ class ArticleListViewModel @Inject constructor(
         val feeds = state.value.articles.map { it.feedId }.distinct()
         viewModelScope.launch { feeds.forEach { repo.markFeedRead(it) } }
     }
+
+    fun markOlderRead(article: Article) {
+        viewModelScope.launch {
+            val ids = repo.markOlderRead(article.id)
+            if (ids.isNotEmpty()) markedOlder.value = ids
+        }
+    }
+
+    fun undoMarkOlderRead() {
+        val ids = markedOlder.value
+        markedOlder.value = emptyList()
+        viewModelScope.launch { repo.setReadBatch(ids, false) }
+    }
+
+    fun dismissMarkedOlder() { markedOlder.value = emptyList() }
 
     fun refresh() {
         if (refreshing.value) return

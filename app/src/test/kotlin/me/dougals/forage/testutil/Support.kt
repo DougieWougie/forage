@@ -35,9 +35,9 @@ suspend fun <T> ReceiveTurbine<T>.awaitUntil(predicate: (T) -> Boolean): T {
     while (true) { val item = awaitItem(); if (predicate(item)) return item }
 }
 
-fun article(id: Long, read: Boolean = false, saved: Boolean = false, feedId: Long = 1) = Article(
+fun article(id: Long, read: Boolean = false, saved: Boolean = false, feedId: Long = 1, publishedAt: Long = 0) = Article(
     id = id, feedId = feedId, guid = "g$id", title = "Title $id", url = "https://example.com/$id",
-    author = null, summary = null, contentHtml = null, publishedAt = 0, isRead = read, isSaved = saved, offlineHtml = null,
+    author = null, summary = null, contentHtml = null, publishedAt = publishedAt, isRead = read, isSaved = saved, offlineHtml = null,
 )
 
 class MemCredentialStore(var value: NextcloudCredentials? = null) : CredentialStore {

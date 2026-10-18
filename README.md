@@ -10,6 +10,7 @@ Local-first, no accounts, no tracking.
 - **Feeds:** RSS 2.0, RDF and Atom. OPML import and export. Folders.
 - **Suggested feeds:** a bundled, UK-leaning catalogue of technology and Linux feeds (`app/src/main/assets/suggestions.json`), ranked on-device by what you already follow. Nothing is sent anywhere.
 - **Swipe cards:** swipe right to toggle read, left to toggle saved, with haptics.
+- **Mark older as read:** long-press a card to mark every older unread article in the same feed as read, with an undo snackbar.
 - **Tabs:** Unread, Categories, Saved, Settings.
 - **Reader:** Serif, Sans or OpenDyslexic (reader only) with adjustable text size. Scripts are off and
   images are fetched by the app, not the page.

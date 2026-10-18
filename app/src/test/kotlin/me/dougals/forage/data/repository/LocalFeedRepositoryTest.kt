@@ -49,6 +49,21 @@ class LocalFeedRepositoryTest : DbTestBase() {
         assertEquals(2, repo.observeUnread().first().size)
     }
 
+    @Test fun markOlderReadAndUndoCoverMoreArticlesThanOneSqlStatementTakes() = runTest {
+        val feedId = db.feedDao().insert(me.dougals.forage.data.local.FeedEntity(url = "https://a/feed", title = "A"))
+        val count = 1_200
+        db.articleDao().insertIgnore((1..count).map { article(feedId, "g$it", publishedAt = it.toLong()) })
+        val newest = db.articleDao().getByFeedAndGuid(feedId, "g$count")!!.id
+
+        val marked = repo.markOlderRead(newest)
+
+        assertEquals(count - 1, marked.size)
+        assertEquals(listOf(newest), repo.observeUnread().first().map { it.id })
+
+        repo.setReadBatch(marked, false)
+        assertEquals(count, repo.observeUnread().first().size)
+    }
+
     @Test fun addFeedFileUnderFolder() = runTest {
         source.feeds["https://a/feed"] = parsed("A")
         val folder = repo.createFolder("Tech").getOrThrow()

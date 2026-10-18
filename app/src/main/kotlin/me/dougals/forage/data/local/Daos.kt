@@ -74,6 +74,13 @@ interface ArticleDao {
     @Query("UPDATE articles SET isSaved = :saved WHERE id = :id") suspend fun setSaved(id: Long, saved: Boolean)
     @Query("UPDATE articles SET offlineHtml = :html WHERE id = :id") suspend fun saveOfflineHtml(id: Long, html: String)
     @Query("UPDATE articles SET isRead = 1 WHERE feedId = :feedId") suspend fun markFeedRead(feedId: Long)
+    /** Unread articles in the same feed as [articleId] that were published before it. */
+    @Query(
+        "SELECT id FROM articles WHERE isRead = 0 AND feedId = (SELECT feedId FROM articles WHERE id = :articleId) " +
+            "AND publishedAt < (SELECT publishedAt FROM articles WHERE id = :articleId)",
+    )
+    suspend fun unreadIdsOlderThan(articleId: Long): List<Long>
+    @Query("UPDATE articles SET isRead = :read WHERE id IN (:ids)") suspend fun setReadIn(ids: List<Long>, read: Boolean)
 }
 
 @Dao

@@ -45,5 +45,7 @@ class ModeAwareFeedRepository(
     override suspend fun setRead(articleId: Long, read: Boolean) = current().setRead(articleId, read)
     override suspend fun setSaved(articleId: Long, saved: Boolean) = current().setSaved(articleId, saved)
     override suspend fun markFeedRead(feedId: Long) = current().markFeedRead(feedId)
+    override suspend fun markOlderRead(articleId: Long) = current().markOlderRead(articleId)
+    override suspend fun setReadBatch(articleIds: List<Long>, read: Boolean) = current().setReadBatch(articleIds, read)
     override suspend fun refresh() = current().refresh()
 }

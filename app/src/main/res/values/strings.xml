@@ -29,6 +29,13 @@
     <string name="action_connect">Connect</string>
     <string name="action_mark_all_read">Mark all as read</string>
     <string name="action_mark_read">Mark read</string>
+    <string name="action_mark_older_read">Mark older as read</string>
+    <string name="action_undo">Undo</string>
+    <string name="dialog_mark_older_read">Mark every older unread article in this feed as read?</string>
+    <plurals name="articles_marked_read">
+        <item quantity="one">%d article marked read</item>
+        <item quantity="other">%d articles marked read</item>
+    </plurals>
     <string name="action_mark_unread">Mark unread</string>
     <string name="action_save">Save</string>
     <string name="action_remove_saved">Remove from saved</string>
