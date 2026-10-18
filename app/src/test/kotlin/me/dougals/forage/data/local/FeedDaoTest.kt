@@ -30,7 +30,7 @@ class FeedDaoTest : DbTestBase() {
 
     @Test fun deletingFeedCascadesToArticles() = runTest {
         val feed = newFeed()
-        db.articleDao().insertIgnore(listOf(article(feed, "a")))
+        db.articleDao().insertIgnore(listOf(articleEntity(feed, "a")))
         db.feedDao().delete(feed)
         assertEquals(emptyList<ArticleEntity>(), db.articleDao().observeUnread().first())
     }

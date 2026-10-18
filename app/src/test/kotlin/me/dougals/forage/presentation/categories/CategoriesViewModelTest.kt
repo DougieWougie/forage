@@ -26,13 +26,13 @@ import me.dougals.forage.domain.repository.SettingsRepository
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.opml.ImportResult
 import me.dougals.forage.domain.opml.OpmlExchange
-import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.FeedSuggestion
 import me.dougals.forage.domain.suggest.SuggestionCatalogue
 import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
 import me.dougals.forage.testutil.awaitUntil
+import me.dougals.forage.testutil.feed
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -42,7 +42,6 @@ import java.io.ByteArrayInputStream
 class CategoriesViewModelTest {
     @JvmField @RegisterExtension val main = MainDispatcherExtension()
 
-    private fun feed(id: Long, title: String, folder: Long? = null) = Feed(id, "https://f/$id", title, null, folder, 0)
 
     @Test fun treeSortsFoldersAndFeedsKeepsEmptyFoldersAndUncategorizedLast() {
         val tree = buildCategories(

@@ -33,7 +33,7 @@ class OfflineArchiverTest : DbTestBase() {
 
     private suspend fun savedArticle(): Long {
         val feed = newFeed()
-        return db.articleDao().insertIgnore(listOf(article(feed, "a", isSaved = true))).single()
+        return db.articleDao().insertIgnore(listOf(articleEntity(feed, "a", isSaved = true))).single()
     }
 
     @Test fun fetchesArticleUrlExtractsAndStoresCleanHtml() = runTest {

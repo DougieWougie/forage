@@ -23,7 +23,7 @@ class PendingChangeDaoTest : DbTestBase() {
 
     private suspend fun articleId(): Long {
         val feed = newFeed()
-        return db.articleDao().insertIgnore(listOf(article(feed, "a"))).single()
+        return db.articleDao().insertIgnore(listOf(articleEntity(feed, "a"))).single()
     }
 
     @Test fun laterToggleOfSameFieldReplacesEarlier() = runTest {
@@ -44,7 +44,7 @@ class PendingChangeDaoTest : DbTestBase() {
 
     @Test fun getAllIsOldestFirst() = runTest {
         val feed = newFeed()
-        val ids = db.articleDao().insertIgnore(listOf(article(feed, "a"), article(feed, "b")))
+        val ids = db.articleDao().insertIgnore(listOf(articleEntity(feed, "a"), articleEntity(feed, "b")))
         dao.enqueue(PendingChangeEntity(ids[1], SyncField.READ, true, createdAt = 5))
         dao.enqueue(PendingChangeEntity(ids[0], SyncField.READ, true, createdAt = 2))
         assertEquals(listOf(ids[0], ids[1]), dao.getAll().map { it.articleId })

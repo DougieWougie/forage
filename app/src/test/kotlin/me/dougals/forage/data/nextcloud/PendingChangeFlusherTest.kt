@@ -30,7 +30,7 @@ class PendingChangeFlusherTest : DbTestBase() {
     private suspend fun articles(vararg remoteIds: Long?): List<Long> {
         val feed = newFeed()
         return db.articleDao().insertIgnore(
-            remoteIds.mapIndexed { i, r -> article(feed, "g$i").copy(remoteId = r) },
+            remoteIds.mapIndexed { i, r -> articleEntity(feed, "g$i").copy(remoteId = r) },
         )
     }
 

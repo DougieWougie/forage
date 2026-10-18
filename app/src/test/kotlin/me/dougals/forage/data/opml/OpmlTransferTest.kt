@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.testutil.feed
 import me.dougals.forage.domain.repository.FeedRepository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -30,12 +31,11 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class OpmlTransferTest {
     private val repo = mockk<FeedRepository>(relaxed = true)
-    private fun feed(id: Long, url: String, title: String = "t", folder: Long? = null) = Feed(id, url, title, null, folder, 0)
 
-    private fun setup(folders: List<Folder> = listOf(Folder(1, "Tech")), feeds: List<Feed> = listOf(feed(1, "https://existing"))) {
+    private fun setup(folders: List<Folder> = listOf(Folder(1, "Tech")), feeds: List<Feed> = listOf(feed(1, url = "https://existing"))) {
         every { repo.observeFolders() } returns flowOf(folders)
         every { repo.observeFeeds() } returns flowOf(feeds)
-        coEvery { repo.addFeed(any(), any()) } returns Result.success(feed(99, "x"))
+        coEvery { repo.addFeed(any(), any()) } returns Result.success(feed(99))
         coEvery { repo.createFolder("News") } returns Result.success(Folder(10, "News"))
     }
 
@@ -76,7 +76,7 @@ class OpmlTransferTest {
     }
 
     @Test fun exportGroupsByFolderAndRoundTrips() = runTest {
-        setup(feeds = listOf(feed(1, "https://lwn.net/rss", "LWN", folder = 1), feed(2, "https://loose/rss", "Loose")))
+        setup(feeds = listOf(feed(1, "LWN", 1, url = "https://lwn.net/rss"), feed(2, "Loose", url = "https://loose/rss")))
         val xml = OpmlTransfer(repo).export()
         assertEquals(
             listOf(OpmlFeed("LWN", "https://lwn.net/rss", "Tech"), OpmlFeed("Loose", "https://loose/rss", null)),

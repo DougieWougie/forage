@@ -32,7 +32,7 @@ abstract class DbTestBase {
     protected suspend fun newFeed(url: String = "https://example.com/feed", folderId: Long? = null): Long =
         db.feedDao().insert(FeedEntity(url = url, title = "Feed", folderId = folderId))
 
-    protected fun article(
+    protected fun articleEntity(
         feedId: Long,
         guid: String,
         publishedAt: Long = 0,
