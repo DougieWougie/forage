@@ -50,6 +50,11 @@ sealed interface ListSource {
 
 enum class ReadFilter { ALL, UNREAD, READ }
 
+/** A read or saved toggle just made on [articleId], now [value], kept so the snackbar can flip it back. */
+data class ToggleUndo(val articleId: Long, val field: Field, val value: Boolean) {
+    enum class Field { READ, SAVED }
+}
+
 data class ArticleListState(
     val articles: List<Article> = emptyList(),
     val filter: ReadFilter = ReadFilter.ALL,
@@ -67,6 +72,7 @@ data class ArticleListState(
     val message: UiText? = null,
     /** Articles just bulk-marked read by "mark older as read", kept so the snackbar can undo it. */
     val markedOlder: List<Long> = emptyList(),
+    val toggled: ToggleUndo? = null,
 )
 
 @HiltViewModel
@@ -79,6 +85,7 @@ class ArticleListViewModel @Inject constructor(
     private val refreshing = MutableStateFlow(false)
     private val message = MutableStateFlow<UiText?>(null)
     private val markedOlder = MutableStateFlow<List<Long>>(emptyList())
+    private val toggled = MutableStateFlow<ToggleUndo?>(null)
     private val filter = MutableStateFlow(ReadFilter.ALL)
     private val folderChoice = MutableStateFlow<Set<Long>>(emptySet())
 
@@ -120,10 +127,12 @@ class ArticleListViewModel @Inject constructor(
         )
     }
 
-    val state: StateFlow<ArticleListState> = combine(shownArticles, refreshing, message, settingsRepo.settings, markedOlder) { list, isRefreshing, msg, settings, marked ->
+    private val undos = combine(markedOlder, toggled) { marked, toggle -> marked to toggle }
+
+    val state: StateFlow<ArticleListState> = combine(shownArticles, refreshing, message, settingsRepo.settings, undos) { list, isRefreshing, msg, settings, (marked, toggle) ->
         ArticleListState(
             list.shown, list.filter, list.all.isNotEmpty(), list.folders, list.hasUncategorised, list.folderIds, list.titles,
-            isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg, marked,
+            isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg, marked, toggle,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
@@ -132,8 +141,30 @@ class ArticleListViewModel @Inject constructor(
     fun toggleFolder(id: Long) { folderChoice.update { if (id in it) it - id else it + id } }
     fun clearFolders() { folderChoice.value = emptySet() }
 
-    fun toggleRead(article: Article) { viewModelScope.launch { repo.setRead(article.id, !article.isRead) } }
-    fun toggleSaved(article: Article) { viewModelScope.launch { repo.setSaved(article.id, !article.isSaved) } }
+    fun toggleRead(article: Article) {
+        val now = !article.isRead
+        toggled.value = ToggleUndo(article.id, ToggleUndo.Field.READ, now)
+        viewModelScope.launch { repo.setRead(article.id, now) }
+    }
+
+    fun toggleSaved(article: Article) {
+        val now = !article.isSaved
+        toggled.value = ToggleUndo(article.id, ToggleUndo.Field.SAVED, now)
+        viewModelScope.launch { repo.setSaved(article.id, now) }
+    }
+
+    fun undoToggle() {
+        val undo = toggled.value ?: return
+        toggled.value = null
+        viewModelScope.launch {
+            when (undo.field) {
+                ToggleUndo.Field.READ -> repo.setRead(undo.articleId, !undo.value)
+                ToggleUndo.Field.SAVED -> repo.setSaved(undo.articleId, !undo.value)
+            }
+        }
+    }
+
+    fun dismissToggle() { toggled.value = null }
 
     fun markAllRead() {
         val feeds = state.value.articles.map { it.feedId }.distinct()

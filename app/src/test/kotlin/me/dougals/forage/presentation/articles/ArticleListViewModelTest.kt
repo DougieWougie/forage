@@ -138,6 +138,46 @@ class ArticleListViewModelTest {
         coVerify { repo.setSaved(1, true); repo.setSaved(2, false) }
     }
 
+    @Test fun undoingAReadSwipeFlipsItBack() = runTest {
+        every { repo.observeUnread() } returns flowOf(listOf(article(1)))
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitItem()
+            v.toggleRead(article(1, read = false))
+            assertEquals(ToggleUndo(1, ToggleUndo.Field.READ, true), awaitUntil { it.toggled != null }.toggled)
+            v.undoToggle()
+            awaitUntil { it.toggled == null }
+        }
+        coVerify(exactly = 1) { repo.setRead(1, true); repo.setRead(1, false) }
+    }
+
+    @Test fun undoingASavedSwipeFlipsItBack() = runTest {
+        every { repo.observeUnread() } returns flowOf(listOf(article(1)))
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitItem()
+            v.toggleSaved(article(1, saved = true))
+            assertEquals(ToggleUndo(1, ToggleUndo.Field.SAVED, false), awaitUntil { it.toggled != null }.toggled)
+            v.undoToggle()
+            awaitUntil { it.toggled == null }
+        }
+        coVerify(exactly = 1) { repo.setSaved(1, false); repo.setSaved(1, true) }
+    }
+
+    @Test fun dismissingAToggleForgetsItWithoutTouchingTheRepository() = runTest {
+        every { repo.observeUnread() } returns flowOf(listOf(article(1)))
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitItem()
+            v.toggleRead(article(1))
+            awaitUntil { it.toggled != null }
+            v.dismissToggle()
+            awaitUntil { it.toggled == null }
+        }
+        coVerify(exactly = 1) { repo.setRead(1, true) }
+        coVerify(exactly = 0) { repo.setRead(1, false) }
+    }
+
     @Test fun refreshShowsSpinnerThenSurfacesFailure() = runTest {
         val gate = CompletableDeferred<Result<me.dougals.forage.domain.model.SyncReport>>()
         every { repo.observeUnread() } returns flowOf(emptyList())
