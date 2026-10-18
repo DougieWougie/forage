@@ -19,10 +19,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -116,6 +118,23 @@ fun ArticleListScreen(
                                 )
                             },
                         )
+                    }
+                }
+            }
+            if (vm.source == ListSource.Unread && state.folders.size + (if (state.hasUncategorised) 1 else 0) >= 2) {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item { FilterChip(selected = state.folderIds.isEmpty(), onClick = vm::clearFolders, label = { Text(stringResource(R.string.filter_all)) }) }
+                    items(state.folders, key = { it.id }) { f ->
+                        FilterChip(selected = f.id in state.folderIds, onClick = { vm.toggleFolder(f.id) }, label = { Text(f.name) })
+                    }
+                    if (state.hasUncategorised) {
+                        item {
+                            FilterChip(
+                                selected = ArticleListViewModel.UNCATEGORISED in state.folderIds,
+                                onClick = { vm.toggleFolder(ArticleListViewModel.UNCATEGORISED) },
+                                label = { Text(stringResource(R.string.filter_uncategorised)) },
+                            )
+                        }
                     }
                 }
             }

@@ -27,6 +27,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.articles.ArticleListState
@@ -184,6 +185,52 @@ class ArticleListScreenTest {
         rule.onNodeWithText("No articles match this filter.").assertExists()
         rule.onNodeWithText("No articles").assertDoesNotExist()
         rule.onNodeWithText("All").assertExists()
+    }
+
+    // Category filter
+
+    private val categorised = list.copy(folders = listOf(Folder(1, "Tech"), Folder(2, "News")), hasArticles = true)
+
+    @Test fun theUnreadListOffersCategoryChips() {
+        show(categorised.copy(hasUncategorised = true))
+        listOf("All", "Tech", "News", "Uncategorised").forEach { rule.onNodeWithText(it).assertExists() }
+    }
+
+    @Test fun oneCategoryIsNotWorthAChip() {
+        show(categorised.copy(folders = listOf(Folder(1, "Tech"))))
+        rule.onNodeWithText("Tech").assertDoesNotExist()
+    }
+
+    @Test fun savedListsHaveNoCategoryChips() {
+        show(categorised, source = ListSource.Saved)
+        rule.onNodeWithText("Tech").assertDoesNotExist()
+    }
+
+    @Test fun feedListsHaveNoCategoryChips() {
+        show(categorised, source = ListSource.Feed(10))
+        rule.onNodeWithText("Tech").assertDoesNotExist()
+    }
+
+    @Test fun tappingACategoryTogglesIt() {
+        show(categorised.copy(hasUncategorised = true))
+        rule.onNodeWithText("News").performClick(); rule.waitForIdle()
+        rule.onNodeWithText("Uncategorised").performClick(); rule.waitForIdle()
+        rule.onNodeWithText("All").performClick(); rule.waitForIdle()
+        verify { vm.toggleFolder(2); vm.toggleFolder(ArticleListViewModel.UNCATEGORISED); vm.clearFolders() }
+    }
+
+    @Test fun everyChosenCategoryIsSelected() {
+        show(categorised.copy(hasUncategorised = true, folderIds = setOf(1, 2)))
+        rule.onNodeWithText("News").assertIsSelected()
+        rule.onNodeWithText("Tech").assertIsSelected()
+        rule.onNodeWithText("Uncategorised").assertIsNotSelected()
+        rule.onNodeWithText("All").assertIsNotSelected()
+    }
+
+    @Test fun allIsSelectedWhenNoCategoryIs() {
+        show(categorised)
+        rule.onNodeWithText("All").assertIsSelected()
+        rule.onNodeWithText("Tech").assertIsNotSelected()
     }
 
     // Pull to refresh
