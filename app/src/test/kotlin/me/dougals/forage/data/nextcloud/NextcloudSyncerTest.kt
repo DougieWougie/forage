@@ -12,6 +12,7 @@
 package me.dougals.forage.data.nextcloud
 
 import kotlinx.coroutines.test.runTest
+import me.dougals.forage.data.local.ArticleEntity
 import me.dougals.forage.data.local.DbTestBase
 import me.dougals.forage.data.local.FeedEntity
 import me.dougals.forage.data.local.FolderEntity
@@ -228,5 +229,44 @@ class NextcloudSyncerTest : DbTestBase() {
         assertEquals(1, r.markedRead)
         assertEquals(1, r.saved)
         assertEquals(0, r.newArticles)
+    }
+
+    @Test fun localOnlyFolderWithADifferentNameIsKept() = runTest {
+        val mine = db.folderDao().insert(FolderEntity(name = "Mine"))
+        serverWithOneFeed()
+        syncer.pull()
+        assertNull(db.folderDao().getById(mine)!!.remoteId)
+        assertEquals(setOf("Mine", "Tech"), db.folderDao().getAll().map { it.name }.toSet())
+    }
+
+    @Test fun feedWithoutALinkKeepsTheSiteItHad() = runTest {
+        api.feedList += FeedDto(10, "https://lwn.net/rss", "LWN", link = "https://lwn.net/")
+        syncer.pull()
+        api.feedList[0] = api.feedList[0].copy(link = null)
+        syncer.pull()
+        assertEquals("https://lwn.net/", db.feedDao().getAll().single().siteUrl)
+    }
+
+    @Test fun localStateThatAlreadyMatchesTheServerIsNotQueued() = runTest {
+        serverWithOneFeed()
+        syncer.pull()
+        val feed = db.feedDao().getAll().single()
+        db.articleDao().insertIgnore(
+            listOf(ArticleEntity(feedId = feed.id, guid = "guid-1", title = "t", url = "u", publishedAt = 0, isRead = true, isSaved = true)),
+        )
+        api.itemList += item(1, 10, unread = false, starred = true)
+        syncer.pull()
+        assertEquals(emptyList<Any>(), db.pendingChangeDao().getAll())
+        assertEquals(1L, db.articleDao().getAll().single().remoteId)
+    }
+
+    @Test fun itemsWithoutTitleLinkOrDateAreStoredWithBlanks() = runTest {
+        serverWithOneFeed()
+        api.itemList += item(1, 10).copy(title = null, url = null, pubDate = null)
+        syncer.pull()
+        val a = db.articleDao().getByRemoteId(1)!!
+        assertEquals("", a.title)
+        assertEquals("", a.url)
+        assertEquals(0L, a.publishedAt)
     }
 }

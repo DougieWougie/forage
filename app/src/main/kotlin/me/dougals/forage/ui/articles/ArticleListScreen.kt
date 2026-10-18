@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +55,7 @@ import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.ui.rememberMeteredConnection
 import me.dougals.forage.presentation.articles.ListSource
+import me.dougals.forage.presentation.articles.ReadFilter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,8 +98,29 @@ fun ArticleListScreen(
         },
     ) { inner ->
         val content: @Composable () -> Unit = {
+            Column(Modifier.fillMaxSize()) {
+            if (vm.source is ListSource.Feed && state.hasArticles) {
+                Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ReadFilter.entries.forEach { f ->
+                        FilterChip(
+                            selected = state.filter == f, onClick = { vm.setFilter(f) },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        when (f) {
+                                            ReadFilter.ALL -> R.string.filter_all
+                                            ReadFilter.UNREAD -> R.string.filter_unread
+                                            ReadFilter.READ -> R.string.filter_read
+                                        },
+                                    ),
+                                )
+                            },
+                        )
+                    }
+                }
+            }
             if (state.articles.isEmpty()) {
-                EmptyState(vm.source, state.pullToRefresh)
+                if (state.hasArticles) FilterEmptyState() else EmptyState(vm.source, state.pullToRefresh)
             } else {
                 val metered = rememberMeteredConnection()
                 LazyColumn(Modifier.fillMaxSize()) {
@@ -115,6 +139,7 @@ fun ArticleListScreen(
                     }
                 }
             }
+            }
         }
         if (state.pullToRefresh) {
             PullToRefreshBox(
@@ -125,6 +150,13 @@ fun ArticleListScreen(
         } else {
             Box(Modifier.padding(inner).fillMaxSize()) { content() }
         }
+    }
+}
+
+@Composable
+private fun FilterEmptyState() {
+    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp), contentAlignment = Alignment.Center) {
+        Text(stringResource(R.string.empty_filter), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

@@ -69,6 +69,18 @@ class ArticleListViewModelTest {
         vm("source" to "feed", "feedId" to 3L).state.test { assertEquals(listOf(4L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id }) }
     }
 
+    @Test fun feedSourceFiltersByReadState() = runTest {
+        every { repo.observeFeedArticles(3) } returns flowOf(listOf(article(1), article(2, read = true)))
+        val vm = vm("source" to "feed", "feedId" to 3L)
+        vm.state.test {
+            assertEquals(listOf(1L, 2L), awaitUntil { it.articles.size == 2 }.articles.map { it.id })
+            vm.setFilter(ReadFilter.UNREAD)
+            assertEquals(listOf(1L), awaitUntil { it.filter == ReadFilter.UNREAD }.articles.map { it.id })
+            vm.setFilter(ReadFilter.READ)
+            awaitUntil { it.filter == ReadFilter.READ }.let { assertEquals(listOf(2L), it.articles.map { a -> a.id }); assertEquals(true, it.hasArticles) }
+        }
+    }
+
     @Test fun thumbnailModeFollowsTheSetting() = runTest {
         every { repo.observeUnread() } returns MutableStateFlow(listOf(article(1)))
         vm("source" to "unread").state.test {

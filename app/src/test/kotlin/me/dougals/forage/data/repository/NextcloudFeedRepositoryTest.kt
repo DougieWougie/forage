@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.repository
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.data.local.DbTestBase
@@ -131,6 +132,16 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
         assertEquals("https://new/feed", feed.url)
         assertEquals(folder.id, feed.folderId)
         assertNotNull(db.articleDao().getByRemoteId(1))
+    }
+
+    @Test fun addFeedToALocalOnlyFolderCreatesTheFolderOnTheServerFirst() = runTest {
+        val mine = db.folderDao().insert(FolderEntity(name = "Mine"))
+
+        val feed = repo.addFeed("https://new/feed", mine).getOrThrow()
+
+        assertEquals(listOf("folders", "createFolder", "createFeed:https://new/feed:100"), api.calls.take(3))
+        assertEquals(100L, db.folderDao().getById(mine)!!.remoteId)
+        assertEquals(mine, feed.folderId)
     }
 
     @Test fun addFeedFailureLeavesNothingLocal() = runTest {
@@ -333,5 +344,63 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
     @Test fun nothingToDoGivesAnEmptyReport() = runTest {
         syncedArticle()
         assertEquals(SyncReport(), repo.refresh().getOrThrow())
+    }
+
+    @Test fun refreshFailsWhenStateQueuedByThePullCannotBeSent() = runTest {
+        val feedId = localFeed()
+        db.articleDao().insertIgnore(
+            listOf(me.dougals.forage.data.local.ArticleEntity(feedId = feedId, guid = "guid-1", title = "t", url = "u", publishedAt = 0, isRead = true)),
+        )
+        api.itemList += item(1, 100)
+        api.failOn = setOf("markRead") // nothing is queued before the pull, so only the flush after it sends
+        assertTrue(repo.refresh().isFailure)
+        assertTrue("folders" in api.calls)
+        assertEquals(1, db.pendingChangeDao().getAll().size)
+    }
+
+    // --- things that never reached the server, and cancellation ---
+
+    @Test fun cancellationIsRethrownNotReportedAsAFailure() = runTest {
+        val cancelling = NextcloudFeedRepository(
+            db, { throw CancellationException("left the screen") }, PendingChangeFlusher(db, provider),
+            NextcloudSyncer(db, provider, MemSyncState(), schedulers), schedulers, schedulers,
+        )
+        val thrown = runCatching { cancelling.createFolder("Tech") }.exceptionOrNull()
+        assertTrue(thrown is CancellationException)
+    }
+
+    @Test fun removingALocalOnlyFeedDoesNotCallTheServer() = runTest {
+        val feedId = localFeed()
+        assertTrue(repo.removeFeed(feedId).isSuccess)
+        assertEquals(emptyList<String>(), api.calls)
+        assertNull(db.feedDao().getById(feedId))
+    }
+
+    @Test fun deletingALocalOnlyFolderDoesNotCallTheServer() = runTest {
+        val folderId = db.folderDao().insert(FolderEntity(name = "Mine"))
+        assertTrue(repo.deleteFolder(folderId).isSuccess)
+        assertEquals(emptyList<String>(), api.calls)
+        assertEquals(0, db.folderDao().getAll().size)
+    }
+
+    @Test fun deletingAFolderOnlyMovesFeedsTheServerKnows() = runTest {
+        val tech = repo.createFolder("Tech").getOrThrow()
+        localFeed(folderId = tech.id)
+        api.calls.clear()
+        assertTrue(repo.deleteFolder(tech.id).isSuccess)
+        assertEquals(listOf("deleteFolder:100"), api.calls)
+    }
+
+    @Test fun movingAMissingFeedFails() = runTest {
+        assertTrue(repo.moveFeed(42, null).isFailure)
+        assertEquals(emptyList<String>(), api.calls)
+    }
+
+    @Test fun addFeedFindsTheNewFeedAmongExistingOnes() = runTest {
+        syncedArticle()
+        val feed = repo.addFeed("  https://new/feed  ").getOrThrow()
+        assertTrue("createFeed:https://new/feed:null" in api.calls)
+        assertEquals("https://new/feed", feed.url)
+        assertEquals(2, db.feedDao().getAll().size)
     }
 }

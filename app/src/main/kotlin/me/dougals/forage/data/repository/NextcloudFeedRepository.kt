@@ -83,8 +83,9 @@ class NextcloudFeedRepository(
     }
 
     override suspend fun addFeed(url: String, folderId: Long?): Result<Feed> = attempt {
-        val remoteFolder = folderId?.let { db.folderDao().getById(it)?.remoteId }
-        val created = apiProvider.api().createFeed(CreateFeedRequest(url.trim(), remoteFolder)).feeds.first()
+        val api = apiProvider.api()
+        val remoteFolder = folderId?.let { remoteFolderId(api, it) }
+        val created = api.createFeed(CreateFeedRequest(url.trim(), remoteFolder)).feeds.first()
         refresh().getOrThrow()
         val local = db.feedDao().getAll().first { it.remoteId == created.id }
         feedWithCount(local.id)!!
