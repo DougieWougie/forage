@@ -84,6 +84,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
+import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.settings.SettingsViewModel
@@ -170,6 +171,33 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                         )
                     }
                     Switch(state.settings.pullToRefresh, vm::setPullToRefresh)
+                }
+            }
+            item {
+                Text(stringResource(R.string.background_refresh), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.background_refresh_body),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RefreshInterval.entries.forEach { interval ->
+                        FilterChip(
+                            state.settings.refreshInterval == interval, { vm.setRefreshInterval(interval) },
+                            label = { Text(stringResource(refreshIntervalLabel(interval))) },
+                        )
+                    }
+                }
+            }
+            if (state.settings.refreshInterval != RefreshInterval.OFF) item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.refresh_wifi_only), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            stringResource(R.string.refresh_wifi_only_body),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(state.settings.refreshWifiOnly, vm::setRefreshWifiOnly)
                 }
             }
             item { Section(stringResource(R.string.section_sync)) }
@@ -330,4 +358,12 @@ private fun lastSyncedLabel(at: Long?): String {
         at, now, android.text.format.DateUtils.MINUTE_IN_MILLIS,
     ).toString().replaceFirstChar { it.lowercase() }
     return stringResource(R.string.last_synced_relative, ago)
+}
+
+private fun refreshIntervalLabel(interval: RefreshInterval) = when (interval) {
+    RefreshInterval.OFF -> R.string.refresh_off
+    RefreshInterval.HOURLY -> R.string.refresh_1h
+    RefreshInterval.EVERY_3_HOURS -> R.string.refresh_3h
+    RefreshInterval.EVERY_6_HOURS -> R.string.refresh_6h
+    RefreshInterval.EVERY_12_HOURS -> R.string.refresh_12h
 }

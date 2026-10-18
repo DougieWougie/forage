@@ -29,6 +29,7 @@ import dagger.assisted.AssistedInject
 import me.dougals.forage.data.content.OfflineArchiver
 import me.dougals.forage.data.nextcloud.NextcloudNotConfiguredException
 import me.dougals.forage.data.nextcloud.PendingChangeFlusher
+import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.repository.FeedRepository
 import java.util.concurrent.TimeUnit
 
@@ -57,13 +58,24 @@ class WorkManagerSchedulers(context: Context) : SyncScheduler, ArchiveScheduler 
         wm.enqueueUniqueWork("archive-$articleId", ExistingWorkPolicy.KEEP, request)
     }
 
-    /** Hourly background refresh; WorkManager's own minimum is 15 minutes. */
-    fun schedulePeriodicRefresh() {
-        val request = PeriodicWorkRequestBuilder<RefreshWorker>(1, TimeUnit.HOURS).setConstraints(online).build()
-        wm.enqueueUniquePeriodicWork("periodic-refresh", ExistingPeriodicWorkPolicy.KEEP, request)
+    /** Applies the chosen background refresh: cancels it for [RefreshInterval.OFF], otherwise (re)schedules it. */
+    fun schedulePeriodicRefresh(interval: RefreshInterval, wifiOnly: Boolean) {
+        if (interval == RefreshInterval.OFF) {
+            wm.cancelUniqueWork(PERIODIC_REFRESH_WORK)
+            return
+        }
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED)
+            .build()
+        val request = PeriodicWorkRequestBuilder<RefreshWorker>(interval.hours, TimeUnit.HOURS).setConstraints(constraints).build()
+        // UPDATE keeps the existing schedule's timing where it can, so re-applying unchanged settings at launch is harmless.
+        wm.enqueueUniquePeriodicWork(PERIODIC_REFRESH_WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 
-    private companion object { const val FLUSH_WORK = "nextcloud-flush" }
+    private companion object {
+        const val FLUSH_WORK = "nextcloud-flush"
+        const val PERIODIC_REFRESH_WORK = "periodic-refresh"
+    }
 }
 
 @HiltWorker
@@ -110,5 +122,16 @@ class RefreshWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val repo: FeedRepository,
 ) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result = if (repo.refresh().isSuccess) Result.success() else Result.retry()
+    override suspend fun doWork(): Result {
+        val outcome = repo.refresh()
+        return when {
+            outcome.isSuccess -> Result.success()
+            // Nothing to retry until the user connects; the next period tries again.
+            outcome.exceptionOrNull() is NextcloudNotConfiguredException -> Result.failure()
+            runAttemptCount >= MAX_ATTEMPTS -> Result.failure()
+            else -> Result.retry()
+        }
+    }
+
+    private companion object { const val MAX_ATTEMPTS = 3 }
 }

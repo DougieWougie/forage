@@ -35,6 +35,7 @@ import me.dougals.forage.domain.nextcloud.SyncStateStore
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
+import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.repository.FeedRepository
@@ -195,6 +196,8 @@ class SettingsViewModel @Inject constructor(
     fun reloadSessions() { ui.update { it.copy(sessionDomains = sessions.domains()) }; refreshLastSynced() }
     fun setAllowLocalNetwork(allow: Boolean) = change { setAllowLocalNetwork(allow) }
     fun setPullToRefresh(enabled: Boolean) = change { setPullToRefresh(enabled) }
+    fun setRefreshInterval(interval: RefreshInterval) = change { setRefreshInterval(interval) }
+    fun setRefreshWifiOnly(wifiOnly: Boolean) = change { setRefreshWifiOnly(wifiOnly) }
     fun setThumbnails(mode: ThumbnailMode) = change { setThumbnails(mode) }
     fun setThumbnailSide(side: ThumbnailSide) = change { setThumbnailSide(side) }
     fun setFont(font: ReaderFont) = change { setReaderFont(font) }

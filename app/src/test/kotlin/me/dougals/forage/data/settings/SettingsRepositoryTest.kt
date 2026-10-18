@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
+import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -49,6 +50,16 @@ class SettingsRepositoryTest {
         assertEquals(ThumbnailMode.ALWAYS, r.settings.first().thumbnails)
         r.setThumbnails(ThumbnailMode.WIFI_ONLY)
         assertEquals(ThumbnailMode.WIFI_ONLY, r.settings.first().thumbnails)
+    }
+
+    @Test fun backgroundRefreshDefaultsToHourlyAnyNetworkAndPersists() = runTest {
+        val r = repo()
+        assertEquals(RefreshInterval.HOURLY, r.settings.first().refreshInterval)
+        assertEquals(false, r.settings.first().refreshWifiOnly)
+        r.setRefreshInterval(RefreshInterval.EVERY_6_HOURS)
+        r.setRefreshWifiOnly(true)
+        assertEquals(RefreshInterval.EVERY_6_HOURS, r.settings.first().refreshInterval)
+        assertEquals(true, r.settings.first().refreshWifiOnly)
     }
 
     @Test fun thumbnailSideDefaultsToEndAndPersists() = runTest {

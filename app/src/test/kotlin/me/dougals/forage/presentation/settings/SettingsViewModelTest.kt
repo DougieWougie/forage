@@ -275,6 +275,13 @@ class SettingsViewModelTest {
         coVerify { settings.setAllowLocalNetwork(true) }
     }
 
+    @Test fun refreshChoicesAreWrittenToSettings() = runTest {
+        val v = vm()
+        v.setRefreshInterval(me.dougals.forage.domain.model.RefreshInterval.OFF)
+        v.setRefreshWifiOnly(true)
+        coVerify { settings.setRefreshInterval(me.dougals.forage.domain.model.RefreshInterval.OFF); settings.setRefreshWifiOnly(true) }
+    }
+
     @Test fun typographyPassThrough() = runTest {
         val v = vm()
         v.setFont(me.dougals.forage.domain.model.ReaderFont.SANS)

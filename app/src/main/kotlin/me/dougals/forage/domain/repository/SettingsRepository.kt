@@ -14,6 +14,7 @@ package me.dougals.forage.domain.repository
 import kotlinx.coroutines.flow.Flow
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
+import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
@@ -23,6 +24,8 @@ interface SettingsRepository {
     suspend fun setSyncMode(mode: SyncMode)
     suspend fun setAllowLocalNetwork(allow: Boolean)
     suspend fun setPullToRefresh(enabled: Boolean)
+    suspend fun setRefreshInterval(interval: RefreshInterval)
+    suspend fun setRefreshWifiOnly(wifiOnly: Boolean)
     suspend fun setThumbnails(mode: ThumbnailMode)
     suspend fun setThumbnailSide(side: ThumbnailSide)
     suspend fun dismissSuggestion(feedUrl: String)

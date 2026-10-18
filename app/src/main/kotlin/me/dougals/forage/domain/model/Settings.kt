@@ -16,6 +16,9 @@ enum class ReaderFont { SERIF, SANS, DYSLEXIC }
 /** When the article list shows thumbnails. [WIFI_ONLY] still shows ones already downloaded on a metered connection. */
 enum class ThumbnailMode { ALWAYS, WIFI_ONLY, OFF }
 
+/** How often feeds refresh in the background. [OFF] leaves refreshing to pull-to-refresh and app start. */
+enum class RefreshInterval(val hours: Long) { OFF(0), HOURLY(1), EVERY_3_HOURS(3), EVERY_6_HOURS(6), EVERY_12_HOURS(12) }
+
 /** Which side of the article card the thumbnail sits on. */
 enum class ThumbnailSide { START, END }
 
@@ -29,6 +32,9 @@ data class AppSettings(
     val pullToRefresh: Boolean = true,
     val thumbnails: ThumbnailMode = ThumbnailMode.ALWAYS,
     val thumbnailSide: ThumbnailSide = ThumbnailSide.END,
+    val refreshInterval: RefreshInterval = RefreshInterval.HOURLY,
+    /** Background refresh waits for an unmetered connection (Wi-Fi) instead of any connection. */
+    val refreshWifiOnly: Boolean = false,
     /** Feed URLs of suggestions the user waved away. */
     val dismissedSuggestions: Set<String> = emptySet(),
 ) {

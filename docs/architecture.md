@@ -40,7 +40,7 @@ the first error is returned at the end.
 
 | Worker | Trigger | Does |
 | --- | --- | --- |
-| `RefreshWorker` | hourly, scheduled in `ForageApp.onCreate` | `FeedRepository.refresh()` for the current mode |
+| `RefreshWorker` | periodic (1, 3, 6 or 12 hours, or off), applied from the settings by `ForageApp` | `FeedRepository.refresh()` for the current mode; gives up after three attempts until the next period |
 | `FlushWorker` | after a Nextcloud-mode read or saved change | pushes `pending_changes` |
 | `ArchiveWorker` | when an article is saved | caches a cleaned copy of the page (`OfflineArchiver`); up to 5 attempts |
 
