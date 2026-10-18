@@ -1,0 +1,13 @@
+flowchart TB
+    ui["<b>ui</b><br/>Compose screens, navigation"]
+    presentation["<b>presentation</b><br/>ViewModels, UI state"]
+    domain["<b>domain</b><br/>models, FeedRepository, SettingsRepository<br/>(no data, ui or presentation imports)"]
+    data["<b>data</b><br/>Room, DataStore, feed fetching and parsing, OPML,<br/>Nextcloud client, WorkManager, GuardedHttp, auth"]
+    di["<b>di</b> (Hilt)<br/>binds domain interfaces to data implementations"]
+
+    ui --> presentation
+    presentation --> domain
+    data -- implements --> domain
+    di -.-> data
+    ui -. "exceptions:<br/>reader, login, settings" .-> data
+    presentation -. "exceptions:<br/>categories, settings" .-> data

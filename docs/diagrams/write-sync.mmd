@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant UI as Screen / ViewModel
+    participant M as ModeAwareFeedRepository
+    participant N as NextcloudFeedRepository
+    participant DB as Room
+    participant WM as WorkManager
+    participant F as PendingChangeFlusher
+    participant S as Nextcloud server
+
+    UI->>M: setRead(id, true)
+    M->>N: current() = Nextcloud
+    N->>DB: articles.setRead (UI updates via Flow)
+    N->>DB: enqueue pending_changes (article, field, value)
+    N->>WM: scheduleFlush (needs network, REPLACE)
+    WM->>F: FlushWorker.doWork
+    F->>DB: read pending_changes, resolve remoteId
+    Note over F: changes for articles with no remoteId are dropped
+    F->>S: markRead / markUnread / star / unstar (batched)
+    alt all batches accepted
+        F->>DB: deleteIfUnchanged for each sent change
+    else failure
+        F-->>WM: retry with 30 s exponential backoff
+    end

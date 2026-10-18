@@ -1,0 +1,19 @@
+flowchart TD
+    A["Untrusted URL: feed, OPML entry,<br/>article link, reader image"] --> B["GuardedHttp.get"]
+    B --> C{"allowPrivate<br/>(Allow local network)?"}
+    C -- yes --> H["plain client"]
+    C -- no --> D{"IP literal host?"}
+    D -- yes --> E{"isPublicAddress?"}
+    E -- no --> X["IOException: blocked"]
+    E -- yes --> G
+    D -- no --> G["guarded client:<br/>PublicOnlyDns, no proxy"]
+    G --> I{"every resolved address<br/>public?"}
+    I -- no --> X
+    I -- yes --> J
+    H --> J["send request"]
+    J --> K{"redirect?"}
+    K -- "yes, up to 10 hops" --> B2["re-check the next hop<br/>(same rules)"]
+    B2 --> C
+    K -- no --> L{"2xx?"}
+    L -- no --> Y["HttpStatusException"]
+    L -- yes --> M["handler reads body<br/>(size-bounded)"]

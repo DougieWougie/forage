@@ -1,0 +1,40 @@
+erDiagram
+    folders ||--o{ feeds : "folderId (SET NULL on delete)"
+    feeds ||--o{ articles : "feedId (CASCADE)"
+    articles ||--o{ pending_changes : "articleId (CASCADE)"
+
+    folders {
+        long id PK
+        string name
+        long remoteId "Nextcloud id, null if local only"
+    }
+    feeds {
+        long id PK
+        string url "unique"
+        string title
+        string siteUrl
+        long folderId FK
+        long remoteId
+    }
+    articles {
+        long id PK
+        long feedId FK "unique with guid"
+        string guid
+        string title
+        string url
+        string author
+        string summary
+        string contentHtml
+        long publishedAt
+        bool isRead
+        bool isSaved
+        string offlineHtml "archived page"
+        long remoteId
+        string imageUrl "added in v2"
+    }
+    pending_changes {
+        long articleId PK
+        enum field PK "READ or STARRED"
+        bool value
+        long createdAt
+    }

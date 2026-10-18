@@ -1,0 +1,12 @@
+flowchart LR
+    VM["ViewModels"] --> M["ModeAwareFeedRepository"]
+    M -- "all reads (observe*);<br/>writes and refresh when mode = LOCAL" --> L["LocalFeedRepository"]
+    M -- "writes and refresh,<br/>mode = NEXTCLOUD" --> N["NextcloudFeedRepository"]
+    L --> R["RoomFeedRepository<br/>(shared base class)"]
+    N --> R
+    R --> DB[("Room: forage.db")]
+    L --> F["FeedFetcher"]
+    F --> Pub(["Publisher feeds"])
+    N --> API["NextcloudApi (Retrofit)"]
+    N --> Q["pending_changes queue"]
+    API --> NCS(["Nextcloud News"])
