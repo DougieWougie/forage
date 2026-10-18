@@ -26,15 +26,14 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import me.dougals.forage.data.content.OfflineArchiver
 import me.dougals.forage.data.nextcloud.NextcloudNotConfiguredException
+import me.dougals.forage.data.nextcloud.PendingChangeFlusher
+import me.dougals.forage.domain.repository.FeedRepository
 import java.util.concurrent.TimeUnit
 
 fun interface SyncScheduler { fun scheduleFlush() }
 fun interface ArchiveScheduler { fun schedule(articleId: Long) }
-
-fun interface FlushAction { suspend fun flush(): Result<Unit> }
-fun interface RefreshAction { suspend fun refresh(): Result<Unit> }
-fun interface ArchiveAction { suspend fun archive(articleId: Long): Result<Unit> }
 
 class WorkManagerSchedulers(context: Context) : SyncScheduler, ArchiveScheduler {
     private val wm = WorkManager.getInstance(context)
@@ -71,7 +70,7 @@ class WorkManagerSchedulers(context: Context) : SyncScheduler, ArchiveScheduler 
 class FlushWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val flusher: FlushAction,
+    private val flusher: PendingChangeFlusher,
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val outcome = flusher.flush()
@@ -87,7 +86,7 @@ class FlushWorker @AssistedInject constructor(
 class ArchiveWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val archiver: ArchiveAction,
+    private val archiver: OfflineArchiver,
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val id = inputData.getLong(KEY_ARTICLE_ID, -1)
@@ -109,7 +108,7 @@ class ArchiveWorker @AssistedInject constructor(
 class RefreshWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val refresher: RefreshAction,
+    private val repo: FeedRepository,
 ) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result = if (refresher.refresh().isSuccess) Result.success() else Result.retry()
+    override suspend fun doWork(): Result = if (repo.refresh().isSuccess) Result.success() else Result.retry()
 }

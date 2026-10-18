@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.repository
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -76,6 +77,14 @@ abstract class RoomFeedRepository(
 
     protected suspend fun feedWithCount(feedId: Long): Feed? =
         db.feedDao().getById(feedId)?.toDomain(db.articleDao().unreadCount(feedId))
+
+    protected inline fun <T> attempt(block: () -> T): Result<T> = try {
+        Result.success(block())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 
     protected open suspend fun onStateChanged(articleId: Long, field: SyncField, value: Boolean) {}
     protected open fun onWritesDone() {}

@@ -16,7 +16,6 @@ import me.dougals.forage.data.local.ForageDatabase
 import me.dougals.forage.data.net.GuardedHttp
 import me.dougals.forage.data.net.isPublicAddress
 import me.dougals.forage.data.net.readBytesBounded
-import me.dougals.forage.data.work.ArchiveAction
 import okhttp3.OkHttpClient
 import java.io.IOException
 import java.net.InetAddress
@@ -44,8 +43,8 @@ class OfflineArchiver(
     private val db: ForageDatabase,
     private val fetcher: PageFetcher,
     private val extractor: ArticleExtractor = ArticleExtractor(),
-) : ArchiveAction {
-    override suspend fun archive(articleId: Long): Result<Unit> {
+) {
+    suspend fun archive(articleId: Long): Result<Unit> {
         val article = db.articleDao().getById(articleId)
             ?: return Result.failure(IllegalArgumentException("No article $articleId"))
         if (!article.isSaved) return Result.success(Unit)
