@@ -101,6 +101,26 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
         assertEquals(2, db.pendingChangeDao().getAll().size)
     }
 
+    @Test fun markOlderReadQueuesOnlyTheOlderUnreadArticlesAndUndoRequeues() = runTest {
+        api.feedList += FeedDto(10, "u", "t")
+        api.itemList += item(1, 10)
+        api.itemList += item(2, 10)
+        api.itemList += item(3, 10)
+        repo.refresh()
+        val selected = db.articleDao().getByRemoteId(2)!!.id
+        val older = db.articleDao().getByRemoteId(1)!!.id
+
+        val marked = repo.markOlderRead(selected)
+
+        assertEquals(listOf(older), marked)
+        assertEquals(setOf(selected, db.articleDao().getByRemoteId(3)!!.id), repo.observeUnread().first().map { it.id }.toSet())
+        assertEquals(listOf(older), db.pendingChangeDao().getAll().map { it.articleId })
+
+        repo.setReadBatch(marked, false)
+        assertEquals(3, repo.observeUnread().first().size)
+        assertEquals(false, db.pendingChangeDao().getAll().single().value)
+    }
+
     @Test fun refreshFlushesBeforePulling() = runTest {
         val id = syncedArticle()
         repo.setRead(id, true)

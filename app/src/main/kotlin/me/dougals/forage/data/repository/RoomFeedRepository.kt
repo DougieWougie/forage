@@ -60,6 +60,20 @@ abstract class RoomFeedRepository(
         if (ids.isNotEmpty()) onWritesDone()
     }
 
+    override suspend fun markOlderRead(articleId: Long): List<Long> {
+        val ids = db.articleDao().unreadIdsOlderThan(articleId)
+        setReadBatch(ids, true)
+        return ids
+    }
+
+    override suspend fun setReadBatch(articleIds: List<Long>, read: Boolean) {
+        if (articleIds.isEmpty()) return
+        // Chunked to stay under SQLite's bound-variable limit.
+        articleIds.chunked(500).forEach { db.articleDao().setReadIn(it, read) }
+        articleIds.forEach { onStateChanged(it, SyncField.READ, read) }
+        onWritesDone()
+    }
+
     protected suspend fun feedWithCount(feedId: Long): Feed? =
         db.feedDao().getById(feedId)?.toDomain(db.articleDao().unreadCount(feedId))
 

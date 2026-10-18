@@ -33,8 +33,11 @@ class ModeAwareFeedRepositoryTest {
         repo.setRead(1, true)
         coVerify { local.setRead(1, true) }
         mode.value = SyncMode.NEXTCLOUD
-        repo.setRead(2, true); repo.setSaved(2, true); repo.markFeedRead(3); repo.refresh()
-        coVerify { nextcloud.setRead(2, true); nextcloud.setSaved(2, true); nextcloud.markFeedRead(3); nextcloud.refresh() }
+        repo.setRead(2, true); repo.setSaved(2, true); repo.markFeedRead(3); repo.markOlderRead(4); repo.setReadBatch(listOf(5), false); repo.refresh()
+        coVerify {
+            nextcloud.setRead(2, true); nextcloud.setSaved(2, true); nextcloud.markFeedRead(3)
+            nextcloud.markOlderRead(4); nextcloud.setReadBatch(listOf(5), false); nextcloud.refresh()
+        }
         coVerify(exactly = 0) { local.refresh() }
     }
 

@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -145,6 +146,61 @@ class ArticleListScreenTest {
         rule.mainClock.advanceTimeBy(10_000)
         rule.onNodeWithText("Refreshed").assertDoesNotExist()
         verify { vm.dismissMessage() }
+    }
+
+    // Mark older as read
+
+    private val older = article(1, feedId = 10, publishedAt = 100)
+    private val newer = article(2, feedId = 10, publishedAt = 200)
+    private val dated = ArticleListState(articles = listOf(newer, older), feedTitles = mapOf(10L to "LWN"))
+
+    @Test fun longPressingAnArticleWithOlderUnreadOnesOffersToMarkThem() {
+        show(dated)
+        rule.onNodeWithText("Title 2").performTouchInput { longClick() }
+        rule.onNodeWithText("Mark every older unread article in this feed as read?").assertExists()
+        rule.onNodeWithText("Mark read").performClick(); rule.waitForIdle()
+        verify { vm.markOlderRead(newer) }
+    }
+
+    @Test fun theOldestUnreadArticleHasNothingOlderToMark() {
+        show(dated)
+        rule.onNodeWithText("Title 1").performTouchInput { longClick() }
+        rule.onNodeWithText("Mark every older unread article in this feed as read?").assertDoesNotExist()
+    }
+
+    @Test fun olderArticlesThatAreAlreadyReadDoNotCount() {
+        show(dated.copy(articles = listOf(newer, older.copy(isRead = true))))
+        rule.onNodeWithText("Title 2").performTouchInput { longClick() }
+        rule.onNodeWithText("Mark every older unread article in this feed as read?").assertDoesNotExist()
+    }
+
+    @Test fun olderUnreadArticlesInAnotherFeedDoNotCount() {
+        show(dated.copy(articles = listOf(newer, older.copy(feedId = 11))))
+        rule.onNodeWithText("Title 2").performTouchInput { longClick() }
+        rule.onNodeWithText("Mark every older unread article in this feed as read?").assertDoesNotExist()
+    }
+
+    @Test fun savedArticlesCannotMarkOlderAsRead() {
+        show(dated, source = ListSource.Saved)
+        rule.onNodeWithText("Title 2").performTouchInput { longClick() }
+        rule.onNodeWithText("Mark every older unread article in this feed as read?").assertDoesNotExist()
+    }
+
+    @Test fun markingOlderAsReadReportsTheCountAndCanBeUndone() {
+        show(dated.copy(markedOlder = listOf(1, 3, 4)))
+        rule.onNodeWithText("3 articles marked read").assertExists()
+        rule.onNodeWithText("Undo").performClick(); rule.waitForIdle()
+        verify { vm.undoMarkOlderRead() }
+        verify(exactly = 0) { vm.dismissMarkedOlder() }
+    }
+
+    @Test fun markedArticlesAreForgottenOnceTheSnackbarTimesOut() {
+        show(dated.copy(markedOlder = listOf(1)))
+        rule.onNodeWithText("1 article marked read").assertExists()
+        rule.mainClock.advanceTimeBy(15_000)
+        rule.onNodeWithText("1 article marked read").assertDoesNotExist()
+        verify { vm.dismissMarkedOlder() }
+        verify(exactly = 0) { vm.undoMarkOlderRead() }
     }
 
     // Read filter

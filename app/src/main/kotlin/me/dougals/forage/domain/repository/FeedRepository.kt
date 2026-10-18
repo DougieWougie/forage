@@ -39,6 +39,9 @@ interface FeedRepository {
     suspend fun setRead(articleId: Long, read: Boolean)
     suspend fun setSaved(articleId: Long, saved: Boolean)
     suspend fun markFeedRead(feedId: Long)
+    /** Marks every unread article in the same feed published before [articleId] as read, and returns their ids. */
+    suspend fun markOlderRead(articleId: Long): List<Long>
+    suspend fun setReadBatch(articleIds: List<Long>, read: Boolean)
 
     /** Pull new items (and, in Nextcloud mode, push queued changes first). */
     suspend fun refresh(): Result<SyncReport>

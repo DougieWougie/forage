@@ -24,7 +24,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,12 +42,14 @@ import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.BookmarkRemove
 import androidx.compose.material.icons.filled.MarkEmailRead
 import androidx.compose.material.icons.filled.MarkEmailUnread
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -91,6 +93,7 @@ fun SwipeableArticleCard(
     onToggleRead: () -> Unit,
     onToggleSaved: () -> Unit,
     modifier: Modifier = Modifier,
+    onMarkOlderRead: (() -> Unit)? = null,
     showThumbnail: Boolean = false,
     thumbnailFromCacheOnly: Boolean = false,
     thumbnailSide: ThumbnailSide = ThumbnailSide.END,
@@ -101,6 +104,7 @@ fun SwipeableArticleCard(
     val saveAction by rememberUpdatedState(onToggleSaved)
     val readLabel = stringResource(if (article.isRead) R.string.action_mark_unread else R.string.action_mark_read)
     val saveLabel = stringResource(if (article.isSaved) R.string.action_remove_saved else R.string.action_save)
+    val olderLabel = stringResource(R.string.action_mark_older_read)
 
     // Side effects must not live in confirmValueChange: it is re-evaluated while the swipe settles and
     // would fire the action several times. currentValue changes exactly once per completed swipe.
@@ -127,11 +131,12 @@ fun SwipeableArticleCard(
         backgroundContent = { SwipeBackground(state.dismissDirection, state.targetValue, article) },
     ) {
         ArticleCardContent(
-            article, feedTitle, onClick, showThumbnail, thumbnailFromCacheOnly, thumbnailSide,
+            article, feedTitle, onClick, showThumbnail, thumbnailFromCacheOnly, thumbnailSide, onMarkOlderRead,
             Modifier.semantics {
-                customActions = listOf(
+                customActions = listOfNotNull(
                     CustomAccessibilityAction(readLabel) { onToggleRead(); true },
                     CustomAccessibilityAction(saveLabel) { onToggleSaved(); true },
+                    onMarkOlderRead?.let { action -> CustomAccessibilityAction(olderLabel) { action(); true } },
                 )
             },
         )
@@ -183,9 +188,20 @@ private fun ArticleCardContent(
     showThumbnail: Boolean,
     thumbnailFromCacheOnly: Boolean,
     thumbnailSide: ThumbnailSide,
+    onMarkOlderRead: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Surface(color = MaterialTheme.colorScheme.surface, modifier = modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    val haptics = LocalHapticFeedback.current
+    var menuOpen by remember { mutableStateOf(false) }
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        modifier = modifier.fillMaxWidth().combinedClickable(
+            onClick = onClick,
+            onLongClick = onMarkOlderRead?.let {
+                { haptics.performHapticFeedback(HapticFeedbackType.LongPress); menuOpen = true }
+            },
+        ),
+    ) {
         Row(
             Modifier.padding(horizontal = 20.dp, vertical = 16.dp).alpha(if (article.isRead) 0.62f else 1f),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -224,6 +240,17 @@ private fun ArticleCardContent(
             }
             if (image != null && thumbnailSide == ThumbnailSide.END) Thumbnail(image, thumbnailFromCacheOnly)
         }
+    }
+    if (menuOpen) {
+        AlertDialog(
+            onDismissRequest = { menuOpen = false },
+            title = { Text(stringResource(R.string.action_mark_older_read)) },
+            text = { Text(stringResource(R.string.dialog_mark_older_read)) },
+            confirmButton = {
+                TextButton({ menuOpen = false; onMarkOlderRead?.invoke() }) { Text(stringResource(R.string.action_mark_read)) }
+            },
+            dismissButton = { TextButton({ menuOpen = false }) { Text(stringResource(R.string.action_cancel)) } },
+        )
     }
 }
 

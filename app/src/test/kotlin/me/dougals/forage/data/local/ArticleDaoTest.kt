@@ -89,6 +89,29 @@ class ArticleDaoTest : DbTestBase() {
         assertEquals(listOf("2"), dao.observeUnread().first().map { it.guid })
     }
 
+    @Test fun unreadIdsOlderThanStaysInTheFeedAndSkipsReadAndNewer() = runTest {
+        val f1 = newFeed("https://a/feed")
+        val f2 = newFeed("https://b/feed")
+        dao.insertIgnore(listOf(
+            article(f1, "oldest", publishedAt = 1), article(f1, "oldRead", publishedAt = 2, isRead = true),
+            article(f1, "tied", publishedAt = 5), article(f1, "selected", publishedAt = 5), article(f1, "newer", publishedAt = 9),
+            article(f2, "otherFeed", publishedAt = 1),
+        ))
+        val selected = dao.getByFeedAndGuid(f1, "selected")!!.id
+        val ids = dao.unreadIdsOlderThan(selected)
+        assertEquals(listOf("oldest"), ids.map { dao.getById(it)!!.guid })
+    }
+
+    @Test fun setReadInUpdatesOnlyTheGivenIds() = runTest {
+        val f1 = newFeed("https://a/feed")
+        dao.insertIgnore(listOf(article(f1, "1"), article(f1, "2")))
+        val ids = dao.getAll().map { it.id }
+        dao.setReadIn(listOf(ids[0]), true)
+        assertEquals(listOf("2"), dao.observeUnread().first().map { it.guid })
+        dao.setReadIn(listOf(ids[0]), false)
+        assertEquals(2, dao.observeUnread().first().size)
+    }
+
     @Test fun feedArticlesIncludeReadOnesNewestFirst() = runTest {
         val f1 = newFeed("https://a/feed")
         val f2 = newFeed("https://b/feed")

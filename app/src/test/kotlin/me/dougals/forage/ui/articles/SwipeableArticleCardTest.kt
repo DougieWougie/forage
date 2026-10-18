@@ -12,8 +12,10 @@
 package me.dougals.forage.ui.articles
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
@@ -36,10 +38,34 @@ class SwipeableArticleCardTest {
     private var saved = 0
     private var clicked = 0
 
-    private fun show(a: Article = article(1)) = rule.setContent {
+    private var older = 0
+
+    private fun show(a: Article = article(1), canMarkOlder: Boolean = true) = rule.setContent {
         ForageTheme {
-            SwipeableArticleCard(a, "LWN", { clicked++ }, { read++ }, { saved++ })
+            SwipeableArticleCard(a, "LWN", { clicked++ }, { read++ }, { saved++ }, onMarkOlderRead = if (canMarkOlder) ({ older++ }) else null)
         }
+    }
+
+    @Test fun longPressPopsUpAConfirmationToMarkOlderAsRead() {
+        show()
+        rule.onNodeWithText("Title 1").performTouchInput { longClick() }
+        rule.onNodeWithText("Mark read").performClick()
+        assertEquals(1, older)
+        assertEquals(0, clicked)
+    }
+
+    @Test fun cancellingTheLongPressPopUpMarksNothing() {
+        show()
+        rule.onNodeWithText("Title 1").performTouchInput { longClick() }
+        rule.onNodeWithText("Cancel").performClick()
+        assertEquals(0, older)
+        rule.onNodeWithText("Mark older as read").assertDoesNotExist()
+    }
+
+    @Test fun longPressDoesNothingWhenNothingIsOlder() {
+        show(canMarkOlder = false)
+        rule.onNodeWithText("Title 1").performTouchInput { longClick() }
+        rule.onNodeWithText("Mark older as read").assertDoesNotExist()
     }
 
     @Test fun swipeRightTogglesReadOnly() {

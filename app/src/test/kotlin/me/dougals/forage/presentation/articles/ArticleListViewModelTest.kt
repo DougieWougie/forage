@@ -173,6 +173,27 @@ class ArticleListViewModelTest {
         coVerify(exactly = 1) { repo.markFeedRead(2) }
     }
 
+    @Test fun markOlderReadKeepsTheMarkedIdsForUndo() = runTest {
+        every { repo.observeUnread() } returns flowOf(listOf(article(1), article(2)))
+        coEvery { repo.markOlderRead(2) } returns listOf(1L)
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitUntil { it.articles.size == 2 }
+            v.markOlderRead(article(2))
+            assertEquals(listOf(1L), awaitUntil { it.markedOlder.isNotEmpty() }.markedOlder)
+            v.undoMarkOlderRead()
+            awaitUntil { it.markedOlder.isEmpty() }
+        }
+        coVerify(exactly = 1) { repo.setReadBatch(listOf(1L), false) }
+    }
+
+    @Test fun markOlderReadWithNothingOlderOffersNoUndo() = runTest {
+        every { repo.observeUnread() } returns flowOf(listOf(article(1)))
+        coEvery { repo.markOlderRead(1) } returns emptyList()
+        val v = vm("source" to "unread")
+        v.state.test { awaitUntil { it.articles.size == 1 }; v.markOlderRead(article(1)); expectNoEvents() }
+    }
+
     // Category filter
 
     private val tech = Folder(1, "Tech")

@@ -36,8 +36,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -54,6 +56,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
+import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.ui.rememberMeteredConnection
 import me.dougals.forage.presentation.articles.ListSource
@@ -73,6 +76,21 @@ fun ArticleListScreen(
     val context = LocalContext.current
     LaunchedEffect(state.message) {
         state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() }
+    }
+
+    LaunchedEffect(state.markedOlder) {
+        if (state.markedOlder.isEmpty()) return@LaunchedEffect
+        val result = snackbar.showSnackbar(
+            UiText.Plural(R.plurals.articles_marked_read, state.markedOlder.size).resolve(context),
+            actionLabel = context.getString(R.string.action_undo),
+            duration = SnackbarDuration.Long,
+        )
+        if (result == SnackbarResult.ActionPerformed) vm.undoMarkOlderRead() else vm.dismissMarkedOlder()
+    }
+
+    // Oldest unread per feed: an article has something older to mark only when that is earlier than its own date.
+    val oldestUnread = remember(state.articles) {
+        state.articles.filterNot { it.isRead }.groupBy { it.feedId }.mapValues { (_, list) -> list.minOf { it.publishedAt } }
     }
 
     val title = when (val s = vm.source) {
@@ -150,6 +168,9 @@ fun ArticleListScreen(
                             onClick = { onOpenArticle(article.id) },
                             onToggleRead = { vm.toggleRead(article) },
                             onToggleSaved = { vm.toggleSaved(article) },
+                            onMarkOlderRead = if (vm.source != ListSource.Saved && (oldestUnread[article.feedId] ?: Long.MAX_VALUE) < article.publishedAt) {
+                                { vm.markOlderRead(article) }
+                            } else null,
                             thumbnailSide = state.thumbnailSide,
                             showThumbnail = state.thumbnails != ThumbnailMode.OFF,
                             thumbnailFromCacheOnly = state.thumbnails == ThumbnailMode.WIFI_ONLY && metered,
