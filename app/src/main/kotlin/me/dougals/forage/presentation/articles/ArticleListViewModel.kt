@@ -19,11 +19,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.dougals.forage.R
 import me.dougals.forage.domain.model.Article
+import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.UiText
@@ -53,6 +54,11 @@ data class ArticleListState(
     val articles: List<Article> = emptyList(),
     val filter: ReadFilter = ReadFilter.ALL,
     val hasArticles: Boolean = false,
+    /** Folders with unread articles, offered as chips on the unread list. */
+    val folders: List<Folder> = emptyList(),
+    val hasUncategorised: Boolean = false,
+    /** The chosen folders, which may include [ArticleListViewModel.UNCATEGORISED] for feeds in none. Empty means all. */
+    val folderIds: Set<Long> = emptySet(),
     val feedTitles: Map<Long, String> = emptyMap(),
     val isRefreshing: Boolean = false,
     val pullToRefresh: Boolean = true,
@@ -71,6 +77,7 @@ class ArticleListViewModel @Inject constructor(
     private val refreshing = MutableStateFlow(false)
     private val message = MutableStateFlow<UiText?>(null)
     private val filter = MutableStateFlow(ReadFilter.ALL)
+    private val folderChoice = MutableStateFlow<Set<Long>>(emptySet())
 
     private val articles = when (source) {
         ListSource.Unread -> repo.observeUnread()
@@ -78,31 +85,49 @@ class ArticleListViewModel @Inject constructor(
         is ListSource.Feed -> repo.observeFeedArticles(source.feedId)
     }
 
-    private class Shown(val all: List<Article>, val shown: List<Article>, val filter: ReadFilter)
+    private class Shown(
+        val all: List<Article>,
+        val shown: List<Article>,
+        val filter: ReadFilter,
+        val titles: Map<Long, String>,
+        val folders: List<Folder>,
+        val hasUncategorised: Boolean,
+        val folderIds: Set<Long>,
+    )
 
-    private val shownArticles = combine(articles, filter) { list, readFilter ->
+    private val shownArticles = combine(articles, filter, folderChoice, repo.observeFeeds(), repo.observeFolders()) { list, readFilter, choice, feeds, allFolders ->
+        val folderOf = feeds.associate { it.id to (it.folderId ?: UNCATEGORISED) }
+        val present = list.map { folderOf[it.feedId] ?: UNCATEGORISED }.toSet()
+        val offered = allFolders.filter { it.id in present }
+        // Choices that have run out of articles are dropped, so the list falls back to all rather than stranding the user.
+        val folderIds = if (source == ListSource.Unread) choice.filter { it in present }.toSet() else emptySet()
+        val byRead = when (readFilter) {
+            ReadFilter.ALL -> list
+            ReadFilter.UNREAD -> list.filterNot { it.isRead }
+            ReadFilter.READ -> list.filter { it.isRead }
+        }
         Shown(
             list,
-            when (readFilter) {
-                ReadFilter.ALL -> list
-                ReadFilter.UNREAD -> list.filterNot { it.isRead }
-                ReadFilter.READ -> list.filter { it.isRead }
-            },
+            if (folderIds.isEmpty()) byRead else byRead.filter { (folderOf[it.feedId] ?: UNCATEGORISED) in folderIds },
             readFilter,
+            feeds.associate { it.id to it.title },
+            offered,
+            UNCATEGORISED in present,
+            folderIds,
         )
     }
 
-    val state: StateFlow<ArticleListState> = combine(
-        shownArticles, repo.observeFeeds().map { feeds -> feeds.associate { it.id to it.title } }, refreshing, message,
-        settingsRepo.settings,
-    ) { list, titles, isRefreshing, msg, settings ->
+    val state: StateFlow<ArticleListState> = combine(shownArticles, refreshing, message, settingsRepo.settings) { list, isRefreshing, msg, settings ->
         ArticleListState(
-            list.shown, list.filter, list.all.isNotEmpty(), titles, isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg,
+            list.shown, list.filter, list.all.isNotEmpty(), list.folders, list.hasUncategorised, list.folderIds, list.titles,
+            isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
 
     fun setFilter(value: ReadFilter) { filter.value = value }
+    fun toggleFolder(id: Long) { folderChoice.update { if (id in it) it - id else it + id } }
+    fun clearFolders() { folderChoice.value = emptySet() }
 
     fun toggleRead(article: Article) { viewModelScope.launch { repo.setRead(article.id, !article.isRead) } }
     fun toggleSaved(article: Article) { viewModelScope.launch { repo.setSaved(article.id, !article.isSaved) } }
@@ -124,4 +149,8 @@ class ArticleListViewModel @Inject constructor(
     }
 
     fun dismissMessage() { message.value = null }
+
+    companion object {
+        const val UNCATEGORISED = -1L
+    }
 }

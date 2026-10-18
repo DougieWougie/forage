@@ -29,6 +29,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.model.Feed
+import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.repository.SettingsRepository
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
@@ -48,7 +49,10 @@ class ArticleListViewModelTest {
     private val settingsRepo = mockk<SettingsRepository>(relaxed = true).also { every { it.settings } returns settings }
     private fun vm(vararg args: Pair<String, Any>) = ArticleListViewModel(SavedStateHandle(mapOf(*args)), repo, settingsRepo)
 
-    init { every { repo.observeFeeds() } returns flowOf(listOf(Feed(1, "u", "LWN", null, null, 0))) }
+    init {
+        every { repo.observeFeeds() } returns flowOf(listOf(Feed(1, "u", "LWN", null, null, 0)))
+        every { repo.observeFolders() } returns flowOf(emptyList())
+    }
 
     @Test fun unreadSourceShowsUnreadArticlesWithFeedTitles() = runTest {
         every { repo.observeUnread() } returns MutableStateFlow(listOf(article(1)))
@@ -167,5 +171,87 @@ class ArticleListViewModelTest {
         v.state.test { awaitUntil { it.articles.size == 3 }; v.markAllRead() }
         coVerify(exactly = 1) { repo.markFeedRead(1) }
         coVerify(exactly = 1) { repo.markFeedRead(2) }
+    }
+
+    // Category filter
+
+    private val tech = Folder(1, "Tech")
+    private val news = Folder(2, "News")
+    private fun categorised(unread: MutableStateFlow<List<me.dougals.forage.domain.model.Article>>) {
+        every { repo.observeUnread() } returns unread
+        every { repo.observeFolders() } returns flowOf(listOf(tech, news))
+        every { repo.observeFeeds() } returns flowOf(
+            listOf(Feed(1, "u", "LWN", null, 1, 0), Feed(2, "u", "BBC", null, 2, 0), Feed(3, "u", "Blog", null, null, 0)),
+        )
+    }
+
+    @Test fun unreadListFiltersByCategory() = runTest {
+        categorised(MutableStateFlow(listOf(article(1, feedId = 1), article(2, feedId = 2), article(3, feedId = 3))))
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitUntil { it.articles.size == 3 }.let {
+                assertEquals(listOf(tech, news), it.folders)
+                assertEquals(true, it.hasUncategorised)
+            }
+            v.toggleFolder(2)
+            assertEquals(listOf(2L), awaitUntil { it.folderIds == setOf(2L) }.articles.map { it.id })
+            v.clearFolders()
+            assertEquals(3, awaitUntil { it.folderIds.isEmpty() }.articles.size)
+            v.toggleFolder(ArticleListViewModel.UNCATEGORISED)
+            assertEquals(listOf(3L), awaitUntil { it.folderIds.isNotEmpty() }.articles.map { it.id })
+        }
+    }
+
+    @Test fun severalCategoriesCanBeChosenAtOnce() = runTest {
+        categorised(MutableStateFlow(listOf(article(1, feedId = 1), article(2, feedId = 2), article(3, feedId = 3))))
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitUntil { it.articles.size == 3 }
+            v.toggleFolder(1)
+            awaitUntil { it.folderIds == setOf(1L) }
+            v.toggleFolder(ArticleListViewModel.UNCATEGORISED)
+            awaitUntil { it.folderIds.size == 2 }.let { assertEquals(listOf(1L, 3L), it.articles.map { a -> a.id }) }
+            v.toggleFolder(1)
+            assertEquals(listOf(3L), awaitUntil { it.folderIds == setOf(ArticleListViewModel.UNCATEGORISED) }.articles.map { it.id })
+        }
+    }
+
+    @Test fun onlyCategoriesWithUnreadArticlesAreOffered() = runTest {
+        categorised(MutableStateFlow(listOf(article(1, feedId = 1))))
+        vm("source" to "unread").state.test {
+            awaitUntil { it.articles.isNotEmpty() }.let {
+                assertEquals(listOf(tech), it.folders)
+                assertEquals(false, it.hasUncategorised)
+            }
+        }
+    }
+
+    @Test fun aCategoryThatRunsOutFallsBackToAll() = runTest {
+        val unread = MutableStateFlow(listOf(article(1, feedId = 1), article(2, feedId = 2)))
+        categorised(unread)
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitUntil { it.articles.size == 2 }
+            v.toggleFolder(2)
+            awaitUntil { it.folderIds == setOf(2L) }
+            unread.value = listOf(article(1, feedId = 1))
+            awaitUntil { it.folderIds.isEmpty() }.let { assertEquals(listOf(1L), it.articles.map { a -> a.id }) }
+        }
+    }
+
+    @Test fun markAllReadOnlyMarksTheChosenCategory() = runTest {
+        categorised(MutableStateFlow(listOf(article(1, feedId = 1), article(2, feedId = 2))))
+        val v = vm("source" to "unread")
+        v.state.test { awaitUntil { it.articles.size == 2 }; v.toggleFolder(2); awaitUntil { it.folderIds == setOf(2L) }; v.markAllRead() }
+        coVerify(exactly = 1) { repo.markFeedRead(2) }
+        coVerify(exactly = 0) { repo.markFeedRead(1) }
+    }
+
+    @Test fun otherListsIgnoreTheCategoryFilter() = runTest {
+        categorised(MutableStateFlow(emptyList()))
+        every { repo.observeSaved() } returns flowOf(listOf(article(1, feedId = 1), article(2, feedId = 2)))
+        val v = vm("source" to "saved")
+        v.toggleFolder(2)
+        v.state.test { assertEquals(2, awaitUntil { it.articles.isNotEmpty() }.articles.size) }
     }
 }
