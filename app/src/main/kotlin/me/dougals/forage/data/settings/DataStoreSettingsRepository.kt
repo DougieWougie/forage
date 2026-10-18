@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
+import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
@@ -35,6 +36,8 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             fontScale = p[SCALE] ?: 1.0f,
             allowLocalNetwork = p[LOCAL_NET] ?: false,
             pullToRefresh = p[PULL] ?: true,
+            refreshInterval = p[REFRESH]?.let { runCatching { RefreshInterval.valueOf(it) }.getOrNull() } ?: RefreshInterval.HOURLY,
+            refreshWifiOnly = p[REFRESH_WIFI] ?: false,
             thumbnails = p[THUMBS]?.let { runCatching { ThumbnailMode.valueOf(it) }.getOrNull() } ?: ThumbnailMode.ALWAYS,
             thumbnailSide = p[THUMB_SIDE]?.let { runCatching { ThumbnailSide.valueOf(it) }.getOrNull() } ?: ThumbnailSide.END,
             dismissedSuggestions = p[DISMISSED].orEmpty(),
@@ -44,6 +47,8 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
     override suspend fun setSyncMode(mode: SyncMode) { store.edit { it[MODE] = mode.name } }
     override suspend fun setAllowLocalNetwork(allow: Boolean) { store.edit { it[LOCAL_NET] = allow } }
     override suspend fun setPullToRefresh(enabled: Boolean) { store.edit { it[PULL] = enabled } }
+    override suspend fun setRefreshInterval(interval: RefreshInterval) { store.edit { it[REFRESH] = interval.name } }
+    override suspend fun setRefreshWifiOnly(wifiOnly: Boolean) { store.edit { it[REFRESH_WIFI] = wifiOnly } }
     override suspend fun setThumbnails(mode: ThumbnailMode) { store.edit { it[THUMBS] = mode.name } }
     override suspend fun setThumbnailSide(side: ThumbnailSide) { store.edit { it[THUMB_SIDE] = side.name } }
     override suspend fun dismissSuggestion(feedUrl: String) { store.edit { it[DISMISSED] = it[DISMISSED].orEmpty() + feedUrl } }
@@ -59,6 +64,8 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val SCALE = floatPreferencesKey("font_scale")
         val LOCAL_NET = booleanPreferencesKey("allow_local_network")
         val PULL = booleanPreferencesKey("pull_to_refresh")
+        val REFRESH = stringPreferencesKey("refresh_interval")
+        val REFRESH_WIFI = booleanPreferencesKey("refresh_wifi_only")
         val THUMBS = stringPreferencesKey("thumbnails")
         val THUMB_SIDE = stringPreferencesKey("thumbnail_side")
         val DISMISSED = stringSetPreferencesKey("dismissed_suggestions")

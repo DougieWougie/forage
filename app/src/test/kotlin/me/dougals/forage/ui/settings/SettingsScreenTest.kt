@@ -26,6 +26,7 @@ import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onLast
@@ -39,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
+import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.UiText
@@ -86,9 +88,25 @@ class SettingsScreenTest {
     @Test fun readingAndListChoicesGoToTheViewModel() {
         show()
         click("Sans-serif")
-        scrollTo("Off"); click("Off")
+        scrollTo("Off"); rule.onAllNodesWithText("Off")[0].performClick().also { rule.waitForIdle() }
         scrollTo("Left"); click("Left")
         verify { vm.setFont(ReaderFont.SANS); vm.setThumbnails(ThumbnailMode.OFF); vm.setThumbnailSide(ThumbnailSide.START) }
+    }
+
+    @Test fun backgroundRefreshChoicesGoToTheViewModel() {
+        show()
+        scrollTo("Background refresh")
+        click("6 h")
+        scrollTo("Wi-Fi only")
+        rule.onAllNodes(switch)[1].performClick()
+        rule.waitForIdle()
+        verify { vm.setRefreshInterval(RefreshInterval.EVERY_6_HOURS); vm.setRefreshWifiOnly(true) }
+    }
+
+    @Test fun wifiOnlyIsHiddenWhenBackgroundRefreshIsOff() {
+        show(SettingsUiState(settings = AppSettings(refreshInterval = RefreshInterval.OFF)))
+        scrollTo("Background refresh")
+        rule.onNodeWithText("Skip background refreshes on mobile data and other metered connections.").assertDoesNotExist()
     }
 
     @Test fun switchesGoToTheViewModel() {
@@ -188,6 +206,7 @@ class SettingsScreenTest {
         show(SettingsUiState(isConnecting = true, loginUrl = "https://cloud.example.com/login/v2/flow/abc"))
         nextBrowserUrl()
         scrollTo("Finish logging in to Nextcloud in your browser.")
+        scrollTo("Open again")
         rule.onNodeWithText("Connect").assertDoesNotExist()
         click("Open again")
         assertEquals("https://cloud.example.com/login/v2/flow/abc", nextBrowserUrl())

@@ -137,6 +137,15 @@
     <string name="signed_in_body">Log in to sites that need an account (for example lwn.net) and Forage will send that session with feed and article requests to the same host only.</string>
     <string name="cd_forget_session">Forget session for %1$s</string>
     <string name="log_in_to_site_button">Log in to a site…</string>
+    <string name="background_refresh">Background refresh</string>
+    <string name="background_refresh_body">How often Forage fetches new articles while the app is closed.</string>
+    <string name="refresh_off">Off</string>
+    <string name="refresh_1h">1 h</string>
+    <string name="refresh_3h">3 h</string>
+    <string name="refresh_6h">6 h</string>
+    <string name="refresh_12h">12 h</string>
+    <string name="refresh_wifi_only">Wi-Fi only</string>
+    <string name="refresh_wifi_only_body">Skip background refreshes on mobile data and other metered connections.</string>
     <string name="pull_to_refresh">Pull down to refresh</string>
     <string name="pull_to_refresh_body">Drag down from the top of Unread or Categories to sync and fetch new articles.</string>
     <string name="allow_local_network">Allow feeds on local network</string>

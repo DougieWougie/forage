@@ -19,7 +19,13 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import me.dougals.forage.data.content.ImageResourceFetcher
 import me.dougals.forage.data.content.ThumbnailFetcher
 import me.dougals.forage.data.work.WorkManagerSchedulers
@@ -47,7 +53,11 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
 
     override fun onCreate() {
         super.onCreate()
-        schedulers.schedulePeriodicRefresh()
+        // Follows the settings, so changing the interval or Wi-Fi-only takes effect immediately and applies at launch.
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            settings.settings.map { it.refreshInterval to it.refreshWifiOnly }.distinctUntilChanged()
+                .collect { (interval, wifiOnly) -> schedulers.schedulePeriodicRefresh(interval, wifiOnly) }
+        }
     }
 
     private companion object {

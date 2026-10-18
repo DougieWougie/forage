@@ -29,12 +29,14 @@ import kotlinx.coroutines.runBlocking
 import me.dougals.forage.data.content.OfflineArchiver
 import me.dougals.forage.data.nextcloud.NextcloudNotConfiguredException
 import me.dougals.forage.data.nextcloud.PendingChangeFlusher
+import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.SyncReport
 import me.dougals.forage.domain.repository.FeedRepository
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
@@ -104,18 +106,43 @@ class WorkTest {
         assertEquals(ListenableWorker.Result.failure(), run(5, Result.failure(java.io.IOException())))
     }
 
-    @Test fun refreshWorkerRetriesOnFailure() = runBlocking {
-        fun run(result: Result<Unit>) = build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo(result)) }).let { runBlocking { it.doWork() } }
+    @Test fun refreshWorkerRetriesThenGivesUpUntilTheNextPeriod() = runBlocking {
+        fun run(result: Result<Unit>, attempt: Int = 0) =
+            build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo(result)) }, attempt).let { runBlocking { it.doWork() } }
         assertEquals(ListenableWorker.Result.success(), run(Result.success(Unit)))
         assertEquals(ListenableWorker.Result.retry(), run(Result.failure(java.io.IOException())))
+        assertEquals(ListenableWorker.Result.failure(), run(Result.failure(java.io.IOException()), attempt = 3))
+    }
+
+    @Test fun refreshWorkerDoesNotRetryWhenNextcloudIsNotConfigured() = runBlocking {
+        val w = build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo(Result.failure(NextcloudNotConfiguredException()))) })
+        assertEquals(ListenableWorker.Result.failure(), w.doWork())
     }
 
     @Test fun periodicRefreshIsUniqueAndNeedsNetwork() {
         val s = WorkManagerSchedulers(context)
-        s.schedulePeriodicRefresh()
-        s.schedulePeriodicRefresh()
+        s.schedulePeriodicRefresh(RefreshInterval.HOURLY, wifiOnly = false)
+        s.schedulePeriodicRefresh(RefreshInterval.HOURLY, wifiOnly = false)
         val infos = WorkManager.getInstance(context).getWorkInfosForUniqueWork("periodic-refresh").get()
         assertEquals(1, infos.size)
         assertEquals(NetworkType.CONNECTED, infos.single().constraints.requiredNetworkType)
+        assertEquals(TimeUnit.HOURS.toMillis(1), infos.single().periodicityInfo!!.repeatIntervalMillis)
+    }
+
+    @Test fun changingTheRefreshSettingsReplacesTheSchedule() {
+        val s = WorkManagerSchedulers(context)
+        s.schedulePeriodicRefresh(RefreshInterval.HOURLY, wifiOnly = false)
+        s.schedulePeriodicRefresh(RefreshInterval.EVERY_6_HOURS, wifiOnly = true)
+        val info = WorkManager.getInstance(context).getWorkInfosForUniqueWork("periodic-refresh").get().single()
+        assertEquals(NetworkType.UNMETERED, info.constraints.requiredNetworkType)
+        assertEquals(TimeUnit.HOURS.toMillis(6), info.periodicityInfo!!.repeatIntervalMillis)
+    }
+
+    @Test fun turningBackgroundRefreshOffCancelsIt() {
+        val s = WorkManagerSchedulers(context)
+        s.schedulePeriodicRefresh(RefreshInterval.HOURLY, wifiOnly = false)
+        s.schedulePeriodicRefresh(RefreshInterval.OFF, wifiOnly = false)
+        val infos = WorkManager.getInstance(context).getWorkInfosForUniqueWork("periodic-refresh").get()
+        assertEquals(WorkInfo.State.CANCELLED, infos.single().state)
     }
 }
