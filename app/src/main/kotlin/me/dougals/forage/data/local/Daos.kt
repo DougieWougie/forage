@@ -20,6 +20,15 @@ import kotlinx.coroutines.flow.Flow
 
 data class UnreadCount(val feedId: Long, val count: Int)
 
+/**
+ * Columns for article lists. Bodies are truncated and the offline copy is reduced to a presence marker, so
+ * a few large articles can't overflow the 2MB CursorWindow; the reader loads the full row via observeById.
+ */
+private const val LIST_COLUMNS =
+    "id, feedId, guid, title, url, author, substr(summary, 1, 4000) AS summary, " +
+        "substr(contentHtml, 1, 4000) AS contentHtml, publishedAt, isRead, isSaved, " +
+        "CASE WHEN offlineHtml IS NULL THEN NULL ELSE '' END AS offlineHtml, remoteId, imageUrl"
+
 @Dao
 interface FolderDao {
     @Insert suspend fun insert(folder: FolderEntity): Long
@@ -61,12 +70,12 @@ interface ArticleDao {
     @Query("UPDATE articles SET imageUrl = :url WHERE feedId = :feedId AND guid = :guid AND imageUrl IS NULL")
     suspend fun fillImageUrl(feedId: Long, guid: String, url: String)
     @Query("UPDATE articles SET offlineHtml = NULL WHERE id = :id") suspend fun clearOfflineHtml(id: Long)
-    @Query("SELECT * FROM articles WHERE isRead = 0 ORDER BY publishedAt DESC")
+    @Query("SELECT " + LIST_COLUMNS + " FROM articles WHERE isRead = 0 ORDER BY publishedAt DESC")
     fun observeUnread(): Flow<List<ArticleEntity>>
-    @Query("SELECT * FROM articles WHERE feedId = :feedId ORDER BY publishedAt DESC")
+    @Query("SELECT " + LIST_COLUMNS + " FROM articles WHERE feedId = :feedId ORDER BY publishedAt DESC")
     fun observeByFeed(feedId: Long): Flow<List<ArticleEntity>>
     @Query("SELECT * FROM articles WHERE id = :id") fun observeById(id: Long): Flow<ArticleEntity?>
-    @Query("SELECT * FROM articles WHERE isSaved = 1 ORDER BY publishedAt DESC")
+    @Query("SELECT " + LIST_COLUMNS + " FROM articles WHERE isSaved = 1 ORDER BY publishedAt DESC")
     fun observeSaved(): Flow<List<ArticleEntity>>
     @Query("SELECT feedId, COUNT(*) AS count FROM articles WHERE isRead = 0 GROUP BY feedId")
     fun observeUnreadCounts(): Flow<List<UnreadCount>>

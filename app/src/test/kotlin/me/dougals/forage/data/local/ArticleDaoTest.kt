@@ -129,4 +129,17 @@ class ArticleDaoTest : DbTestBase() {
         assertEquals(true, dao.observeById(id).first()!!.isRead)
         assertNull(dao.observeById(999).first())
     }
+
+    @Test fun listQueriesTruncateBodiesAndKeepOfflinePresence() = runTest {
+        val feed = newFeed()
+        val id = dao.insertIgnore(listOf(article(feed, "big").copy(summary = "s".repeat(10_000), contentHtml = "c".repeat(10_000)))).single()
+        dao.saveOfflineHtml(id, "o".repeat(10_000))
+
+        val row = dao.observeUnread().first().single()
+
+        assertEquals(4000, row.summary!!.length)
+        assertEquals(4000, row.contentHtml!!.length)
+        assertEquals("", row.offlineHtml)
+        assertEquals(10_000, dao.getById(id)!!.offlineHtml!!.length)
+    }
 }
