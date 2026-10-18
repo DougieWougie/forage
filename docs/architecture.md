@@ -7,9 +7,12 @@ Diagrams are Mermaid sources in [`diagrams/`](diagrams); regenerate the SVGs wit
 
 ![Layers](diagrams/layers.svg)
 
-- `domain` imports nothing from the other layers. `data` implements its interfaces and `di/AppModule.kt` binds them.
-- The layering is not strict. `ui` (reader, login and settings screens) and two ViewModels (`CategoriesViewModel`,
-  `SettingsViewModel`) import `data` types directly, for example `SessionStore`, `NextcloudLoginFlow` and `OpmlTransfer`.
+- Dependencies point inward: `ui` and `presentation` use `domain` interfaces only, and `data` implements them. Neither `ui`
+  nor `presentation` imports `data`, and `domain` imports nothing from the other layers or from Android.
+  Only `di` (Hilt) knows the concrete classes.
+- Examples of interfaces implemented in `data`: `SessionStore` (`PrefsSessionStore`), `CredentialStore`,
+  `NextcloudLoginFlow` (`OkHttpNextcloudLoginFlow`) and `OpmlExchange` (`OpmlTransfer`).
+- `ui/WebUrl.kt` and `ui/Links.kt` are small UI helpers (`isWebUrl`, the Nextcloud News link).
 
 ## Repositories
 
