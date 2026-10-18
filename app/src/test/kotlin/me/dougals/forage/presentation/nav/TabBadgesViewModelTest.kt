@@ -16,10 +16,10 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
 import me.dougals.forage.testutil.awaitUntil
+import me.dougals.forage.testutil.feed
 import me.dougals.forage.ui.TabBadges
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -28,11 +28,10 @@ import org.junit.jupiter.api.extension.RegisterExtension
 class TabBadgesViewModelTest {
     @JvmField @RegisterExtension val main = MainDispatcherExtension()
 
-    private fun feed(id: Long, unread: Int) = Feed(id, "https://f/$id", "F$id", null, null, unread)
 
     @Test fun totalsUnreadArticlesAndCountsFeedsWithNewOnes() = runTest {
         val repo = mockk<FeedRepository>(relaxed = true)
-        every { repo.observeFeeds() } returns flowOf(listOf(feed(1, 4), feed(2, 0), feed(3, 2)))
+        every { repo.observeFeeds() } returns flowOf(listOf(feed(1, unread = 4), feed(2), feed(3, unread = 2)))
         TabBadgesViewModel(repo).state.test {
             assertEquals(TabBadges(unread = 6, updatedFeeds = 2), awaitUntil { it.unread > 0 })
         }

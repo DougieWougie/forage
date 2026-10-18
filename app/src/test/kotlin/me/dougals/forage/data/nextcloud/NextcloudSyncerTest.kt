@@ -169,7 +169,7 @@ class NextcloudSyncerTest : DbTestBase() {
         serverWithOneFeed()
         syncer.pull()
         val feed = db.feedDao().getAll().single()
-        db.articleDao().insertIgnore(listOf(article(feed.id, "guid-1")))
+        db.articleDao().insertIgnore(listOf(articleEntity(feed.id, "guid-1")))
         api.itemList += item(1, 10)
         syncer.pull()
         val all = db.articleDao().getAll()

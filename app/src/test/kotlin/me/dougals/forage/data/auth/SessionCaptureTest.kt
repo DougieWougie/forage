@@ -12,7 +12,7 @@
 package me.dougals.forage.data.auth
 
 import me.dougals.forage.domain.auth.SessionCapture
-import me.dougals.forage.domain.auth.SessionStore
+import me.dougals.forage.testutil.MemSessionStore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -20,29 +20,21 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SessionCaptureTest {
-    private class MemStore : SessionStore {
-        val map = mutableMapOf<String, String>()
-        override fun save(domain: String, cookieHeader: String) { map[domain.lowercase()] = cookieHeader }
-        override fun get(domain: String) = map[domain.lowercase()]
-        override fun remove(domain: String) { map.remove(domain.lowercase()) }
-        override fun domains() = map.keys.sorted()
-    }
-
     @Test fun storesCookiesUnderTheHostOfTheLoginUrl() {
-        val store = MemStore()
+        val store = MemSessionStore()
         val capture = SessionCapture({ "sid=abc; theme=dark" }, store)
         assertTrue(capture.capture("https://lwn.net/Login/"))
         assertEquals("sid=abc; theme=dark", store.get("lwn.net"))
     }
 
     @Test fun noCookiesMeansNothingStored() {
-        val store = MemStore()
+        val store = MemSessionStore()
         assertFalse(SessionCapture({ null }, store).capture("https://lwn.net/"))
         assertFalse(SessionCapture({ "" }, store).capture("https://lwn.net/"))
         assertNull(store.get("lwn.net"))
     }
 
     @Test fun invalidUrlIsRejected() {
-        assertFalse(SessionCapture({ "a=b" }, MemStore()).capture("not a url"))
+        assertFalse(SessionCapture({ "a=b" }, MemSessionStore()).capture("not a url"))
     }
 }

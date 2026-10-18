@@ -55,6 +55,12 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
         return db.articleDao().getByRemoteId(1)!!.id
     }
 
+    private suspend fun syncUnread(count: Int) {
+        api.feedList += FeedDto(10, "u", "t")
+        (1..count).forEach { api.itemList += item(it.toLong(), 10) }
+        repo.refresh()
+    }
+
     @Test fun setReadUpdatesRoomQueuesChangeAndSchedulesFlush() = runTest {
         val id = syncedArticle()
         repo.setRead(id, true)
@@ -91,10 +97,7 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
     }
 
     @Test fun markFeedReadQueuesEveryPreviouslyUnreadArticle() = runTest {
-        api.feedList += FeedDto(10, "u", "t")
-        api.itemList += item(1, 10)
-        api.itemList += item(2, 10)
-        repo.refresh()
+        syncUnread(2)
         val feedId = db.feedDao().getAll().single().id
         repo.markFeedRead(feedId)
         assertEquals(0, repo.observeUnread().first().size)
@@ -102,11 +105,7 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
     }
 
     @Test fun markOlderReadQueuesOnlyTheOlderUnreadArticlesAndUndoRequeues() = runTest {
-        api.feedList += FeedDto(10, "u", "t")
-        api.itemList += item(1, 10)
-        api.itemList += item(2, 10)
-        api.itemList += item(3, 10)
-        repo.refresh()
+        syncUnread(3)
         val selected = db.articleDao().getByRemoteId(2)!!.id
         val older = db.articleDao().getByRemoteId(1)!!.id
 

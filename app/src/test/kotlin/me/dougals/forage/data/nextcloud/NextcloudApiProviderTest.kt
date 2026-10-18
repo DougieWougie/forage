@@ -11,7 +11,7 @@
  */
 package me.dougals.forage.data.nextcloud
 
-import me.dougals.forage.domain.nextcloud.CredentialStore
+import me.dougals.forage.testutil.MemCredentialStore
 import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
@@ -27,18 +27,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class NextcloudApiProviderTest {
-    private class MemCreds(var value: NextcloudCredentials?) : CredentialStore {
-        override fun get() = value
-        override fun save(credentials: NextcloudCredentials) { value = credentials }
-        override fun clear() { value = null }
-    }
-
     private lateinit var server: MockWebServer
     @BeforeEach fun up() { server = MockWebServer().apply { start() } }
     @AfterEach fun down() { server.close() }
 
     private fun provider(creds: NextcloudCredentials?, allowInsecure: Boolean = true) =
-        RetrofitNextcloudApiProvider(MemCreds(creds), OkHttpClient(), allowInsecure)
+        RetrofitNextcloudApiProvider(MemCredentialStore(creds), OkHttpClient(), allowInsecure)
 
     private val foldersJson = """{"folders":[{"id":1,"name":"Tech","opened":true,"feeds":[]}]}"""
 
@@ -110,7 +104,7 @@ class NextcloudApiProviderTest {
     }
 
     @Test fun apiIsReusedUntilTheCredentialsChange() {
-        val creds = MemCreds(NextcloudCredentials(server.url("/").toString(), "u", "p"))
+        val creds = MemCredentialStore(NextcloudCredentials(server.url("/").toString(), "u", "p"))
         val p = RetrofitNextcloudApiProvider(creds, OkHttpClient(), allowInsecure = true)
         val first = p.api()
         assertSame(first, p.api())

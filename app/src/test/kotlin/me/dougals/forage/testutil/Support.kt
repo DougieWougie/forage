@@ -21,6 +21,7 @@ import me.dougals.forage.domain.auth.SessionStore
 import me.dougals.forage.domain.nextcloud.CredentialStore
 import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import me.dougals.forage.domain.model.Article
+import me.dougals.forage.domain.model.Feed
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -39,6 +40,9 @@ fun article(id: Long, read: Boolean = false, saved: Boolean = false, feedId: Lon
     id = id, feedId = feedId, guid = "g$id", title = "Title $id", url = "https://example.com/$id",
     author = null, summary = null, contentHtml = null, publishedAt = publishedAt, isRead = read, isSaved = saved, offlineHtml = null,
 )
+
+fun feed(id: Long, title: String = "F$id", folder: Long? = null, unread: Int = 0, url: String = "https://f/$id") =
+    Feed(id, url, title, null, folder, unread)
 
 class MemCredentialStore(var value: NextcloudCredentials? = null) : CredentialStore {
     override fun get() = value
