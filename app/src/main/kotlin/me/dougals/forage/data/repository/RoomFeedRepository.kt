@@ -14,6 +14,7 @@ package me.dougals.forage.data.repository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import me.dougals.forage.data.local.ForageDatabase
 import me.dougals.forage.data.local.SyncField
@@ -33,6 +34,12 @@ abstract class RoomFeedRepository(
     override fun observeSaved(): Flow<List<Article>> = db.articleDao().observeSaved().map { it.map { a -> a.toDomain() } }
     override fun observeFeedArticles(feedId: Long): Flow<List<Article>> =
         db.articleDao().observeByFeed(feedId).map { it.map { a -> a.toDomain() } }
+    override fun search(query: String): Flow<List<Article>> {
+        val term = query.trim()
+        if (term.isEmpty()) return flowOf(emptyList())
+        val pattern = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        return db.articleDao().search(pattern).map { it.map { a -> a.toDomain() } }
+    }
     override fun observeArticle(articleId: Long): Flow<Article?> = db.articleDao().observeById(articleId).map { it?.toDomain() }
     override fun observeFolders(): Flow<List<Folder>> = db.folderDao().observeAll().map { it.map { f -> f.toDomain() } }
     override fun observeFeeds(): Flow<List<Feed>> =

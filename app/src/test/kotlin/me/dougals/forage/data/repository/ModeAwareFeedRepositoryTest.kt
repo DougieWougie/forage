@@ -55,6 +55,14 @@ class ModeAwareFeedRepositoryTest {
         coVerify { nextcloud.moveFeed(3, null) }
     }
 
+    @Test fun searchAlwaysReadsFromLocalRoom() = runTest {
+        val hits = flowOf(emptyList<me.dougals.forage.domain.model.Article>())
+        every { local.search("rust") } returns hits
+        mode.value = SyncMode.NEXTCLOUD
+        assertEquals(hits, repo.search("rust"))
+        coVerify(exactly = 0) { nextcloud.search(any()) }
+    }
+
     @Test fun readsComeFromSharedRoomRegardlessOfMode() = runTest {
         val articles = flowOf(emptyList<me.dougals.forage.domain.model.Article>())
         every { local.observeUnread() } returns articles

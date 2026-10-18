@@ -33,6 +33,7 @@ class ModeAwareFeedRepository(
     override fun observeUnread(): Flow<List<Article>> = local.observeUnread()
     override fun observeSaved(): Flow<List<Article>> = local.observeSaved()
     override fun observeFeedArticles(feedId: Long): Flow<List<Article>> = local.observeFeedArticles(feedId)
+    override fun search(query: String): Flow<List<Article>> = local.search(query)
     override fun observeArticle(articleId: Long): Flow<Article?> = local.observeArticle(articleId)
     override fun observeFolders(): Flow<List<Folder>> = local.observeFolders()
     override fun observeFeeds(): Flow<List<Feed>> = local.observeFeeds()

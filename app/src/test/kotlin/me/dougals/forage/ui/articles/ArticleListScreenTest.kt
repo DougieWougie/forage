@@ -58,12 +58,13 @@ class ArticleListScreenTest {
     private val vm = mockk<ArticleListViewModel>(relaxed = true).also { every { it.state } returns state }
     private val opened = mutableListOf<Long>()
     private var backs = 0
+    private var searches = 0
 
     private fun show(initial: ArticleListState = list, source: ListSource = ListSource.Unread, canGoBack: Boolean = false) {
         state.value = initial
         every { vm.source } returns source
         rule.setContent {
-            ForageTheme { ArticleListScreen(onOpenArticle = { opened += it }, onBack = if (canGoBack) ({ backs++ }) else null, vm = vm) }
+            ForageTheme { ArticleListScreen(onOpenArticle = { opened += it }, onBack = if (canGoBack) ({ backs++ }) else null, onSearch = { searches++ }, vm = vm) }
         }
     }
 
@@ -90,6 +91,12 @@ class ArticleListScreenTest {
     @Test fun backOnlyShowsWhenThereIsSomewhereToGo() {
         show()
         rule.onNodeWithContentDescription("Back").assertDoesNotExist()
+    }
+
+    @Test fun searchOpensTheSearchScreen() {
+        show()
+        rule.onNodeWithContentDescription("Search").performClick(); rule.waitForIdle()
+        assertEquals(1, searches)
     }
 
     @Test fun backGoesBack() {

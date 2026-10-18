@@ -11,7 +11,9 @@
  */
 package me.dougals.forage.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -29,11 +31,12 @@ class ForageNavigationTest {
     @get:Rule val rule = createComposeRule()
 
     private val screens = ForageScreens(
-        list = { kind, _ -> Text("list:$kind") },
+        list = { kind, nav -> Text("list:$kind", Modifier.clickable { nav.navigate("search") }) },
         categories = { Text("screen:categories") },
         settings = { Text("screen:settings") },
         reader = { Text("screen:reader") },
         login = { _, _ -> Text("screen:login") },
+        search = { Text("screen:search") },
     )
 
     private fun start(badges: TabBadges = TabBadges()) = rule.setContent { ForageTheme { ForageNavScaffold(screens, badges) } }
@@ -73,6 +76,12 @@ class ForageNavigationTest {
         rule.onNodeWithText("Saved").assertIsSelected()
         tab("Unread")
         rule.onNodeWithText("Unread").assertIsSelected()
+    }
+
+    @Test fun searchIsAFullScreenWithoutTheTabBar() {
+        start()
+        rule.onNodeWithText("list:unread").performClick(); rule.waitForIdle()
+        shows("screen:search"); hides("Settings")
     }
 
     @Test fun otherTabsStillWork() {

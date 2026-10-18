@@ -25,6 +25,8 @@ interface FeedRepository {
     fun observeUnread(): Flow<List<Article>>
     fun observeSaved(): Flow<List<Article>>
     fun observeFeedArticles(feedId: Long): Flow<List<Article>>
+    /** Articles whose title, author or text contain [query] (case-insensitive), newest first; empty for a blank query. */
+    fun search(query: String): Flow<List<Article>>
     fun observeArticle(articleId: Long): Flow<Article?>
     fun observeFolders(): Flow<List<Folder>>
     fun observeFeeds(): Flow<List<Feed>>

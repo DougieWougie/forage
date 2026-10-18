@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -61,13 +62,13 @@ import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.ui.rememberMeteredConnection
 import me.dougals.forage.presentation.articles.ListSource
 import me.dougals.forage.presentation.articles.ReadFilter
-import me.dougals.forage.presentation.articles.ToggleUndo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleListScreen(
     onOpenArticle: (Long) -> Unit,
     onBack: (() -> Unit)?,
+    onSearch: () -> Unit,
     vm: ArticleListViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -90,19 +91,7 @@ fun ArticleListScreen(
         if (result == SnackbarResult.ActionPerformed) vm.undoMarkOlderRead() else vm.dismissMarkedOlder()
     }
 
-    val toggleMessage = state.toggled?.let { toggle ->
-        stringResource(
-            when (toggle.field) {
-                ToggleUndo.Field.READ -> if (toggle.value) R.string.toggled_read else R.string.toggled_unread
-                ToggleUndo.Field.SAVED -> if (toggle.value) R.string.toggled_saved else R.string.toggled_unsaved
-            },
-        )
-    }
-    LaunchedEffect(state.toggled) {
-        val message = toggleMessage ?: return@LaunchedEffect
-        val result = snackbar.showSnackbar(message, actionLabel = undoLabel, duration = SnackbarDuration.Short)
-        if (result == SnackbarResult.ActionPerformed) vm.undoToggle() else vm.dismissToggle()
-    }
+    ToggleUndoSnackbar(state.toggled, snackbar, onUndo = vm::undoToggle, onDismiss = vm::dismissToggle)
 
     // Oldest unread per feed: an article has something older to mark only when that is earlier than its own date.
     val oldestUnread = remember(state.articles) {
@@ -125,6 +114,7 @@ fun ArticleListScreen(
                     if (onBack != null) IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) }
                 },
                 actions = {
+                    IconButton(onSearch) { Icon(Icons.Filled.Search, stringResource(R.string.action_search)) }
                     if (vm.source != ListSource.Saved && state.articles.isNotEmpty()) {
                         IconButton(vm::markAllRead) { Icon(Icons.Filled.DoneAll, stringResource(R.string.action_mark_all_read)) }
                     }
