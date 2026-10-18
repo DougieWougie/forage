@@ -31,6 +31,13 @@
     <string name="action_mark_read">Mark read</string>
     <string name="action_mark_older_read">Mark older as read</string>
     <string name="action_undo">Undo</string>
+    <string name="action_search">Search</string>
+    <string name="search_hint">Search articles</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_empty_title">Search your articles</string>
+    <string name="search_empty_body">Looks through titles, authors and article text.</string>
+    <string name="search_no_results_title">No matches</string>
+    <string name="search_no_results_body">Nothing found for \u201c%1$s\u201d.</string>
     <string name="toggled_read">Marked read</string>
     <string name="toggled_unread">Marked unread</string>
     <string name="toggled_saved">Saved</string>

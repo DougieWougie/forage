@@ -50,11 +50,6 @@ sealed interface ListSource {
 
 enum class ReadFilter { ALL, UNREAD, READ }
 
-/** A read or saved toggle just made on [articleId], now [value], kept so the snackbar can flip it back. */
-data class ToggleUndo(val articleId: Long, val field: Field, val value: Boolean) {
-    enum class Field { READ, SAVED }
-}
-
 data class ArticleListState(
     val articles: List<Article> = emptyList(),
     val filter: ReadFilter = ReadFilter.ALL,
@@ -85,7 +80,7 @@ class ArticleListViewModel @Inject constructor(
     private val refreshing = MutableStateFlow(false)
     private val message = MutableStateFlow<UiText?>(null)
     private val markedOlder = MutableStateFlow<List<Long>>(emptyList())
-    private val toggled = MutableStateFlow<ToggleUndo?>(null)
+    private val toggles = ArticleToggles(repo, viewModelScope)
     private val filter = MutableStateFlow(ReadFilter.ALL)
     private val folderChoice = MutableStateFlow<Set<Long>>(emptySet())
 
@@ -127,7 +122,7 @@ class ArticleListViewModel @Inject constructor(
         )
     }
 
-    private val undos = combine(markedOlder, toggled) { marked, toggle -> marked to toggle }
+    private val undos = combine(markedOlder, toggles.pending) { marked, toggle -> marked to toggle }
 
     val state: StateFlow<ArticleListState> = combine(shownArticles, refreshing, message, settingsRepo.settings, undos) { list, isRefreshing, msg, settings, (marked, toggle) ->
         ArticleListState(
@@ -141,30 +136,10 @@ class ArticleListViewModel @Inject constructor(
     fun toggleFolder(id: Long) { folderChoice.update { if (id in it) it - id else it + id } }
     fun clearFolders() { folderChoice.value = emptySet() }
 
-    fun toggleRead(article: Article) {
-        val now = !article.isRead
-        toggled.value = ToggleUndo(article.id, ToggleUndo.Field.READ, now)
-        viewModelScope.launch { repo.setRead(article.id, now) }
-    }
-
-    fun toggleSaved(article: Article) {
-        val now = !article.isSaved
-        toggled.value = ToggleUndo(article.id, ToggleUndo.Field.SAVED, now)
-        viewModelScope.launch { repo.setSaved(article.id, now) }
-    }
-
-    fun undoToggle() {
-        val undo = toggled.value ?: return
-        toggled.value = null
-        viewModelScope.launch {
-            when (undo.field) {
-                ToggleUndo.Field.READ -> repo.setRead(undo.articleId, !undo.value)
-                ToggleUndo.Field.SAVED -> repo.setSaved(undo.articleId, !undo.value)
-            }
-        }
-    }
-
-    fun dismissToggle() { toggled.value = null }
+    fun toggleRead(article: Article) = toggles.toggleRead(article)
+    fun toggleSaved(article: Article) = toggles.toggleSaved(article)
+    fun undoToggle() = toggles.undo()
+    fun dismissToggle() = toggles.dismiss()
 
     fun markAllRead() {
         val feeds = state.value.articles.map { it.feedId }.distinct()

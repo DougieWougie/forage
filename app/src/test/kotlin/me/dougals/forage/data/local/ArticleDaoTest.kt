@@ -34,6 +34,37 @@ class ArticleDaoTest : DbTestBase() {
         assertEquals(listOf("new", "old"), dao.observeUnread().first().map { it.guid })
     }
 
+    @Test fun searchMatchesTitleAuthorSummaryAndTextIgnoringCase() = runTest {
+        val feed = newFeed()
+        dao.insertIgnore(listOf(
+            articleEntity(feed, "title", publishedAt = 1).copy(title = "Rust in the kernel"),
+            articleEntity(feed, "author", publishedAt = 2).copy(author = "Ada RUSTAM"),
+            articleEntity(feed, "summary", publishedAt = 3).copy(summary = "all about rusty nails"),
+            articleEntity(feed, "text", publishedAt = 4).copy(contentHtml = "<p>trust the process</p>"),
+            articleEntity(feed, "other", publishedAt = 5).copy(title = "Gardening"),
+        ))
+        assertEquals(listOf("text", "summary", "author", "title"), dao.search("%rust%").first().map { it.guid })
+    }
+
+    @Test fun searchFindsTextBeyondTheTruncatedListColumns() = runTest {
+        val feed = newFeed()
+        dao.insertIgnore(listOf(articleEntity(feed, "long").copy(contentHtml = "x".repeat(5_000) + " needle")))
+        val hit = dao.search("%needle%").first().single()
+        assertEquals(4_000, hit.contentHtml!!.length)
+    }
+
+    @Test fun searchTreatsBackslashAsTheEscapeCharacter() = runTest {
+        val feed = newFeed()
+        dao.insertIgnore(listOf(articleEntity(feed, "pct").copy(title = "100% sure"), articleEntity(feed, "plain").copy(title = "1000 sure")))
+        assertEquals(listOf("pct"), dao.search("%100\\% s%").first().map { it.guid })
+    }
+
+    @Test fun searchIsCapped() = runTest {
+        val feed = newFeed()
+        dao.insertIgnore((1..SEARCH_LIMIT + 5).map { articleEntity(feed, "g$it", publishedAt = it.toLong()) })
+        assertEquals(SEARCH_LIMIT, dao.search("%T-g%").first().size)
+    }
+
     @Test fun savedReturnsOnlySaved() = runTest {
         val feed = newFeed()
         dao.insertIgnore(listOf(articleEntity(feed, "a", isSaved = true), articleEntity(feed, "b")))

@@ -29,6 +29,8 @@ private const val LIST_COLUMNS =
         "substr(contentHtml, 1, 4000) AS contentHtml, publishedAt, isRead, isSaved, " +
         "CASE WHEN offlineHtml IS NULL THEN NULL ELSE '' END AS offlineHtml, remoteId, imageUrl"
 
+const val SEARCH_LIMIT = 200
+
 @Dao
 interface FolderDao {
     @Insert suspend fun insert(folder: FolderEntity): Long
@@ -77,6 +79,13 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE id = :id") fun observeById(id: Long): Flow<ArticleEntity?>
     @Query("SELECT " + LIST_COLUMNS + " FROM articles WHERE isSaved = 1 ORDER BY publishedAt DESC")
     fun observeSaved(): Flow<List<ArticleEntity>>
+    /** [pattern] is a LIKE pattern in which `\` escapes `%` and `_`; capped so a broad term can't flood the list. */
+    @Query(
+        "SELECT " + LIST_COLUMNS + " FROM articles WHERE articles.title LIKE :pattern ESCAPE '\\' " +
+            "OR articles.author LIKE :pattern ESCAPE '\\' OR articles.summary LIKE :pattern ESCAPE '\\' " +
+            "OR articles.contentHtml LIKE :pattern ESCAPE '\\' ORDER BY publishedAt DESC LIMIT " + SEARCH_LIMIT,
+    )
+    fun search(pattern: String): Flow<List<ArticleEntity>>
     @Query("SELECT feedId, COUNT(*) AS count FROM articles WHERE isRead = 0 GROUP BY feedId")
     fun observeUnreadCounts(): Flow<List<UnreadCount>>
     @Query("UPDATE articles SET isRead = :read WHERE id = :id") suspend fun setRead(id: Long, read: Boolean)

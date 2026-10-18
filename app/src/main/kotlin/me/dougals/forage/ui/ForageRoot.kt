@@ -50,6 +50,7 @@ import me.dougals.forage.ui.articles.ArticleListScreen
 import me.dougals.forage.ui.categories.CategoriesScreen
 import me.dougals.forage.ui.login.LoginScreen
 import me.dougals.forage.ui.reader.ReaderScreen
+import me.dougals.forage.ui.search.SearchScreen
 import me.dougals.forage.ui.settings.SettingsScreen
 
 /** Unread articles (Unread tab) and feeds with something new (Categories tab). */
@@ -74,6 +75,7 @@ private const val SAVED_ROUTE = "list/saved"
 private const val FEED_ROUTE = "list/feed?feedId={feedId}"
 private fun isListRoute(route: String?) = route != null && route.startsWith("list/")
 private const val READER_ROUTE = "reader/{articleId}"
+private const val SEARCH_ROUTE = "search"
 private const val LOGIN_ROUTE = "login?url={url}"
 
 /** The screens behind each destination, so navigation can be tested with stand-ins. */
@@ -83,12 +85,14 @@ class ForageScreens(
     val settings: @Composable (nav: NavHostController) -> Unit,
     val reader: @Composable (nav: NavHostController) -> Unit,
     val login: @Composable (startUrl: String, nav: NavHostController) -> Unit,
+    val search: @Composable (nav: NavHostController) -> Unit,
 )
 
 private val RealScreens = ForageScreens(
     list = { kind, nav ->
         ArticleListScreen(
             onOpenArticle = { nav.navigate("reader/$it") },
+            onSearch = { nav.navigate(SEARCH_ROUTE) },
             onBack = if (kind == "feed") ({ nav.popBackStack() }) else null,
         )
     },
@@ -96,6 +100,7 @@ private val RealScreens = ForageScreens(
     settings = { nav -> SettingsScreen(onLogin = { url -> nav.navigate("login?url=${android.net.Uri.encode(url)}") }) },
     reader = { nav -> ReaderScreen(onBack = { nav.popBackStack() }) },
     login = { url, nav -> LoginScreen(startUrl = url, onDone = { nav.popBackStack() }) },
+    search = { nav -> SearchScreen(onOpenArticle = { nav.navigate("reader/$it") }, onBack = { nav.popBackStack() }) },
 )
 
 @Composable
@@ -157,6 +162,7 @@ fun ForageNavScaffold(screens: ForageScreens, badges: TabBadges = TabBadges()) {
                     ),
                 ) { screens.list(kind, nav) }
             }
+            composable(SEARCH_ROUTE) { screens.search(nav) }
             composable("categories") { screens.categories(nav) }
             composable("settings") { screens.settings(nav) }
             composable(READER_ROUTE, arguments = listOf(navArgument("articleId") { type = NavType.LongType })) {

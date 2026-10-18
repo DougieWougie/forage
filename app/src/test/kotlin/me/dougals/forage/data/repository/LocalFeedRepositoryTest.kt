@@ -64,6 +64,28 @@ class LocalFeedRepositoryTest : DbTestBase() {
         assertEquals(count, repo.observeUnread().first().size)
     }
 
+    @Test fun searchTrimsTheQueryAndIsEmptyWhenBlank() = runTest {
+        source.feeds["https://a/feed"] = parsed("A", "1", "2")
+        repo.addFeed("https://a/feed")
+        assertEquals(listOf("T-2"), repo.search("  t-2 ").first().map { it.title })
+        assertEquals(emptyList<Long>(), repo.search("   ").first().map { it.id })
+    }
+
+    @Test fun searchTakesWildcardCharactersLiterally() = runTest {
+        val feedId = db.feedDao().insert(me.dougals.forage.data.local.FeedEntity(url = "https://a/feed", title = "A"))
+        db.articleDao().insertIgnore(listOf(
+            articleEntity(feedId, "a").copy(title = "50% off"),
+            articleEntity(feedId, "b").copy(title = "snake_case"),
+            articleEntity(feedId, "c").copy(title = "500 offers"),
+            articleEntity(feedId, "d").copy(title = "snakeXcase"),
+            articleEntity(feedId, "e").copy(title = "back\\slash"),
+        ))
+        assertEquals(listOf("50% off"), repo.search("0% o").first().map { it.title })
+        assertEquals(listOf("snake_case"), repo.search("ke_c").first().map { it.title })
+        assertEquals(listOf("back\\slash"), repo.search("k\\s").first().map { it.title })
+        assertEquals(emptyList<String>(), repo.search("%").first().map { it.title }.filter { it == "500 offers" })
+    }
+
     @Test fun addFeedFileUnderFolder() = runTest {
         source.feeds["https://a/feed"] = parsed("A")
         val folder = repo.createFolder("Tech").getOrThrow()
