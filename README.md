@@ -48,8 +48,31 @@ Requires JDK 17+ and the Android SDK (compileSdk 37). minSdk 26.
 ```sh
 ./gradlew :app:assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :app:testDebugUnitTest    # unit and Robolectric tests
-./gradlew :app:assembleRelease      # unsigned; sign it yourself
+./gradlew :app:bundleRelease        # app/build/outputs/bundle/release/app-release.aab
+./gradlew :app:assembleRelease      # release APK
 ```
+
+### Release signing
+
+Release builds are signed with an upload key when one is configured, and unsigned otherwise. Create the
+keystore once, keep it outside the repository and back it up:
+
+```sh
+keytool -genkeypair -v -keystore ~/forage-upload.jks -alias upload -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Then give Gradle the details, either in `keystore.properties` at the repository root (git-ignored):
+
+```properties
+storeFile=/home/you/forage-upload.jks
+storePassword=...
+keyAlias=upload
+keyPassword=...
+```
+
+or as the environment variables `FORAGE_KEYSTORE`, `FORAGE_KEYSTORE_PASSWORD`, `FORAGE_KEY_ALIAS` and
+`FORAGE_KEY_PASSWORD`. Enrol in Play App Signing when you create the app in Play Console so this is only
+the upload key; Google holds the app signing key.
 
 Install on a connected device with Google's [Android CLI](https://developer.android.com/tools/agents/android-cli):
 
