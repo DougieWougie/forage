@@ -27,6 +27,14 @@ val signingProps = Properties().apply {
 }
 fun signingValue(key: String, env: String): String? = signingProps.getProperty(key) ?: System.getenv(env)
 
+// versionName comes from the latest v* tag and versionCode from the commit count; see GitVersion.
+fun git(vararg args: String): String? = runCatching {
+    providers.exec {
+        commandLine("git", *args)
+        isIgnoreExitValue = true
+    }.standardOutput.asText.get()
+}.getOrNull()
+
 android {
     namespace = "me.dougals.forage"
     compileSdk = 37
@@ -39,8 +47,8 @@ android {
         applicationId = "me.dougals.forage"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = GitVersion.code(git("rev-list", "--count", "HEAD"))
+        versionName = GitVersion.name(git("describe", "--tags", "--match", "v*"))
     }
 
     signingConfigs {

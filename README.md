@@ -52,6 +52,19 @@ Requires JDK 17+ and the Android SDK (compileSdk 37). minSdk 26.
 ./gradlew :app:assembleRelease      # release APK
 ```
 
+### Versioning
+
+Version numbers come from git, so there is nothing to edit. `versionName` is the latest `v*` tag
+(`v0.2.0` gives `0.2.0`; commits after it give `0.2.0-5-g1a2b3c4`, and with no tag it is `0.1.0`).
+`versionCode` is the commit count, which only grows, as Play requires. To release:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+./gradlew :app:bundleRelease
+```
+
+Build from a full clone: a shallow one undercounts commits and gives a low `versionCode`.
+
 ### Release signing
 
 Release builds are signed with an upload key when one is configured, and unsigned otherwise. Create the
