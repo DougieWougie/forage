@@ -9,6 +9,8 @@
  * of the License, or (at your option) any later version. It is distributed WITHOUT ANY WARRANTY;
  * see the LICENSE file for details.
  */
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -17,6 +19,13 @@ plugins {
     alias(libs.plugins.hilt)
     jacoco
 }
+
+// Upload key for Play. Read from keystore.properties (git-ignored) or FORAGE_* environment variables;
+// without either, release builds stay unsigned so debug builds and CI need no secrets.
+val signingProps = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+}
+fun signingValue(key: String, env: String): String? = signingProps.getProperty(key) ?: System.getenv(env)
 
 android {
     namespace = "me.dougals.forage"
@@ -34,9 +43,22 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        val storeFile = signingValue("storeFile", "FORAGE_KEYSTORE")
+        if (storeFile != null) {
+            create("release") {
+                this.storeFile = rootProject.file(storeFile)
+                storePassword = signingValue("storePassword", "FORAGE_KEYSTORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "FORAGE_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "FORAGE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug { enableUnitTestCoverage = true }
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
