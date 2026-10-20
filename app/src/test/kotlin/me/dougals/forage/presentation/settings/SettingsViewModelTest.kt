@@ -49,7 +49,7 @@ class SettingsViewModelTest {
     private val creds = MemCredentialStore()
     private val sync = MemSyncState(lastModified = 999)
     private val sessions = MemSessionStore()
-    private val repo = mockk<FeedRepository>(relaxed = true)
+    private val repo = mockk<FeedRepository>(relaxed = true).also { every { it.observeFolders() } returns flowOf(emptyList()) }
     private val loginFlow = mockk<NextcloudLoginFlow>(relaxed = true)
     private fun vm() = SettingsViewModel(settings, creds, sync, sessions, repo, loginFlow)
 

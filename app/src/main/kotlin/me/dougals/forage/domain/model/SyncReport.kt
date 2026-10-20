@@ -20,4 +20,6 @@ data class SyncReport(
     val saved: Int = 0,
     val feedsReceived: Int = 0,
     val feedsRemoved: Int = 0,
+    /** [newArticles] broken down by local feed id; feeds that gained nothing are absent. */
+    val newByFeed: Map<Long, Int> = emptyMap(),
 )

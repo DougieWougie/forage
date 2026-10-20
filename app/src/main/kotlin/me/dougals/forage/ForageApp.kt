@@ -12,6 +12,8 @@
 package me.dougals.forage
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import coil3.ImageLoader
@@ -53,6 +55,7 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
 
     override fun onCreate() {
         super.onCreate()
+        createNotificationChannel()
         // Follows the settings, so changing the interval or Wi-Fi-only takes effect immediately and applies at launch.
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             settings.settings.map { it.refreshInterval to it.refreshWifiOnly }.distinctUntilChanged()
@@ -60,7 +63,15 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
         }
     }
 
-    private companion object {
-        const val THUMBNAIL_CACHE_BYTES = 64L * 1024 * 1024
+    /** Low importance: no sound or vibration, so a digest never interrupts. Users can tune it in system settings. */
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(NEW_ARTICLES_CHANNEL, getString(R.string.channel_new_articles), NotificationManager.IMPORTANCE_LOW)
+            .apply { description = getString(R.string.channel_new_articles_body) }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    companion object {
+        const val NEW_ARTICLES_CHANNEL = "new-articles"
+        private const val THUMBNAIL_CACHE_BYTES = 64L * 1024 * 1024
     }
 }

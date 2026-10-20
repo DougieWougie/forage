@@ -335,7 +335,9 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
     @Test fun reportCountsNewArticlesPulled() = runTest {
         api.feedList += FeedDto(10, "https://lwn.net/rss", "LWN")
         api.itemList += item(1, 10); api.itemList += item(2, 10)
-        assertEquals(SyncReport(newArticles = 2, feedsReceived = 1), repo.refresh().getOrThrow())
+        val report = repo.refresh().getOrThrow()
+        val feedId = db.feedDao().getAll().single().id
+        assertEquals(SyncReport(newArticles = 2, newByFeed = mapOf(feedId to 2), feedsReceived = 1), report)
     }
 
     @Test fun alreadyReadItemsArePulledButNotCountedAsNew() = runTest {

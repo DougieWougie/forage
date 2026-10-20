@@ -26,6 +26,9 @@ interface SettingsRepository {
     suspend fun setPullToRefresh(enabled: Boolean)
     suspend fun setRefreshInterval(interval: RefreshInterval)
     suspend fun setRefreshWifiOnly(wifiOnly: Boolean)
+    /** Replaces every folder opted in to digests, e.g. to select or clear them all at once. */
+    suspend fun setNotifyFolders(folderIds: Set<Long>)
+    suspend fun setFolderNotifications(folderId: Long, notify: Boolean)
     suspend fun setThumbnails(mode: ThumbnailMode)
     suspend fun setThumbnailSide(side: ThumbnailSide)
     suspend fun dismissSuggestion(feedUrl: String)

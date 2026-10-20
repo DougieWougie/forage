@@ -53,13 +53,14 @@ class NextcloudSyncer(
         pulled.newlySaved.forEach(archive::schedule)
         state.lastSyncedAt = System.currentTimeMillis()
         return SyncReport(
-            newArticles = pulled.newUnread, markedRead = pulled.markedRead, saved = pulled.newlySaved.size,
+            newArticles = pulled.newUnread.values.sum(), newByFeed = pulled.newUnread,
+            markedRead = pulled.markedRead, saved = pulled.newlySaved.size,
             feedsReceived = feeds.received, feedsRemoved = feeds.removed,
         )
     }
 
     private class FeedsReconciled(val ids: Map<Long, Long>, val received: Int, val removed: Int)
-    private class ItemsUpserted(val newlySaved: List<Long>, val newUnread: Int, val markedRead: Int)
+    private class ItemsUpserted(val newlySaved: List<Long>, val newUnread: Map<Long, Int>, val markedRead: Int)
 
     /** @return remote folder id -> local id */
     private suspend fun reconcileFolders(remote: List<FolderDto>): Map<Long, Long> {
@@ -106,7 +107,7 @@ class NextcloudSyncer(
         val dao = db.articleDao()
         val pending = db.pendingChangeDao().getAll().groupBy({ it.articleId }, { it.field })
         val newlySaved = mutableListOf<Long>()
-        var newUnread = 0
+        val newUnread = mutableMapOf<Long, Int>()
         var markedRead = 0
         for (item in items) {
             val feedId = feedIds[item.feedId] ?: continue
@@ -132,7 +133,7 @@ class NextcloudSyncer(
                 item.toEntity(feedId, isRead, isSaved).imageUrl?.let { dao.fillImageUrl(feedId, existing.guid, it) }
                 existing.id
             }
-            if (existing == null && !isRead) newUnread++
+            if (existing == null && !isRead) newUnread.merge(feedId, 1, Int::plus)
             if (existing != null && !existing.isRead && isRead) markedRead++
             if (isSaved && existing?.isSaved != true) newlySaved += id
         }

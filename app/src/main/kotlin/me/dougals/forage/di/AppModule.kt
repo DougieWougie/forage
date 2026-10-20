@@ -56,7 +56,10 @@ import me.dougals.forage.data.settings.settingsDataStore
 import me.dougals.forage.data.work.ArchiveScheduler
 import me.dougals.forage.data.work.SyncScheduler
 import me.dougals.forage.data.work.WorkManagerSchedulers
+import me.dougals.forage.data.notify.AndroidDigestNotifier
 import me.dougals.forage.domain.model.RefreshProgress
+import me.dougals.forage.domain.notify.DigestNotifier
+import me.dougals.forage.domain.notify.NewArticleDigest
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
 import okhttp3.OkHttpClient
@@ -137,6 +140,11 @@ object AppModule {
         local = LocalFeedRepository(db, source, archive, progress = progress),
         nextcloud = NextcloudFeedRepository(db, api, flusher, syncer, sync, archive),
     )
+
+    @Provides @Singleton fun digestNotifier(@ApplicationContext c: Context): DigestNotifier = AndroidDigestNotifier(c)
+    @Provides
+    fun newArticleDigest(repo: FeedRepository, settings: SettingsRepository, state: SyncStateStore, notifier: DigestNotifier) =
+        NewArticleDigest(repo, settings, state, notifier)
 
     @Provides @Singleton fun suggestionCatalogue(@ApplicationContext c: Context): SuggestionCatalogue = AssetSuggestionCatalogue(c)
 

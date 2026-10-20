@@ -128,7 +128,8 @@ class LocalFeedRepositoryTest : DbTestBase() {
         repo.setRead(repo.observeUnread().first().single().id, true)
 
         source.feeds["https://a/feed"] = parsed("A", "1", "2")
-        assertEquals(me.dougals.forage.domain.model.SyncReport(newArticles = 1), repo.refresh().getOrThrow())
+        val feedId = repo.observeFeeds().first().single().id
+        assertEquals(me.dougals.forage.domain.model.SyncReport(newArticles = 1, newByFeed = mapOf(feedId to 1)), repo.refresh().getOrThrow())
 
         assertEquals(listOf("2"), repo.observeUnread().first().map { it.guid })
         assertEquals(2, db.articleDao().getAll().size)

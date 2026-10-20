@@ -103,4 +103,17 @@ class SettingsRepositoryTest {
         r.setFontScale(9f); assertEquals(2.0f, r.settings.first().fontScale)
         r.setFontScale(0.1f); assertEquals(0.8f, r.settings.first().fontScale)
     }
+
+    @Test fun notificationsAreOffByDefaultAndFolderOptInsPersist() = runTest {
+        val r = repo()
+        assertEquals(emptySet<Long>(), r.settings.first().notifyFolderIds)
+        r.setFolderNotifications(3, true)
+        r.setFolderNotifications(7, true)
+        r.setFolderNotifications(3, false)
+        assertEquals(setOf(7L), r.settings.first().notifyFolderIds)
+        r.setNotifyFolders(setOf(-1L, 4L, 9L))
+        assertEquals(setOf(-1L, 4L, 9L), r.settings.first().notifyFolderIds)
+        r.setNotifyFolders(emptySet())
+        assertEquals(emptySet<Long>(), r.settings.first().notifyFolderIds)
+    }
 }

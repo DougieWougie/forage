@@ -30,6 +30,7 @@ import me.dougals.forage.data.content.OfflineArchiver
 import me.dougals.forage.data.nextcloud.NextcloudNotConfiguredException
 import me.dougals.forage.data.nextcloud.PendingChangeFlusher
 import me.dougals.forage.domain.model.RefreshInterval
+import me.dougals.forage.domain.notify.NewArticleDigest
 import me.dougals.forage.domain.repository.FeedRepository
 import java.util.concurrent.TimeUnit
 
@@ -121,9 +122,12 @@ class RefreshWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val repo: FeedRepository,
+    private val digest: NewArticleDigest,
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
+        val announceable = digest.hasBaseline()
         val outcome = repo.refresh()
+        outcome.getOrNull()?.takeIf { announceable }?.let { digest.announce(it) }
         return when {
             outcome.isSuccess -> Result.success()
             // Nothing to retry until the user connects; the next period tries again.

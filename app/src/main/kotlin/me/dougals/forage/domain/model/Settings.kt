@@ -35,6 +35,8 @@ data class AppSettings(
     val refreshInterval: RefreshInterval = RefreshInterval.HOURLY,
     /** Background refresh waits for an unmetered connection (Wi-Fi) instead of any connection. */
     val refreshWifiOnly: Boolean = false,
+    /** Local ids of the folders (or [UNCATEGORISED_FOLDER_ID]) whose new articles appear in a digest. Empty: no digests. */
+    val notifyFolderIds: Set<Long> = emptySet(),
     /** Feed URLs of suggestions the user waved away. */
     val dismissedSuggestions: Set<String> = emptySet(),
 ) {

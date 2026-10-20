@@ -113,6 +113,9 @@
 
     <!-- Settings -->
     <string name="settings_title">Einstellungen</string>
+    <string name="section_notifications">Benachrichtigungen</string>
+    <string name="notifications_hint">Tippe auf eine Kategorie, um nach einer Aktualisierung im Hintergrund eine ruhige Zusammenfassung ihrer neuen Artikel zu erhalten. Erneut tippen zum Beenden.</string>
+    <string name="notifications_blocked">Benachrichtigungen sind für Forage blockiert. Erlaube sie in den Systemeinstellungen.</string>
     <string name="section_sync">Synchronisierung</string>
     <string name="section_reading">Lesen</string>
     <string name="section_article_list">Artikelliste</string>
@@ -147,6 +150,8 @@
     <string name="refresh_3h">3 Std.</string>
     <string name="refresh_6h">6 Std.</string>
     <string name="refresh_12h">12 Std.</string>
+    <string name="channel_new_articles">Neue Artikel</string>
+    <string name="channel_new_articles_body">Eine ruhige Zusammenfassung neuer Artikel in den von dir gewählten Kategorien.</string>
     <string name="refresh_wifi_only">Nur WLAN</string>
     <string name="refresh_wifi_only_body">Hintergrundaktualisierungen bei mobilen Daten und anderen getakteten Verbindungen überspringen.</string>
     <string name="pull_to_refresh">Zum Aktualisieren nach unten ziehen</string>
