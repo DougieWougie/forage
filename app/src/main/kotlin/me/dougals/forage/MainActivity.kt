@@ -32,9 +32,15 @@ class MainActivity : ComponentActivity() {
         setContent { ForageTheme { BrandSplash { ForageRoot() } } }
     }
 
+    override fun onStop() {
+        ForageApp.appVisible = false
+        super.onStop()
+    }
+
     /** Opening the app is what the digest asked for, so it shouldn't linger. */
     override fun onStart() {
         super.onStart()
+        ForageApp.appVisible = true
         digest.clear()
     }
 }
