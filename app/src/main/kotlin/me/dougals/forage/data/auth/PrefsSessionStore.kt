@@ -12,18 +12,19 @@
 package me.dougals.forage.data.auth
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import me.dougals.forage.domain.auth.SessionStore
 
 /** Pass EncryptedSharedPreferences in production; plain prefs are fine in tests. */
 class PrefsSessionStore(private val prefs: SharedPreferences) : SessionStore {
     override fun save(domain: String, cookieHeader: String) {
-        prefs.edit().putString(domain.lowercase(), cookieHeader).apply()
+        prefs.edit { putString(domain.lowercase(), cookieHeader) }
     }
 
     override fun get(domain: String): String? = prefs.getString(domain.lowercase(), null)
 
     override fun remove(domain: String) {
-        prefs.edit().remove(domain.lowercase()).apply()
+        prefs.edit { remove(domain.lowercase()) }
     }
 
     override fun domains(): List<String> = prefs.all.keys.sorted()

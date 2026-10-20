@@ -279,7 +279,7 @@ class ArticleListScreenTest {
 
     @Test fun theUnreadListOffersCategoryChips() {
         show(categorised.copy(hasUncategorised = true))
-        listOf("All", "Tech", "News", "Uncategorised").forEach { rule.onNodeWithText(it).assertExists() }
+        listOf("All", "Tech", "News", "Uncategorized").forEach { rule.onNodeWithText(it).assertExists() }
     }
 
     @Test fun oneCategoryIsNotWorthAChip() {
@@ -300,7 +300,7 @@ class ArticleListScreenTest {
     @Test fun tappingACategoryTogglesIt() {
         show(categorised.copy(hasUncategorised = true))
         rule.onNodeWithText("News").performClick(); rule.waitForIdle()
-        rule.onNodeWithText("Uncategorised").performClick(); rule.waitForIdle()
+        rule.onNodeWithText("Uncategorized").performClick(); rule.waitForIdle()
         rule.onNodeWithText("All").performClick(); rule.waitForIdle()
         verify { vm.toggleFolder(2); vm.toggleFolder(ArticleListViewModel.UNCATEGORISED); vm.clearFolders() }
     }
@@ -309,7 +309,7 @@ class ArticleListScreenTest {
         show(categorised.copy(hasUncategorised = true, folderIds = setOf(1, 2)))
         rule.onNodeWithText("News").assertIsSelected()
         rule.onNodeWithText("Tech").assertIsSelected()
-        rule.onNodeWithText("Uncategorised").assertIsNotSelected()
+        rule.onNodeWithText("Uncategorized").assertIsNotSelected()
         rule.onNodeWithText("All").assertIsNotSelected()
     }
 
