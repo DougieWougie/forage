@@ -142,8 +142,22 @@ class LocalFeedRepositoryTest : DbTestBase() {
         repo.addFeed("https://b/feed").getOrThrow()
         source.feeds["https://b/feed"] = parsed("B", "1", "2")
         source.failing += "https://a/feed"
-        assertTrue(repo.refresh().isFailure)
+        val outcome = repo.refresh()
+        assertTrue(outcome.isFailure)
         assertEquals(3, db.articleDao().getAll().size)
+
+        // What the healthy feed brought in rides along with the failure, so a digest can still announce it.
+        val partial = outcome.exceptionOrNull() as me.dougals.forage.domain.model.PartialRefreshException
+        val bId = db.feedDao().getByUrl("https://b/feed")!!.id
+        assertEquals(me.dougals.forage.domain.model.SyncReport(newArticles = 1, newByFeed = mapOf(bId to 1)), partial.report)
+        assertEquals("down: https://a/feed", partial.message)
+    }
+
+    @Test fun aRefreshWhereEveryFeedFailsIsAPlainFailure() = runTest {
+        source.feeds["https://a/feed"] = parsed("A", "1")
+        repo.addFeed("https://a/feed").getOrThrow()
+        source.failing += "https://a/feed"
+        assertTrue(repo.refresh().exceptionOrNull() is java.io.IOException)
     }
 
     @Test fun refreshReportsProgressPerFeedAndClearsWhenDone() = runTest {
