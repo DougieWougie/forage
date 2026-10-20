@@ -11,6 +11,14 @@
  */
 package me.dougals.forage.ui.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import me.dougals.forage.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
@@ -22,6 +30,8 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -86,10 +96,11 @@ import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.settings.SettingsViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -98,6 +109,28 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     val scroll = TopAppBarDefaults.pinnedScrollBehavior()
     var showConnect by rememberSaveable { mutableStateOf(false) }
     var showLogin by rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val uncategorisedLabel = stringResource(R.string.uncategorized)
+    val notificationsBlocked = stringResource(R.string.notifications_blocked)
+    // Android 13+ asks at runtime; earlier versions grant it at install. Re-read on resume, as it can change in system settings.
+    var permitted by remember { mutableStateOf(notificationsPermitted(context)) }
+    // The change that prompted the permission request, applied only if it is granted.
+    var pendingNotifyChange by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        permitted = granted
+        if (granted) pendingNotifyChange?.invoke()
+        else scope.launch { snackbar.showSnackbar(notificationsBlocked) }
+        pendingNotifyChange = null
+    }
+    /** Turning a digest on needs the permission first; turning one off never does. */
+    fun changeNotifications(enabling: Boolean, apply: () -> Unit) {
+        if (enabling && !permitted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pendingNotifyChange = apply
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            apply()
+        }
+    }
     var scale by remember(state.settings.fontScale) { mutableFloatStateOf(state.settings.fontScale) }
 
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() } }
@@ -111,7 +144,7 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     // A login finishes on another screen; pick up the new session when we come back.
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
-        val observer = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) vm.reloadSessions() }
+        val observer = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) { vm.reloadSessions(); permitted = notificationsPermitted(context) } }
         owner.lifecycle.addObserver(observer)
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
@@ -198,6 +231,31 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                         )
                     }
                     Switch(state.settings.refreshWifiOnly, vm::setRefreshWifiOnly)
+                }
+            }
+            item { Section(stringResource(R.string.section_notifications)) }
+            item {
+                Text(
+                    stringResource(R.string.notifications_hint),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            item {
+                // Feeds start out in no folder, so "Uncategorized" is always offered, ahead of any the user has made.
+                val choices = listOf(UNCATEGORISED_FOLDER_ID to uncategorisedLabel) + state.folders.map { it.id to it.name }
+                val chosen = if (permitted) state.settings.notifyFolderIds else emptySet()
+                val all = choices.all { it.first in chosen }
+                // Chips wrap onto as many lines as the categories need, so a long list stays in view.
+                FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(all, {
+                        changeNotifications(enabling = !all) { vm.setNotifyFolders(if (all) emptySet() else choices.map { it.first }.toSet()) }
+                    }, label = { Text(stringResource(R.string.filter_all)) })
+                    choices.forEach { (id, name) ->
+                        val selected = id in chosen
+                        FilterChip(selected, {
+                            changeNotifications(enabling = !selected) { vm.setFolderNotifications(id, !selected) }
+                        }, label = { Text(name) })
+                    }
                 }
             }
             item { Section(stringResource(R.string.section_sync)) }
@@ -367,3 +425,7 @@ private fun refreshIntervalLabel(interval: RefreshInterval) = when (interval) {
     RefreshInterval.EVERY_6_HOURS -> R.string.refresh_6h
     RefreshInterval.EVERY_12_HOURS -> R.string.refresh_12h
 }
+
+private fun notificationsPermitted(context: android.content.Context) =
+    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED

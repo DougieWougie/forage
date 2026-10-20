@@ -40,6 +40,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             refreshWifiOnly = p[REFRESH_WIFI] ?: false,
             thumbnails = p[THUMBS]?.let { runCatching { ThumbnailMode.valueOf(it) }.getOrNull() } ?: ThumbnailMode.ALWAYS,
             thumbnailSide = p[THUMB_SIDE]?.let { runCatching { ThumbnailSide.valueOf(it) }.getOrNull() } ?: ThumbnailSide.END,
+            notifyFolderIds = p[NOTIFY_FOLDERS].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
             dismissedSuggestions = p[DISMISSED].orEmpty(),
         )
     }
@@ -49,6 +50,13 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
     override suspend fun setPullToRefresh(enabled: Boolean) { store.edit { it[PULL] = enabled } }
     override suspend fun setRefreshInterval(interval: RefreshInterval) { store.edit { it[REFRESH] = interval.name } }
     override suspend fun setRefreshWifiOnly(wifiOnly: Boolean) { store.edit { it[REFRESH_WIFI] = wifiOnly } }
+    override suspend fun setNotifyFolders(folderIds: Set<Long>) { store.edit { it[NOTIFY_FOLDERS] = folderIds.map(Long::toString).toSet() } }
+    override suspend fun setFolderNotifications(folderId: Long, notify: Boolean) {
+        store.edit {
+            val current = it[NOTIFY_FOLDERS].orEmpty()
+            it[NOTIFY_FOLDERS] = if (notify) current + folderId.toString() else current - folderId.toString()
+        }
+    }
     override suspend fun setThumbnails(mode: ThumbnailMode) { store.edit { it[THUMBS] = mode.name } }
     override suspend fun setThumbnailSide(side: ThumbnailSide) { store.edit { it[THUMB_SIDE] = side.name } }
     override suspend fun dismissSuggestion(feedUrl: String) { store.edit { it[DISMISSED] = it[DISMISSED].orEmpty() + feedUrl } }
@@ -68,6 +76,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val REFRESH_WIFI = booleanPreferencesKey("refresh_wifi_only")
         val THUMBS = stringPreferencesKey("thumbnails")
         val THUMB_SIDE = stringPreferencesKey("thumbnail_side")
+        val NOTIFY_FOLDERS = stringSetPreferencesKey("notify_folder_ids")
         val DISMISSED = stringSetPreferencesKey("dismissed_suggestions")
     }
 }

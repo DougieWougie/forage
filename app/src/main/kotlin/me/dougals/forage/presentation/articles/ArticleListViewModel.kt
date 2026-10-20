@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.dougals.forage.R
 import me.dougals.forage.domain.model.Article
+import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
 import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
@@ -175,6 +176,6 @@ class ArticleListViewModel @Inject constructor(
     fun dismissMessage() { message.value = null }
 
     companion object {
-        const val UNCATEGORISED = -1L
+        const val UNCATEGORISED = UNCATEGORISED_FOLDER_ID
     }
 }

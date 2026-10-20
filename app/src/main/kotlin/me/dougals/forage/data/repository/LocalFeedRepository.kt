@@ -49,13 +49,14 @@ class LocalFeedRepository(
 
     override suspend fun refresh(): Result<SyncReport> {
         var failure: Throwable? = null
-        var fresh = 0
+        val freshByFeed = mutableMapOf<Long, Int>()
         val feeds = db.feedDao().getAll()
         try {
             feeds.forEachIndexed { i, feed ->
                 progress.report(i, feeds.size)
                 try {
-                    fresh += store(feed.id, source.fetch(feed.url).items)
+                    val added = store(feed.id, source.fetch(feed.url).items)
+                    if (added > 0) freshByFeed[feed.id] = added
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -65,7 +66,7 @@ class LocalFeedRepository(
         } finally {
             progress.clear()
         }
-        return failure?.let { Result.failure(it) } ?: Result.success(SyncReport(newArticles = fresh))
+        return failure?.let { Result.failure(it) } ?: Result.success(SyncReport(newArticles = freshByFeed.values.sum(), newByFeed = freshByFeed))
     }
 
     override suspend fun removeFeed(feedId: Long): Result<Unit> {

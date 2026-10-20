@@ -16,15 +16,25 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import dagger.hilt.android.AndroidEntryPoint
+import me.dougals.forage.domain.notify.DigestNotifier
 import me.dougals.forage.ui.BrandSplash
 import me.dougals.forage.ui.ForageRoot
 import me.dougals.forage.ui.theme.ForageTheme
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var digest: DigestNotifier
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent { ForageTheme { BrandSplash { ForageRoot() } } }
+    }
+
+    /** Opening the app is what the digest asked for, so it shouldn't linger. */
+    override fun onStart() {
+        super.onStart()
+        digest.clear()
     }
 }

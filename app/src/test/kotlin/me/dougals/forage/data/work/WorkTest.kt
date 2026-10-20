@@ -31,6 +31,7 @@ import me.dougals.forage.data.nextcloud.NextcloudNotConfiguredException
 import me.dougals.forage.data.nextcloud.PendingChangeFlusher
 import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.SyncReport
+import me.dougals.forage.domain.notify.NewArticleDigest
 import me.dougals.forage.domain.repository.FeedRepository
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -84,6 +85,22 @@ class WorkTest {
     }
     private fun repo(result: Result<Unit>) = mockk<FeedRepository> { coEvery { refresh() } returns result.map { SyncReport() } }
 
+    private fun digest(baseline: Boolean = true) = mockk<NewArticleDigest>(relaxed = true) { coEvery { hasBaseline() } returns baseline }
+
+    @Test fun refreshWorkerAnnouncesWhatARefreshFoundOnlyOnceThereIsABaseline() = runBlocking {
+        val report = SyncReport(newArticles = 2, newByFeed = mapOf(1L to 2))
+        fun run(baseline: Boolean): NewArticleDigest {
+            val d = digest(baseline)
+            val repo = mockk<FeedRepository> { coEvery { refresh() } returns Result.success(report) }
+            runBlocking { build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo, d) }).doWork() }
+            return d
+        }
+        val announced = run(baseline = true)
+        val skipped = run(baseline = false)
+        io.mockk.coVerify(exactly = 1) { announced.announce(report) }
+        io.mockk.coVerify(exactly = 0) { skipped.announce(any()) }
+    }
+
     @Test fun flushWorkerMapsOutcomes() = runBlocking {
         fun run(result: Result<Unit>) =
             build<FlushWorker>({ c, p -> FlushWorker(c, p, flusher(result)) }).let { runBlocking { it.doWork() } }
@@ -108,14 +125,14 @@ class WorkTest {
 
     @Test fun refreshWorkerRetriesThenGivesUpUntilTheNextPeriod() = runBlocking {
         fun run(result: Result<Unit>, attempt: Int = 0) =
-            build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo(result)) }, attempt).let { runBlocking { it.doWork() } }
+            build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo(result), digest()) }, attempt).let { runBlocking { it.doWork() } }
         assertEquals(ListenableWorker.Result.success(), run(Result.success(Unit)))
         assertEquals(ListenableWorker.Result.retry(), run(Result.failure(java.io.IOException())))
         assertEquals(ListenableWorker.Result.failure(), run(Result.failure(java.io.IOException()), attempt = 3))
     }
 
     @Test fun refreshWorkerDoesNotRetryWhenNextcloudIsNotConfigured() = runBlocking {
-        val w = build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo(Result.failure(NextcloudNotConfiguredException()))) })
+        val w = build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo(Result.failure(NextcloudNotConfiguredException())), digest()) })
         assertEquals(ListenableWorker.Result.failure(), w.doWork())
     }
 

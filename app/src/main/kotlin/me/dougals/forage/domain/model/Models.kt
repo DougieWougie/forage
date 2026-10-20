@@ -13,6 +13,9 @@ package me.dougals.forage.domain.model
 
 data class Folder(val id: Long, val name: String)
 
+/** Stands in for "no folder" wherever folders are chosen by id; real folder ids are positive. */
+const val UNCATEGORISED_FOLDER_ID = -1L
+
 data class Feed(
     val id: Long,
     val url: String,

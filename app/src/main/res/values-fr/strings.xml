@@ -115,6 +115,9 @@
 
     <!-- Settings -->
     <string name="settings_title">Réglages</string>
+    <string name="section_notifications">Notifications</string>
+    <string name="notifications_hint">Touchez une catégorie pour recevoir un résumé discret de ses nouveaux articles après une actualisation en arrière-plan. Touchez-la de nouveau pour arrêter.</string>
+    <string name="notifications_blocked">Les notifications sont bloquées pour Forage. Autorisez-les dans les paramètres système.</string>
     <string name="section_sync">Synchronisation</string>
     <string name="section_reading">Lecture</string>
     <string name="section_article_list">Liste d’articles</string>
@@ -149,6 +152,8 @@
     <string name="refresh_3h">3 h</string>
     <string name="refresh_6h">6 h</string>
     <string name="refresh_12h">12 h</string>
+    <string name="channel_new_articles">Nouveaux articles</string>
+    <string name="channel_new_articles_body">Un résumé discret des nouveaux articles dans les catégories que vous choisissez.</string>
     <string name="refresh_wifi_only">Wi-Fi uniquement</string>
     <string name="refresh_wifi_only_body">Ignorer les actualisations en arrière-plan sur données mobiles et autres connexions limitées.</string>
     <string name="pull_to_refresh">Tirer pour actualiser</string>

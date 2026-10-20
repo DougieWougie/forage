@@ -45,6 +45,7 @@ android {
 
     defaultConfig {
         applicationId = "me.dougals.forage"
+        manifestPlaceholders["appLabel"] = "@string/app_name"
         minSdk = 26
         targetSdk = 36
         versionCode = GitVersion.code(git("rev-list", "--count", "HEAD"))
@@ -64,7 +65,12 @@ android {
     }
 
     buildTypes {
-        debug { enableUnitTestCoverage = true }
+        debug {
+            enableUnitTestCoverage = true
+            // Installs beside the Play build (signed by Google's key, so a local build can't update it) without touching its data.
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "Forage (debug)"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true

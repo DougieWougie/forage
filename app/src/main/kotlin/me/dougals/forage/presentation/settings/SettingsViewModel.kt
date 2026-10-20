@@ -33,6 +33,7 @@ import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import me.dougals.forage.domain.nextcloud.NextcloudLoginFlow
 import me.dougals.forage.domain.nextcloud.SyncStateStore
 import me.dougals.forage.domain.model.AppSettings
+import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.RefreshInterval
@@ -53,6 +54,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 data class SettingsUiState(
     val settings: AppSettings = AppSettings(),
+    val folders: List<Folder> = emptyList(),
     val nextcloudServer: String? = null,
     val nextcloudUser: String? = null,
     val sessionDomains: List<String> = emptyList(),
@@ -79,7 +81,9 @@ class SettingsViewModel @Inject constructor(
     )
     private var loginJob: Job? = null
 
-    val state: StateFlow<SettingsUiState> = combine(settingsRepo.settings, ui) { settings, rest -> rest.copy(settings = settings) }
+    val state: StateFlow<SettingsUiState> = combine(settingsRepo.settings, repo.observeFolders(), ui) { settings, folders, rest ->
+        rest.copy(settings = settings, folders = folders)
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     private fun SettingsUiState.withCredentials(c: NextcloudCredentials?) = copy(nextcloudServer = c?.serverUrl, nextcloudUser = c?.username)
@@ -197,6 +201,8 @@ class SettingsViewModel @Inject constructor(
     fun setAllowLocalNetwork(allow: Boolean) = change { setAllowLocalNetwork(allow) }
     fun setPullToRefresh(enabled: Boolean) = change { setPullToRefresh(enabled) }
     fun setRefreshInterval(interval: RefreshInterval) = change { setRefreshInterval(interval) }
+    fun setNotifyFolders(folderIds: Set<Long>) = change { setNotifyFolders(folderIds) }
+    fun setFolderNotifications(folderId: Long, notify: Boolean) = change { setFolderNotifications(folderId, notify) }
     fun setRefreshWifiOnly(wifiOnly: Boolean) = change { setRefreshWifiOnly(wifiOnly) }
     fun setThumbnails(mode: ThumbnailMode) = change { setThumbnails(mode) }
     fun setThumbnailSide(side: ThumbnailSide) = change { setThumbnailSide(side) }
