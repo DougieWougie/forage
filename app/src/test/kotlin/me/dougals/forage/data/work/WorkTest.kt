@@ -101,6 +101,17 @@ class WorkTest {
         io.mockk.coVerify(exactly = 0) { skipped.announce(any()) }
     }
 
+    @Test fun refreshWorkerAnnouncesWhatArrivedEvenWhenSomeFeedsFailedAndStillRetries() = runBlocking {
+        val report = SyncReport(newArticles = 1, newByFeed = mapOf(2L to 1))
+        val d = digest()
+        val repo = mockk<FeedRepository> {
+            coEvery { refresh() } returns Result.failure(me.dougals.forage.domain.model.PartialRefreshException(report, java.io.IOException("down")))
+        }
+        val result = build<RefreshWorker>({ c, p -> RefreshWorker(c, p, repo, d) }).doWork()
+        assertEquals(ListenableWorker.Result.retry(), result)
+        io.mockk.coVerify(exactly = 1) { d.announce(report) }
+    }
+
     @Test fun flushWorkerMapsOutcomes() = runBlocking {
         fun run(result: Result<Unit>) =
             build<FlushWorker>({ c, p -> FlushWorker(c, p, flusher(result)) }).let { runBlocking { it.doWork() } }

@@ -23,3 +23,9 @@ data class SyncReport(
     /** [newArticles] broken down by local feed id; feeds that gained nothing are absent. */
     val newByFeed: Map<Long, Int> = emptyMap(),
 )
+
+/**
+ * A refresh where some feeds failed but others brought in articles. It stays a failure for callers that report or retry,
+ * and carries what did arrive so it isn't lost. Its message is the first underlying error's.
+ */
+class PartialRefreshException(val report: SyncReport, cause: Throwable) : Exception(cause.message, cause)

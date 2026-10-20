@@ -22,6 +22,7 @@ import me.dougals.forage.data.remote.ParsedItem
 import me.dougals.forage.data.work.ArchiveScheduler
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.PartialRefreshException
 import me.dougals.forage.domain.model.RefreshProgress
 import me.dougals.forage.domain.model.SyncReport
 
@@ -66,7 +67,9 @@ class LocalFeedRepository(
         } finally {
             progress.clear()
         }
-        return failure?.let { Result.failure(it) } ?: Result.success(SyncReport(newArticles = freshByFeed.values.sum(), newByFeed = freshByFeed))
+        val report = SyncReport(newArticles = freshByFeed.values.sum(), newByFeed = freshByFeed)
+        return failure?.let { Result.failure(if (freshByFeed.isEmpty()) it else PartialRefreshException(report, it)) }
+            ?: Result.success(report)
     }
 
     override suspend fun removeFeed(feedId: Long): Result<Unit> {
