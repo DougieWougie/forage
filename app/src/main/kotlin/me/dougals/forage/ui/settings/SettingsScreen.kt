@@ -124,7 +124,7 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     }
     /** Turning a digest on needs the permission first; turning one off never does. */
     fun changeNotifications(enabling: Boolean, apply: () -> Unit) {
-        if (enabling && !permitted) {
+        if (enabling && !permitted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pendingNotifyChange = apply
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
