@@ -119,8 +119,7 @@ The project was built test-first. Tests use JUnit 5, MockK, Turbine, MockWebServ
 ## Status
 
 Early (0.1.0). Not yet verified against a wide range of Nextcloud versions. Known gaps: the German, French
-and Spanish translations have not had a native-speaker review, swipe cards snap back without animation,
-and there is no release signing config.
+and Spanish translations have not had a native-speaker review, and swipe cards snap back without animation.
 
 ## License
 
