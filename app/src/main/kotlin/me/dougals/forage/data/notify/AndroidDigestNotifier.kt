@@ -27,7 +27,7 @@ class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
     // areNotificationsEnabled() is false while POST_NOTIFICATIONS is ungranted, so the guard covers the lint rule.
     @SuppressLint("MissingPermission")
     override fun post(lines: List<DigestLine>) {
-        if (!manager.areNotificationsEnabled()) return
+        if (ForageApp.appVisible || !manager.areNotificationsEnabled()) return
         val total = lines.sumOf { it.count }
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
             PendingIntent.getActivity(context, 0, it, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)

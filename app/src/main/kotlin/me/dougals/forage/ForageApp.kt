@@ -72,6 +72,9 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
 
     companion object {
         const val NEW_ARTICLES_CHANNEL = "new-articles"
+
+        /** True while an activity is on screen; a digest would only linger there, so none is posted. */
+        @Volatile var appVisible = false
         private const val THUMBNAIL_CACHE_BYTES = 64L * 1024 * 1024
     }
 }
