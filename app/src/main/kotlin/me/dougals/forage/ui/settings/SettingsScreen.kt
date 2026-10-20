@@ -111,6 +111,7 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     var showLogin by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val uncategorisedLabel = stringResource(R.string.uncategorized)
+    val notificationsBlocked = stringResource(R.string.notifications_blocked)
     // Android 13+ asks at runtime; earlier versions grant it at install. Re-read on resume, as it can change in system settings.
     var permitted by remember { mutableStateOf(notificationsPermitted(context)) }
     // The change that prompted the permission request, applied only if it is granted.
@@ -118,7 +119,7 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         permitted = granted
         if (granted) pendingNotifyChange?.invoke()
-        else scope.launch { snackbar.showSnackbar(context.getString(R.string.notifications_blocked)) }
+        else scope.launch { snackbar.showSnackbar(notificationsBlocked) }
         pendingNotifyChange = null
     }
     /** Turning a digest on needs the permission first; turning one off never does. */
