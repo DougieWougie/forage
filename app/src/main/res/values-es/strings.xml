@@ -154,6 +154,7 @@
     <string name="refresh_12h">12 h</string>
     <string name="channel_new_articles">Artículos nuevos</string>
     <string name="channel_new_articles_body">Un resumen discreto de los artículos nuevos de las categorías que elijas.</string>
+    <string name="digest_more_feeds">%1$s y %2$d más</string>
     <string name="refresh_wifi_only">Solo con Wi-Fi</string>
     <string name="refresh_wifi_only_body">Omitir las actualizaciones en segundo plano con datos móviles y otras conexiones de uso medido.</string>
     <string name="pull_to_refresh">Desliza para actualizar</string>

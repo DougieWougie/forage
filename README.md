@@ -13,6 +13,9 @@ Local-first, no accounts, no tracking.
 - **Swipe cards:** swipe right to toggle read, left to toggle saved, with haptics and an undo snackbar.
 - **Mark older as read:** long-press a card to mark every older unread article in the same feed as read, with an undo snackbar.
 - **Background refresh:** hourly by default; choose 1, 3, 6 or 12 hours, or off, and optionally Wi-Fi only.
+- **New-article digest:** opt in per category in Settings for one quiet notification after a background refresh. It
+  shows the count, the categories and the feeds the articles came from; tapping it opens Unread filtered to those
+  categories. It stays silent while the app is on screen.
 - **Languages:** English, German, French and Spanish, following the system language (per-app language on Android 13+).
 - **Tabs:** Unread, Categories, Saved, Settings.
 - **Reader:** Serif, Sans or OpenDyslexic (reader only) with adjustable text size. Scripts are off and

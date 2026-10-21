@@ -19,8 +19,11 @@ import me.dougals.forage.domain.nextcloud.SyncStateStore
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
 
-/** One category's share of a digest; [folder] is null for feeds in no folder. */
-data class DigestLine(val folder: String?, val count: Int)
+/**
+ * One category's share of a digest. [folder] is null for feeds in no folder, whose [folderId] is
+ * [UNCATEGORISED_FOLDER_ID]. [feeds] are the titles of the feeds that gained articles, busiest first.
+ */
+data class DigestLine(val folder: String?, val count: Int, val folderId: Long, val feeds: List<String> = emptyList())
 
 interface DigestNotifier {
     /** Shows the digest, replacing any earlier one. May do nothing when the system disallows notifications. */
@@ -50,17 +53,19 @@ class NewArticleDigest(
         val current = settings.settings.first()
         if (current.notifyFolderIds.isEmpty()) return
 
-        val folderOfFeed = repo.observeFeeds().first().associate { it.id to it.folderId }
+        val feeds = repo.observeFeeds().first().associateBy { it.id }
         val perFolder = report.newByFeed.entries
-            .groupingBy { folderOfFeed[it.key] ?: UNCATEGORISED_FOLDER_ID }
-            .fold(0) { total, entry -> total + entry.value }
+            .filter { it.key in feeds }
+            .groupBy { feeds.getValue(it.key).folderId ?: UNCATEGORISED_FOLDER_ID }
+        fun line(name: String?, id: Long) = perFolder[id]?.let { entries ->
+            val busiest = entries.sortedWith(compareByDescending<Map.Entry<Long, Int>> { it.value }.thenBy { feeds.getValue(it.key).title.lowercase() })
+            DigestLine(name, entries.sumOf { it.value }, id, busiest.map { feeds.getValue(it.key).title })
+        }
         val named = repo.observeFolders().first()
             .filter { it.id in current.notifyFolderIds }
             .sortedBy { it.name.lowercase() }
-            .mapNotNull { folder -> perFolder[folder.id]?.let { DigestLine(folder.name, it) } }
-        val uncategorised = perFolder[UNCATEGORISED_FOLDER_ID]
-            ?.takeIf { UNCATEGORISED_FOLDER_ID in current.notifyFolderIds }
-            ?.let { DigestLine(null, it) }
+            .mapNotNull { line(it.name, it.id) }
+        val uncategorised = line(null, UNCATEGORISED_FOLDER_ID)?.takeIf { UNCATEGORISED_FOLDER_ID in current.notifyFolderIds }
         val lines = named + listOfNotNull(uncategorised)
         if (lines.isNotEmpty()) notifier.post(lines)
     }

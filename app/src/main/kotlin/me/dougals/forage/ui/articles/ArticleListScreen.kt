@@ -54,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import me.dougals.forage.ui.FolderRequest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
@@ -69,9 +70,14 @@ fun ArticleListScreen(
     onOpenArticle: (Long) -> Unit,
     onBack: (() -> Unit)?,
     onSearch: () -> Unit,
+    folderRequest: FolderRequest? = null,
+    onFolderRequestHandled: () -> Unit = {},
     vm: ArticleListViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    LaunchedEffect(folderRequest) {
+        folderRequest?.let { vm.selectFolders(it.folderIds); onFolderRequestHandled() }
+    }
     val snackbar = remember { SnackbarHostState() }
     val scroll = TopAppBarDefaults.pinnedScrollBehavior()
 
