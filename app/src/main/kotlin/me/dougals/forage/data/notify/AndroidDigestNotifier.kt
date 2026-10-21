@@ -40,11 +40,14 @@ class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
                 .putExtra(EXTRA_DIGEST_FOLDERS, lines.map { it.folderId }.toLongArray()),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+        // The newest title leads the collapsed notification; the category summary moves up to the header beside it.
+        val newest = lines.flatMap { it.headlines }.maxByOrNull { it.publishedAt }
         val summary = if (lines.size == 1) detail(lines.single()) else lines.joinToString(" · ") { "${name(it)} ${it.count}" }
         val notification = NotificationCompat.Builder(context, ForageApp.NEW_ARTICLES_CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle(context.resources.getQuantityString(R.plurals.new_articles, total, total))
-            .setContentText(summary)
+            .setContentText(newest?.let { oneLine(it.title) } ?: summary)
+            .setSubText(summary.takeIf { newest != null })
             .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n") { expanded(it, if (lines.size == 1) MAX_HEADLINES_ALONE else MAX_HEADLINES_SHARED) }))
             .setContentIntent(open)
             .setAutoCancel(true)
@@ -59,8 +62,10 @@ class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
     private fun expanded(line: DigestLine, headlines: Int): String {
         val feeds = feedsOf(line)
         val heading = "${name(line)} · ${line.count}" + if (feeds.isEmpty()) "" else " — $feeds"
-        return (listOf(heading) + line.headlines.take(headlines).map { "• ${it.trim().replace(WHITESPACE, " ")}" }).joinToString("\n")
+        return (listOf(heading) + line.headlines.take(headlines).map { "• ${oneLine(it.title)}" }).joinToString("\n")
     }
+
+    private fun oneLine(title: String) = title.trim().replace(WHITESPACE, " ")
 
     /** A lone category has room for what the count means, so it says which feeds the articles came from. */
     private fun detail(line: DigestLine) = listOf(name(line), feedsOf(line)).filter { it.isNotEmpty() }.joinToString(" · ")

@@ -85,12 +85,13 @@ class NewArticleDigestTest {
             ),
         )
         digest(optedIn).announce(report)
-        assertEquals(listOf("F2 new", "F1 new", "F2 old"), posted.single().single().headlines)
+        assertEquals(listOf("F2 new", "F1 new", "F2 old"), posted.single().single().headlines.map { it.title })
+        assertEquals(400L, posted.single().single().headlines.first().publishedAt)
     }
 
     @Test fun aCategoryWithoutHeadlinesStillAnnounces() = runTest {
         digest(optedIn).announce(SyncReport(newByFeed = mapOf(1L to 2)))
-        assertEquals(emptyList<String>(), posted.single().single().headlines)
+        assertEquals(emptyList<Headline>(), posted.single().single().headlines)
     }
 
     @Test fun ignoresFeedsThatNoLongerExist() = runTest {

@@ -18,6 +18,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import me.dougals.forage.ForageApp
 import me.dougals.forage.MainActivity
+import me.dougals.forage.domain.model.Headline
 import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
 import me.dougals.forage.domain.notify.DigestLine
 import me.dougals.forage.ui.EXTRA_DIGEST_FOLDERS
@@ -64,6 +65,19 @@ class AndroidDigestNotifierTest {
         notifier.post(listOf(tech))
         assertEquals("5 new articles", posted().text(Notification.EXTRA_TITLE))
         assertEquals("Tech · Ars, LWN", posted().text(Notification.EXTRA_TEXT))
+        assertNull(posted().text(Notification.EXTRA_SUB_TEXT))
+    }
+
+    @Test fun theNewestHeadlineLeadsTheCollapsedLineAndTheSummaryMovesToTheHeader() {
+        notifier.post(listOf(tech.copy(headlines = listOf(Headline("Older tech", 10))), blogs.copy(headlines = listOf(Headline("  Newest\n blog ", 99)))))
+        assertEquals("Newest blog", posted().text(Notification.EXTRA_TEXT))
+        assertEquals("Tech 5 · Uncategorized 2", posted().text(Notification.EXTRA_SUB_TEXT))
+    }
+
+    @Test fun aLoneCategoryKeepsItsFeedsInTheHeader() {
+        notifier.post(listOf(tech.copy(headlines = listOf(Headline("Only one", 5)))))
+        assertEquals("Only one", posted().text(Notification.EXTRA_TEXT))
+        assertEquals("Tech · Ars, LWN", posted().text(Notification.EXTRA_SUB_TEXT))
     }
 
     @Test fun manyFeedsAreTrimmedToTheBusiestTwo() {
@@ -79,12 +93,12 @@ class AndroidDigestNotifierTest {
     }
 
     @Test fun aLoneCategoryQuotesUpToThreeHeadlinesBelowItsFeeds() {
-        notifier.post(listOf(tech.copy(headlines = listOf("One", "Two", "Three", "Four"))))
+        notifier.post(listOf(tech.copy(headlines = listOf("One", "Two", "Three", "Four").mapIndexed { i, t -> Headline(t, 100L - i) })))
         assertEquals("Tech · 5 — Ars, LWN\n• One\n• Two\n• Three", posted().text(Notification.EXTRA_BIG_TEXT))
     }
 
     @Test fun categoriesSharingTheNotificationQuoteTwoHeadlinesEach() {
-        notifier.post(listOf(tech.copy(headlines = listOf("One", "Two", "Three")), blogs.copy(headlines = listOf("Solo"))))
+        notifier.post(listOf(tech.copy(headlines = listOf("One", "Two", "Three").mapIndexed { i, t -> Headline(t, 100L - i) }), blogs.copy(headlines = listOf(Headline("Solo", 50)))))
         assertEquals(
             "Tech · 5 — Ars, LWN\n• One\n• Two\nUncategorized · 2 — Blog\n• Solo",
             posted().text(Notification.EXTRA_BIG_TEXT),
@@ -92,7 +106,7 @@ class AndroidDigestNotifierTest {
     }
 
     @Test fun headlinesAreTidiedToOneLine() {
-        notifier.post(listOf(tech.copy(headlines = listOf("  Spread \n over\t lines  "))))
+        notifier.post(listOf(tech.copy(headlines = listOf(Headline("  Spread \n over\t lines  ", 1)))))
         assertEquals("Tech · 5 — Ars, LWN\n• Spread over lines", posted().text(Notification.EXTRA_BIG_TEXT))
     }
 
