@@ -47,8 +47,11 @@ the first error is returned at the end.
 ### New-article digest
 
 After a background refresh, `RefreshWorker` gives the `SyncReport` to `NewArticleDigest`, which keeps the categories the user
-opted into and builds one `DigestLine` per category (name, folder id, count, and the feeds that gained articles, busiest
-first). `DigestNotifier` is the domain interface; `AndroidDigestNotifier` implements it. Nothing is posted while the app is
+opted into and builds one `DigestLine` per category (name, folder id, count, the feeds that gained articles, busiest
+first, and the newest headlines across them). Both refresh paths fill `SyncReport.newHeadlines` with the newest
+`HEADLINES_PER_FEED` (3) titles of each feed's new articles, so the report stays small even on a first Nextcloud pull, which
+brings down the whole backlog. The notification quotes three headlines for a lone category and two each when categories
+share it. `DigestNotifier` is the domain interface; `AndroidDigestNotifier` implements it. Nothing is posted while the app is
 visible or on the first Nextcloud pull, whose whole unread backlog would count as new.
 
 Tapping the notification starts `MainActivity` (`singleTop`) with the folder ids in `EXTRA_DIGEST_FOLDERS`. The activity

@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.Headline
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.SyncReport
 import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
@@ -73,6 +74,23 @@ class NewArticleDigestTest {
         posted.clear()
         digest(optedIn).announce(SyncReport(newByFeed = mapOf(1L to 3, 2L to 3)))
         assertEquals(listOf("F1", "F2"), posted.single().single().feeds)
+    }
+
+    @Test fun quotesTheNewestHeadlinesAcrossACategorysFeeds() = runTest {
+        val report = SyncReport(
+            newByFeed = mapOf(1L to 2, 2L to 2),
+            newHeadlines = mapOf(
+                1L to listOf(Headline("F1 new", 300), Headline("F1 old", 100)),
+                2L to listOf(Headline("F2 new", 400), Headline("F2 old", 200)),
+            ),
+        )
+        digest(optedIn).announce(report)
+        assertEquals(listOf("F2 new", "F1 new", "F2 old"), posted.single().single().headlines)
+    }
+
+    @Test fun aCategoryWithoutHeadlinesStillAnnounces() = runTest {
+        digest(optedIn).announce(SyncReport(newByFeed = mapOf(1L to 2)))
+        assertEquals(emptyList<String>(), posted.single().single().headlines)
     }
 
     @Test fun ignoresFeedsThatNoLongerExist() = runTest {

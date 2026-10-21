@@ -78,6 +78,24 @@ class AndroidDigestNotifierTest {
         assertEquals("Tech · 5 — Ars, LWN\nUncategorized · 2 — Blog", posted().text(Notification.EXTRA_BIG_TEXT))
     }
 
+    @Test fun aLoneCategoryQuotesUpToThreeHeadlinesBelowItsFeeds() {
+        notifier.post(listOf(tech.copy(headlines = listOf("One", "Two", "Three", "Four"))))
+        assertEquals("Tech · 5 — Ars, LWN\n• One\n• Two\n• Three", posted().text(Notification.EXTRA_BIG_TEXT))
+    }
+
+    @Test fun categoriesSharingTheNotificationQuoteTwoHeadlinesEach() {
+        notifier.post(listOf(tech.copy(headlines = listOf("One", "Two", "Three")), blogs.copy(headlines = listOf("Solo"))))
+        assertEquals(
+            "Tech · 5 — Ars, LWN\n• One\n• Two\nUncategorized · 2 — Blog\n• Solo",
+            posted().text(Notification.EXTRA_BIG_TEXT),
+        )
+    }
+
+    @Test fun headlinesAreTidiedToOneLine() {
+        notifier.post(listOf(tech.copy(headlines = listOf("  Spread \n over\t lines  "))))
+        assertEquals("Tech · 5 — Ars, LWN\n• Spread over lines", posted().text(Notification.EXTRA_BIG_TEXT))
+    }
+
     @Test fun aCategoryWithNoFeedNamesJustShowsItself() {
         notifier.post(listOf(tech.copy(feeds = emptyList())))
         assertEquals("Tech", posted().text(Notification.EXTRA_TEXT))

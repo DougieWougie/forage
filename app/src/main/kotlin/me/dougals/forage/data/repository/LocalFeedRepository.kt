@@ -24,7 +24,9 @@ import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.model.PartialRefreshException
 import me.dougals.forage.domain.model.RefreshProgress
+import me.dougals.forage.domain.model.Headline
 import me.dougals.forage.domain.model.SyncReport
+import me.dougals.forage.domain.model.newestHeadlines
 
 /** Local Mode: feeds are fetched straight from their publishers; nothing is synced anywhere. */
 class LocalFeedRepository(
@@ -51,13 +53,17 @@ class LocalFeedRepository(
     override suspend fun refresh(): Result<SyncReport> {
         var failure: Throwable? = null
         val freshByFeed = mutableMapOf<Long, Int>()
+        val headlines = mutableMapOf<Long, List<Headline>>()
         val feeds = db.feedDao().getAll()
         try {
             feeds.forEachIndexed { i, feed ->
                 progress.report(i, feeds.size)
                 try {
                     val added = store(feed.id, source.fetch(feed.url).items)
-                    if (added > 0) freshByFeed[feed.id] = added
+                    if (added.isNotEmpty()) {
+                        freshByFeed[feed.id] = added.size
+                        headlines[feed.id] = newestHeadlines(added.map { Headline(it.title, it.publishedAt) })
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -67,7 +73,7 @@ class LocalFeedRepository(
         } finally {
             progress.clear()
         }
-        val report = SyncReport(newArticles = freshByFeed.values.sum(), newByFeed = freshByFeed)
+        val report = SyncReport(newArticles = freshByFeed.values.sum(), newByFeed = freshByFeed, newHeadlines = headlines)
         return failure?.let { Result.failure(if (freshByFeed.isEmpty()) it else PartialRefreshException(report, it)) }
             ?: Result.success(report)
     }
@@ -91,17 +97,17 @@ class LocalFeedRepository(
         return Result.success(Unit)
     }
 
-    /** @return how many items were new */
-    private suspend fun store(feedId: Long, items: List<ParsedItem>): Int {
+    /** @return the items that were new */
+    private suspend fun store(feedId: Long, items: List<ParsedItem>): List<ArticleEntity> {
         items.forEach { item -> item.imageUrl?.let { db.articleDao().fillImageUrl(feedId, item.guid, it) } }
-        return db.articleDao().insertIgnore(
-            items.map {
-                ArticleEntity(
-                    feedId = feedId, guid = it.guid, title = it.title, url = it.url, author = it.author,
-                    summary = it.summary, contentHtml = it.contentHtml, imageUrl = it.imageUrl,
-                    publishedAt = if (it.publishedAt == 0L) clock() else it.publishedAt,
-                )
-            },
-        ).count { it != -1L }
+        val articles = items.map {
+            ArticleEntity(
+                feedId = feedId, guid = it.guid, title = it.title, url = it.url, author = it.author,
+                summary = it.summary, contentHtml = it.contentHtml, imageUrl = it.imageUrl,
+                publishedAt = if (it.publishedAt == 0L) clock() else it.publishedAt,
+            )
+        }
+        val inserted = db.articleDao().insertIgnore(articles)
+        return articles.filterIndexed { i, _ -> inserted[i] != -1L }
     }
 }

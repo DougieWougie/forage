@@ -45,7 +45,7 @@ class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle(context.resources.getQuantityString(R.plurals.new_articles, total, total))
             .setContentText(summary)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n") { "${name(it)} · ${it.count}" + feedsOf(it).let { feeds -> if (feeds.isEmpty()) "" else " — $feeds" } }))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n") { expanded(it, if (lines.size == 1) MAX_HEADLINES_ALONE else MAX_HEADLINES_SHARED) }))
             .setContentIntent(open)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
@@ -55,6 +55,12 @@ class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
     }
 
     private fun name(line: DigestLine) = line.folder ?: context.getString(R.string.uncategorized)
+
+    private fun expanded(line: DigestLine, headlines: Int): String {
+        val feeds = feedsOf(line)
+        val heading = "${name(line)} · ${line.count}" + if (feeds.isEmpty()) "" else " — $feeds"
+        return (listOf(heading) + line.headlines.take(headlines).map { "• ${it.trim().replace(WHITESPACE, " ")}" }).joinToString("\n")
+    }
 
     /** A lone category has room for what the count means, so it says which feeds the articles came from. */
     private fun detail(line: DigestLine) = listOf(name(line), feedsOf(line)).filter { it.isNotEmpty() }.joinToString(" · ")
@@ -70,5 +76,9 @@ class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
     private companion object {
         const val DIGEST_ID = 1
         const val MAX_FEEDS = 2
+        // Expanded text is a few lines tall, so categories sharing it quote less than a lone one.
+        const val MAX_HEADLINES_ALONE = 3
+        const val MAX_HEADLINES_SHARED = 2
+        val WHITESPACE = Regex("\\s+")
     }
 }
