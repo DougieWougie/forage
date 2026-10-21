@@ -13,6 +13,9 @@ package me.dougals.forage.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -31,7 +34,7 @@ class ForageNavigationTest {
     @get:Rule val rule = createComposeRule()
 
     private val screens = ForageScreens(
-        list = { kind, nav -> Text("list:$kind", Modifier.clickable { nav.navigate("search") }) },
+        list = { kind, nav, folders, _ -> Text("list:$kind" + (folders?.let { ":" + it.folderIds.sorted().joinToString(",") } ?: ""), Modifier.clickable { nav.navigate("search") }) },
         categories = { Text("screen:categories") },
         settings = { Text("screen:settings") },
         reader = { Text("screen:reader") },
@@ -39,7 +42,11 @@ class ForageNavigationTest {
         search = { Text("screen:search") },
     )
 
-    private fun start(badges: TabBadges = TabBadges()) = rule.setContent { ForageTheme { ForageNavScaffold(screens, badges) } }
+    private var request by mutableStateOf<FolderRequest?>(null)
+    private var handled = 0
+    private fun start(badges: TabBadges = TabBadges()) = rule.setContent {
+        ForageTheme { ForageNavScaffold(screens, badges, request, onFolderRequestHandled = { handled++; request = null }) }
+    }
     private fun tab(label: String) = rule.onNodeWithText(label).performClick().also { rule.waitForIdle() }
     private fun shows(text: String) = rule.onNodeWithText(text).assertExists()
     private fun hides(text: String) = rule.onNodeWithText(text).assertDoesNotExist()
@@ -89,6 +96,35 @@ class ForageNavigationTest {
         tab("Categories"); shows("screen:categories")
         tab("Settings"); shows("screen:settings")
         tab("Unread"); shows("list:unread")
+    }
+
+    @Test fun aDigestTapOpensUnreadForItsCategoriesFromAnyTab() {
+        start()
+        tab("Settings"); shows("screen:settings")
+        request = FolderRequest(setOf(3L, 1L)); rule.waitForIdle()
+        shows("list:unread:1,3"); hides("screen:settings")
+    }
+
+    @Test fun aDigestTapLeavesTheSavedListAlone() {
+        start()
+        tab("Saved")
+        request = FolderRequest(setOf(1L)); rule.waitForIdle()
+        shows("list:unread:1"); hides("list:saved")
+    }
+
+    @Test fun aDigestTapWhileUnreadIsAlreadyShownStillNarrowsIt() {
+        start()
+        shows("list:unread")
+        request = FolderRequest(setOf(5L)); rule.waitForIdle()
+        shows("list:unread:5")
+    }
+
+    @Test fun aDigestTapOnSearchStillLandsOnUnread() {
+        start()
+        rule.onNodeWithText("list:unread").performClick(); rule.waitForIdle()
+        shows("screen:search")
+        request = FolderRequest(setOf(2L)); rule.waitForIdle()
+        shows("list:unread:2"); hides("screen:search")
     }
 
     @Test fun tabsShowCountsOfUnreadArticlesAndUpdatedFeeds() {

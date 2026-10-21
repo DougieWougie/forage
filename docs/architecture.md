@@ -44,6 +44,18 @@ the first error is returned at the end.
 | `FlushWorker` | after a Nextcloud-mode read or saved change | pushes `pending_changes` |
 | `ArchiveWorker` | when an article is saved | caches a cleaned copy of the page (`OfflineArchiver`); up to 5 attempts |
 
+### New-article digest
+
+After a background refresh, `RefreshWorker` gives the `SyncReport` to `NewArticleDigest`, which keeps the categories the user
+opted into and builds one `DigestLine` per category (name, folder id, count, and the feeds that gained articles, busiest
+first). `DigestNotifier` is the domain interface; `AndroidDigestNotifier` implements it. Nothing is posted while the app is
+visible or on the first Nextcloud pull, whose whole unread backlog would count as new.
+
+Tapping the notification starts `MainActivity` (`singleTop`) with the folder ids in `EXTRA_DIGEST_FOLDERS`. The activity
+turns them into a `FolderRequest` (`ui/FolderRequest.kt`), handled in two steps: `ForageNavScaffold` pops back to the
+Unread list, then `ArticleListScreen` calls `ArticleListViewModel.selectFolders` and reports the request handled so it
+is not applied again. Uncategorized feeds use `UNCATEGORISED_FOLDER_ID` (-1), the same id as the Unread list's chip.
+
 ## Dependency injection
 
 `di/AppModule.kt` provides singletons. Two `OkHttpClient`s are qualified so credentials cannot leak across uses:

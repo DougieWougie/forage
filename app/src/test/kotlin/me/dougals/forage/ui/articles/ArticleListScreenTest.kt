@@ -37,6 +37,7 @@ import me.dougals.forage.presentation.articles.ListSource
 import me.dougals.forage.presentation.articles.ReadFilter
 import me.dougals.forage.presentation.articles.ToggleUndo
 import me.dougals.forage.testutil.article
+import me.dougals.forage.ui.FolderRequest
 import me.dougals.forage.ui.theme.ForageTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -59,17 +60,39 @@ class ArticleListScreenTest {
     private val opened = mutableListOf<Long>()
     private var backs = 0
     private var searches = 0
+    private var handled = 0
 
-    private fun show(initial: ArticleListState = list, source: ListSource = ListSource.Unread, canGoBack: Boolean = false) {
+    private fun show(
+        initial: ArticleListState = list,
+        source: ListSource = ListSource.Unread,
+        canGoBack: Boolean = false,
+        request: FolderRequest? = null,
+    ) {
         state.value = initial
         every { vm.source } returns source
         rule.setContent {
-            ForageTheme { ArticleListScreen(onOpenArticle = { opened += it }, onBack = if (canGoBack) ({ backs++ }) else null, onSearch = { searches++ }, vm = vm) }
+            ForageTheme { ArticleListScreen(onOpenArticle = { opened += it }, onBack = if (canGoBack) ({ backs++ }) else null, onSearch = { searches++ }, folderRequest = request, onFolderRequestHandled = { handled++ }, vm = vm) }
         }
     }
 
     /** Starts below the app bar, which would otherwise take the drag. */
     private fun pull() = rule.onRoot().performTouchInput { swipeDown(startY = centerY, durationMillis = 600) }.also { rule.waitForIdle() }
+
+    // Digest notification
+
+    @Test fun aFolderRequestNarrowsTheListOnceAndIsThenHandled() {
+        show(request = FolderRequest(setOf(3L, 4L)))
+        rule.waitForIdle()
+        verify(exactly = 1) { vm.selectFolders(setOf(3L, 4L)) }
+        assertEquals(1, handled)
+    }
+
+    @Test fun withoutARequestTheChosenFoldersAreLeftAlone() {
+        show()
+        rule.waitForIdle()
+        verify(exactly = 0) { vm.selectFolders(any()) }
+        assertEquals(0, handled)
+    }
 
     // Title and navigation
 

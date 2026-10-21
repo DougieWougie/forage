@@ -14,12 +14,15 @@ package me.dougals.forage.data.notify
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import me.dougals.forage.ForageApp
+import me.dougals.forage.MainActivity
 import me.dougals.forage.R
 import me.dougals.forage.domain.notify.DigestLine
 import me.dougals.forage.domain.notify.DigestNotifier
+import me.dougals.forage.ui.EXTRA_DIGEST_FOLDERS
 
 class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
     private val manager = NotificationManagerCompat.from(context)
@@ -29,16 +32,20 @@ class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
     override fun post(lines: List<DigestLine>) {
         if (ForageApp.appVisible || !manager.areNotificationsEnabled()) return
         val total = lines.sumOf { it.count }
-        val open = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
-            PendingIntent.getActivity(context, 0, it, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        }
-        val labelled = lines.map { (it.folder ?: context.getString(R.string.uncategorized)) to it.count }
-        val summary = labelled.joinToString(" · ") { (name, count) -> "$name $count" }
+        // UPDATE_CURRENT swaps in this digest's categories; the request code is shared because only one digest is shown.
+        val open = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(EXTRA_DIGEST_FOLDERS, lines.map { it.folderId }.toLongArray()),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val summary = if (lines.size == 1) detail(lines.single()) else lines.joinToString(" · ") { "${name(it)} ${it.count}" }
         val notification = NotificationCompat.Builder(context, ForageApp.NEW_ARTICLES_CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle(context.resources.getQuantityString(R.plurals.new_articles, total, total))
             .setContentText(summary)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(labelled.joinToString("\n") { (name, count) -> "$name · $count" }))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n") { "${name(it)} · ${it.count}" + feedsOf(it).let { feeds -> if (feeds.isEmpty()) "" else " — $feeds" } }))
             .setContentIntent(open)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
@@ -47,7 +54,21 @@ class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
         manager.notify(DIGEST_ID, notification)
     }
 
+    private fun name(line: DigestLine) = line.folder ?: context.getString(R.string.uncategorized)
+
+    /** A lone category has room for what the count means, so it says which feeds the articles came from. */
+    private fun detail(line: DigestLine) = listOf(name(line), feedsOf(line)).filter { it.isNotEmpty() }.joinToString(" · ")
+
+    private fun feedsOf(line: DigestLine): String {
+        val shown = line.feeds.take(MAX_FEEDS).joinToString(", ")
+        val hidden = line.feeds.size - MAX_FEEDS
+        return if (hidden > 0) context.getString(R.string.digest_more_feeds, shown, hidden) else shown
+    }
+
     override fun clear() = manager.cancel(DIGEST_ID)
 
-    private companion object { const val DIGEST_ID = 1 }
+    private companion object {
+        const val DIGEST_ID = 1
+        const val MAX_FEEDS = 2
+    }
 }

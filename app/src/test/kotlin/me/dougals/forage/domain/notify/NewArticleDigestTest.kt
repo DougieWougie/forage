@@ -47,24 +47,37 @@ class NewArticleDigestTest {
 
     @Test fun sumsFeedsIntoTheirFoldersAndListsThemAlphabetically() = runTest {
         digest(optedIn).announce(SyncReport(newByFeed = mapOf(1L to 2, 2L to 3, 3L to 1)))
-        assertEquals(listOf(DigestLine("Security", 1), DigestLine("Tech", 5)), posted.single())
+        assertEquals(listOf(DigestLine("Security", 1, 20, listOf("F3")), DigestLine("Tech", 5, 10, listOf("F2", "F1"))), posted.single())
     }
 
     @Test fun onlyAnnouncesFoldersTheUserOptedIn() = runTest {
         digest(optedIn.copy(notifyFolderIds = setOf(20L))).announce(SyncReport(newByFeed = mapOf(1L to 2, 3L to 1)))
-        assertEquals(listOf(DigestLine("Security", 1)), posted.single())
+        assertEquals(listOf(DigestLine("Security", 1, 20, listOf("F3"))), posted.single())
     }
 
     @Test fun feedsInNoFolderAreAnnouncedLastAndOnlyWhenOptedIn() = runTest {
         val report = SyncReport(newByFeed = mapOf(1L to 2, 4L to 9))
         digest(withUncategorised).announce(report)
-        assertEquals(listOf(DigestLine("Tech", 2), DigestLine(null, 9)), posted.single())
+        assertEquals(listOf(DigestLine("Tech", 2, 10, listOf("F1")), DigestLine(null, 9, UNCATEGORISED_FOLDER_ID, listOf("F4"))), posted.single())
         posted.clear()
         digest(optedIn).announce(report)
-        assertEquals(listOf(DigestLine("Tech", 2)), posted.single())
+        assertEquals(listOf(DigestLine("Tech", 2, 10, listOf("F1"))), posted.single())
         posted.clear()
         digest(optedIn.copy(notifyFolderIds = setOf(UNCATEGORISED_FOLDER_ID))).announce(report)
-        assertEquals(listOf(DigestLine(null, 9)), posted.single())
+        assertEquals(listOf(DigestLine(null, 9, UNCATEGORISED_FOLDER_ID, listOf("F4"))), posted.single())
+    }
+
+    @Test fun namesTheFeedsBehindACategoryBusiestFirst() = runTest {
+        digest(optedIn).announce(SyncReport(newByFeed = mapOf(1L to 2, 2L to 7)))
+        assertEquals(listOf("F2", "F1"), posted.single().single().feeds)
+        posted.clear()
+        digest(optedIn).announce(SyncReport(newByFeed = mapOf(1L to 3, 2L to 3)))
+        assertEquals(listOf("F1", "F2"), posted.single().single().feeds)
+    }
+
+    @Test fun ignoresFeedsThatNoLongerExist() = runTest {
+        digest(optedIn).announce(SyncReport(newByFeed = mapOf(99L to 4)))
+        assertTrue(posted.isEmpty())
     }
 
     @Test fun staysSilentWhenOffOrNothingQualifies() = runTest {

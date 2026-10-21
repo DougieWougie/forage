@@ -135,6 +135,8 @@ class ArticleListViewModel @Inject constructor(
 
     fun setFilter(value: ReadFilter) { filter.value = value }
     fun toggleFolder(id: Long) { folderChoice.update { if (id in it) it - id else it + id } }
+    /** Narrows the list to exactly [ids], replacing any earlier choice. */
+    fun selectFolders(ids: Set<Long>) { folderChoice.value = ids }
     fun clearFolders() { folderChoice.value = emptySet() }
 
     fun toggleRead(article: Article) = toggles.toggleRead(article)

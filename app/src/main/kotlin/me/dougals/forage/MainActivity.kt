@@ -11,14 +11,20 @@
  */
 package me.dougals.forage
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import dagger.hilt.android.AndroidEntryPoint
 import me.dougals.forage.domain.notify.DigestNotifier
 import me.dougals.forage.ui.BrandSplash
+import me.dougals.forage.ui.FolderRequest
 import me.dougals.forage.ui.ForageRoot
+import me.dougals.forage.ui.folderRequest
 import me.dougals.forage.ui.theme.ForageTheme
 import javax.inject.Inject
 
@@ -26,10 +32,21 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject lateinit var digest: DigestNotifier
 
+    private var folderRequest by mutableStateOf<FolderRequest?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { ForageTheme { BrandSplash { ForageRoot() } } }
+        // After a recreation the intent is the one already acted on.
+        if (savedInstanceState == null) folderRequest = intent.folderRequest()
+        setContent { ForageTheme { BrandSplash { ForageRoot(folderRequest = folderRequest, onFolderRequestHandled = { folderRequest = null }) } } }
+    }
+
+    /** A digest tapped while the app is already running (the activity is singleTop). */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.folderRequest()?.let { folderRequest = it }
     }
 
     override fun onStop() {

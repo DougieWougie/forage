@@ -30,7 +30,9 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -80,7 +82,7 @@ private const val LOGIN_ROUTE = "login?url={url}"
 
 /** The screens behind each destination, so navigation can be tested with stand-ins. */
 class ForageScreens(
-    val list: @Composable (kind: String, nav: NavHostController) -> Unit,
+    val list: @Composable (kind: String, nav: NavHostController, folders: FolderRequest?, handled: () -> Unit) -> Unit,
     val categories: @Composable (nav: NavHostController) -> Unit,
     val settings: @Composable (nav: NavHostController) -> Unit,
     val reader: @Composable (nav: NavHostController) -> Unit,
@@ -89,8 +91,10 @@ class ForageScreens(
 )
 
 private val RealScreens = ForageScreens(
-    list = { kind, nav ->
+    list = { kind, nav, folders, handled ->
         ArticleListScreen(
+            folderRequest = folders,
+            onFolderRequestHandled = handled,
             onOpenArticle = { nav.navigate("reader/$it") },
             onSearch = { nav.navigate(SEARCH_ROUTE) },
             onBack = if (kind == "feed") ({ nav.popBackStack() }) else null,
@@ -104,14 +108,31 @@ private val RealScreens = ForageScreens(
 )
 
 @Composable
-fun ForageRoot(badgesVm: TabBadgesViewModel = hiltViewModel()) {
+fun ForageRoot(
+    folderRequest: FolderRequest? = null,
+    onFolderRequestHandled: () -> Unit = {},
+    badgesVm: TabBadgesViewModel = hiltViewModel(),
+) {
     val badges by badgesVm.state.collectAsStateWithLifecycle()
-    ForageNavScaffold(RealScreens, badges)
+    ForageNavScaffold(RealScreens, badges, folderRequest, onFolderRequestHandled)
 }
 
 @Composable
-fun ForageNavScaffold(screens: ForageScreens, badges: TabBadges = TabBadges()) {
+fun ForageNavScaffold(
+    screens: ForageScreens,
+    badges: TabBadges = TabBadges(),
+    folderRequest: FolderRequest? = null,
+    onFolderRequestHandled: () -> Unit = {},
+) {
     val nav = rememberNavController()
+    // Read inside the destinations, which keep the lambdas of the graph they were built from.
+    val request by rememberUpdatedState(folderRequest)
+    val handled by rememberUpdatedState(onFolderRequestHandled)
+    // A digest tap lands on the Unread tab, whatever was open, and the list then applies the request.
+    // Unread is the start destination, so popping back to it also clears the tab-less screens (search, reader).
+    LaunchedEffect(folderRequest) {
+        if (folderRequest != null && !nav.popBackStack(UNREAD_ROUTE, inclusive = false)) nav.navigateTab(UNREAD_ROUTE)
+    }
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
     val source = entry?.arguments?.getString("source")
@@ -160,7 +181,7 @@ fun ForageNavScaffold(screens: ForageScreens, badges: TabBadges = TabBadges()) {
                         navArgument("source") { type = NavType.StringType; defaultValue = kind },
                         navArgument("feedId") { type = NavType.LongType; defaultValue = -1L },
                     ),
-                ) { screens.list(kind, nav) }
+                ) { screens.list(kind, nav, request.takeIf { kind == "unread" }) { handled() } }
             }
             composable(SEARCH_ROUTE) { screens.search(nav) }
             composable("categories") { screens.categories(nav) }
