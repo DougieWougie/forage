@@ -73,7 +73,7 @@ data class ArticleListState(
 
 @HiltViewModel
 class ArticleListViewModel @Inject constructor(
-    handle: SavedStateHandle,
+    private val handle: SavedStateHandle,
     private val repo: FeedRepository,
     settingsRepo: SettingsRepository,
 ) : ViewModel() {
@@ -83,7 +83,8 @@ class ArticleListViewModel @Inject constructor(
     private val markedOlder = MutableStateFlow<List<Long>>(emptyList())
     private val toggles = ArticleToggles(repo, viewModelScope)
     private val filter = MutableStateFlow(ReadFilter.ALL)
-    private val folderChoice = MutableStateFlow<Set<Long>>(emptySet())
+    // Kept in the saved state so the chosen chips survive the process being killed in the background.
+    private val folderChoice = handle.getStateFlow(FOLDER_CHOICE_KEY, LongArray(0))
 
     private val articles = when (source) {
         ListSource.Unread -> repo.observeUnread()
@@ -101,7 +102,8 @@ class ArticleListViewModel @Inject constructor(
         val folderIds: Set<Long>,
     )
 
-    private val shownArticles = combine(articles, filter, folderChoice, repo.observeFeeds(), repo.observeFolders()) { list, readFilter, choice, feeds, allFolders ->
+    private val shownArticles = combine(articles, filter, folderChoice, repo.observeFeeds(), repo.observeFolders()) { list, readFilter, saved, feeds, allFolders ->
+        val choice = saved.toSet()
         val folderOf = feeds.associate { it.id to (it.folderId ?: UNCATEGORISED) }
         val present = list.map { folderOf[it.feedId] ?: UNCATEGORISED }.toSet()
         val offered = allFolders.filter { it.id in present }
@@ -134,10 +136,15 @@ class ArticleListViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
 
     fun setFilter(value: ReadFilter) { filter.value = value }
-    fun toggleFolder(id: Long) { folderChoice.update { if (id in it) it - id else it + id } }
+    fun toggleFolder(id: Long) {
+        val now = folderChoice.value.toSet()
+        chooseFolders(if (id in now) now - id else now + id)
+    }
     /** Narrows the list to exactly [ids], replacing any earlier choice. */
-    fun selectFolders(ids: Set<Long>) { folderChoice.value = ids }
-    fun clearFolders() { folderChoice.value = emptySet() }
+    fun selectFolders(ids: Set<Long>) = chooseFolders(ids)
+    fun clearFolders() = chooseFolders(emptySet())
+
+    private fun chooseFolders(ids: Set<Long>) { handle[FOLDER_CHOICE_KEY] = ids.toLongArray() }
 
     fun toggleRead(article: Article) = toggles.toggleRead(article)
     fun toggleSaved(article: Article) = toggles.toggleSaved(article)
@@ -179,5 +186,6 @@ class ArticleListViewModel @Inject constructor(
 
     companion object {
         const val UNCATEGORISED = UNCATEGORISED_FOLDER_ID
+        private const val FOLDER_CHOICE_KEY = "folderChoice"
     }
 }
