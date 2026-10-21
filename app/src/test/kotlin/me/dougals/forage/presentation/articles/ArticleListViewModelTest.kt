@@ -292,6 +292,21 @@ class ArticleListViewModelTest {
         }
     }
 
+    @Test fun chosenCategoriesSurviveARecreatedViewModel() = runTest {
+        categorised(MutableStateFlow(listOf(article(1, feedId = 1), article(2, feedId = 2), article(3, feedId = 3))))
+        val handle = SavedStateHandle(mapOf("source" to "unread"))
+        val first = ArticleListViewModel(handle, repo, settingsRepo)
+        first.state.test {
+            awaitUntil { it.articles.size == 3 }
+            first.toggleFolder(1)
+            first.toggleFolder(2)
+            awaitUntil { it.folderIds == setOf(1L, 2L) }
+        }
+        ArticleListViewModel(handle, repo, settingsRepo).state.test {
+            awaitUntil { it.folderIds == setOf(1L, 2L) }.let { assertEquals(listOf(1L, 2L), it.articles.map { a -> a.id }) }
+        }
+    }
+
     @Test fun onlyCategoriesWithUnreadArticlesAreOffered() = runTest {
         categorised(MutableStateFlow(listOf(article(1, feedId = 1))))
         vm("source" to "unread").state.test {
