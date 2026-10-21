@@ -12,6 +12,7 @@
 package me.dougals.forage.domain.notify
 
 import kotlinx.coroutines.flow.first
+import me.dougals.forage.domain.model.Headline
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.newestHeadlines
 import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
@@ -23,14 +24,14 @@ import me.dougals.forage.domain.repository.SettingsRepository
 /**
  * One category's share of a digest. [folder] is null for feeds in no folder, whose [folderId] is
  * [UNCATEGORISED_FOLDER_ID]. [feeds] are the titles of the feeds that gained articles, busiest first, and [headlines]
- * the newest article titles across them, newest first.
+ * the newest new articles across them, newest first.
  */
 data class DigestLine(
     val folder: String?,
     val count: Int,
     val folderId: Long,
     val feeds: List<String> = emptyList(),
-    val headlines: List<String> = emptyList(),
+    val headlines: List<Headline> = emptyList(),
 )
 
 interface DigestNotifier {
@@ -68,7 +69,7 @@ class NewArticleDigest(
         fun line(name: String?, id: Long) = perFolder[id]?.let { entries ->
             val busiest = entries.sortedWith(compareByDescending<Map.Entry<Long, Int>> { it.value }.thenBy { feeds.getValue(it.key).title.lowercase() })
             val newest = newestHeadlines(entries.flatMap { report.newHeadlines[it.key].orEmpty() })
-            DigestLine(name, entries.sumOf { it.value }, id, busiest.map { feeds.getValue(it.key).title }, newest.map { it.title })
+            DigestLine(name, entries.sumOf { it.value }, id, busiest.map { feeds.getValue(it.key).title }, newest)
         }
         val named = repo.observeFolders().first()
             .filter { it.id in current.notifyFolderIds }
