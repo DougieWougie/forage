@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.repository
 
+import me.dougals.forage.domain.model.Headline
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -129,10 +130,20 @@ class LocalFeedRepositoryTest : DbTestBase() {
 
         source.feeds["https://a/feed"] = parsed("A", "1", "2")
         val feedId = repo.observeFeeds().first().single().id
-        assertEquals(me.dougals.forage.domain.model.SyncReport(newArticles = 1, newByFeed = mapOf(feedId to 1)), repo.refresh().getOrThrow())
+        assertEquals(me.dougals.forage.domain.model.SyncReport(newArticles = 1, newByFeed = mapOf(feedId to 1), newHeadlines = mapOf(feedId to listOf(Headline("T-2", 1001L)))), repo.refresh().getOrThrow())
 
         assertEquals(listOf("2"), repo.observeUnread().first().map { it.guid })
         assertEquals(2, db.articleDao().getAll().size)
+    }
+
+    @Test fun refreshReportsTheNewestThreeNewHeadlinesNewestFirst() = runTest {
+        source.feeds["https://a/feed"] = parsed("A", "0")
+        repo.addFeed("https://a/feed").getOrThrow()
+        source.feeds["https://a/feed"] = parsed("A", "0", "1", "2", "3", "4")
+        val report = repo.refresh().getOrThrow()
+        val feedId = repo.observeFeeds().first().single().id
+        assertEquals(4, report.newByFeed.getValue(feedId))
+        assertEquals(listOf("T-4", "T-3", "T-2"), report.newHeadlines.getValue(feedId).map { it.title })
     }
 
     @Test fun oneFailingFeedDoesNotBlockOthersButIsReported() = runTest {
@@ -149,7 +160,7 @@ class LocalFeedRepositoryTest : DbTestBase() {
         // What the healthy feed brought in rides along with the failure, so a digest can still announce it.
         val partial = outcome.exceptionOrNull() as me.dougals.forage.domain.model.PartialRefreshException
         val bId = db.feedDao().getByUrl("https://b/feed")!!.id
-        assertEquals(me.dougals.forage.domain.model.SyncReport(newArticles = 1, newByFeed = mapOf(bId to 1)), partial.report)
+        assertEquals(me.dougals.forage.domain.model.SyncReport(newArticles = 1, newByFeed = mapOf(bId to 1), newHeadlines = mapOf(bId to listOf(Headline("T-2", 1001L)))), partial.report)
         assertEquals("down: https://a/feed", partial.message)
     }
 

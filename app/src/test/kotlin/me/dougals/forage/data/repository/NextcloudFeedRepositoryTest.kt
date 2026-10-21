@@ -22,6 +22,7 @@ import me.dougals.forage.data.nextcloud.FeedDto
 import me.dougals.forage.data.nextcloud.NextcloudApiProvider
 import me.dougals.forage.data.nextcloud.NextcloudSyncer
 import me.dougals.forage.data.nextcloud.PendingChangeFlusher
+import me.dougals.forage.domain.model.Headline
 import me.dougals.forage.domain.model.SyncReport
 import me.dougals.forage.testutil.FakeNextcloudApi
 import me.dougals.forage.testutil.MemSyncState
@@ -337,7 +338,23 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
         api.itemList += item(1, 10); api.itemList += item(2, 10)
         val report = repo.refresh().getOrThrow()
         val feedId = db.feedDao().getAll().single().id
-        assertEquals(SyncReport(newArticles = 2, newByFeed = mapOf(feedId to 2), feedsReceived = 1), report)
+        assertEquals(
+            SyncReport(
+                newArticles = 2, newByFeed = mapOf(feedId to 2), feedsReceived = 1,
+                newHeadlines = mapOf(feedId to listOf(Headline("Item 2", 1_700_000_002_000L), Headline("Item 1", 1_700_000_001_000L))),
+            ),
+            report,
+        )
+    }
+
+    @Test fun readItemsAreNotQuotedAndOnlyTheNewestThreeAre() = runTest {
+        api.feedList += FeedDto(10, "https://lwn.net/rss", "LWN")
+        (1L..5L).forEach { api.itemList += item(it, 10) }
+        api.itemList += item(6, 10, unread = false)
+        val report = repo.refresh().getOrThrow()
+        val feedId = db.feedDao().getAll().single().id
+        assertEquals(5, report.newByFeed.getValue(feedId))
+        assertEquals(listOf("Item 5", "Item 4", "Item 3"), report.newHeadlines.getValue(feedId).map { it.title })
     }
 
     @Test fun alreadyReadItemsArePulledButNotCountedAsNew() = runTest {

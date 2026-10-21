@@ -22,7 +22,18 @@ data class SyncReport(
     val feedsRemoved: Int = 0,
     /** [newArticles] broken down by local feed id; feeds that gained nothing are absent. */
     val newByFeed: Map<Long, Int> = emptyMap(),
+    /** The newest few titles behind [newByFeed], newest first; see [newestHeadlines]. */
+    val newHeadlines: Map<Long, List<Headline>> = emptyMap(),
 )
+
+/** A new article's title and when it was published (epoch millis), enough to pick and order what a digest quotes. */
+data class Headline(val title: String, val publishedAt: Long)
+
+const val HEADLINES_PER_FEED = 3
+
+/** The newest titles worth quoting: blank ones are dropped and the rest keep their arrival order on ties. */
+fun newestHeadlines(found: List<Headline>): List<Headline> =
+    found.filter { it.title.isNotBlank() }.sortedByDescending { it.publishedAt }.take(HEADLINES_PER_FEED)
 
 /**
  * A refresh where some feeds failed but others brought in articles. It stays a failure for callers that report or retry,
