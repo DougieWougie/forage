@@ -22,6 +22,8 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
       - run: ./gradlew lintDebug
       - uses: actions/upload-artifact@v5
         if: always()
@@ -38,13 +40,14 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v5
-      - run: ./gradlew testDebugUnitTest :buildSrc:test
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - run: ./gradlew testDebugUnitTest :buildSrc:test createDebugUnitTestCoverageReport
       - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: test-report
           path: app/build/reports/tests/testDebugUnitTest/
-      - run: ./gradlew createDebugUnitTestCoverageReport
       - uses: actions/upload-artifact@v5
         with:
           name: coverage-report
