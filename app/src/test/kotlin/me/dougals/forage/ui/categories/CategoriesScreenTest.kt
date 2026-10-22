@@ -95,6 +95,39 @@ class CategoriesScreenTest {
         rule.onNodeWithText("No feeds yet").assertDoesNotExist()
     }
 
+    @Test fun collapsedFolderHidesItsFeedsButKeepsItsBadge() {
+        show(tree.copy(collapsedFolderIds = setOf(1L)))
+        rule.onNodeWithText("TECH").assertExists()
+        rule.onNodeWithText("LWN").assertDoesNotExist()
+        rule.onNodeWithText("3").assertExists() // folder badge only
+        rule.onNodeWithText("Loose").assertExists()
+    }
+
+    @Test fun chevronTogglesAFolder() {
+        show()
+        rule.onNodeWithContentDescription("Collapse folder Tech").performClick()
+        verify { vm.toggleFolder(1, true) }
+        state.value = tree.copy(collapsedFolderIds = setOf(1L))
+        rule.waitForIdle()
+        rule.onNodeWithContentDescription("Expand folder Tech").performClick()
+        verify { vm.toggleFolder(1, false) }
+    }
+
+    @Test fun uncategorizedHasNoChevron() {
+        show()
+        rule.onAllNodes(hasContentDescription("Collapse folder", substring = true)).fetchSemanticsNodes().let { assertEquals(2, it.size) }
+    }
+
+    @Test fun menuExpandsAndCollapsesEverything() {
+        show()
+        rule.onNodeWithContentDescription("More").performClick()
+        inMenu("Collapse all")
+        verify { vm.setAllFoldersCollapsed(true) }
+        rule.onNodeWithContentDescription("More").performClick()
+        inMenu("Expand all")
+        verify { vm.setAllFoldersCollapsed(false) }
+    }
+
     @Test fun tappingAFeedOpensIt() {
         show()
         click("LWN")

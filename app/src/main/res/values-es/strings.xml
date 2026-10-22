@@ -103,6 +103,10 @@
     <string name="folder_none">Ninguna</string>
     <string name="uncategorized">Sin categoría</string>
     <string name="cd_delete_folder">Eliminar la carpeta %1$s</string>
+    <string name="cd_expand_folder">Expandir la carpeta %1$s</string>
+    <string name="cd_collapse_folder">Contraer la carpeta %1$s</string>
+    <string name="expand_all_folders">Expandir todo</string>
+    <string name="collapse_all_folders">Contraer todo</string>
     <string name="delete_folder_title">¿Eliminar «%1$s»?</string>
     <string name="delete_folder_body">Sus feeds se conservan y se mueven a «Sin categoría».</string>
     <string name="suggested_feeds">Feeds sugeridos</string>

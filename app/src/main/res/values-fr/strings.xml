@@ -103,6 +103,10 @@
     <string name="folder_none">Aucun</string>
     <string name="uncategorized">Sans catégorie</string>
     <string name="cd_delete_folder">Supprimer le dossier %1$s</string>
+    <string name="cd_expand_folder">Développer le dossier %1$s</string>
+    <string name="cd_collapse_folder">Réduire le dossier %1$s</string>
+    <string name="expand_all_folders">Tout développer</string>
+    <string name="collapse_all_folders">Tout réduire</string>
     <string name="delete_folder_title">Supprimer « %1$s » ?</string>
     <string name="delete_folder_body">Ses flux sont conservés et déplacés dans « Sans catégorie ».</string>
     <string name="suggested_feeds">Flux suggérés</string>
