@@ -59,6 +59,12 @@ class CategoriesViewModelTest {
         assertEquals(2, node.updatedFeeds)
     }
 
+    @Test fun feedInAMissingFolderFallsIntoUncategorized() {
+        val tree = buildCategories(listOf(Folder(1, "Art")), listOf(feed(1, "Orphan", 99)))
+        assertEquals(listOf("Art", null), tree.map { it.folder?.name })
+        assertEquals(listOf("Orphan"), tree[1].feeds.map { it.title })
+    }
+
     @Test fun uncategorizedGroupIsOmittedWhenEmpty() {
         assertEquals(listOf("Art"), buildCategories(listOf(Folder(1, "Art")), emptyList()).map { it.folder?.name })
     }
