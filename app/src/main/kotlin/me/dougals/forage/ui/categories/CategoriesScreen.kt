@@ -215,7 +215,8 @@ fun CategoriesScreen(onOpenFeed: (Long) -> Unit, vm: CategoriesViewModel = hiltV
     moving?.let { feed ->
         MoveFeedDialog(
             feed = feed, folders = state.categories.mapNotNull { it.folder },
-            onPick = { vm.moveFeed(feed.id, it); moving = null }, onDismiss = { moving = null },
+            onPick = { vm.moveFeed(feed.id, it); moving = null },
+            onCreate = { vm.createFolderAndMove(feed.id, it); moving = null }, onDismiss = { moving = null },
         )
     }
 
@@ -274,7 +275,19 @@ private fun SuggestionRow(suggestion: FeedSuggestion, onAdd: () -> Unit, onDismi
 }
 
 @Composable
-private fun MoveFeedDialog(feed: Feed, folders: List<Folder>, onPick: (Long?) -> Unit, onDismiss: () -> Unit) {
+private fun MoveFeedDialog(feed: Feed, folders: List<Folder>, onPick: (Long?) -> Unit, onCreate: (String) -> Unit, onDismiss: () -> Unit) {
+    var creating by rememberSaveable { mutableStateOf(false) }
+    var name by rememberSaveable { mutableStateOf("") }
+    if (creating) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(R.string.new_folder)) },
+            text = { OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(stringResource(R.string.field_name)) }) },
+            confirmButton = { TextButton({ onCreate(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.action_create)) } },
+            dismissButton = { TextButton({ creating = false }) { Text(stringResource(R.string.action_cancel)) } },
+        )
+        return
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.move_feed_title, feed.title)) },
@@ -289,6 +302,13 @@ private fun MoveFeedDialog(feed: Feed, folders: List<Folder>, onPick: (Long?) ->
                         RadioButton(selected, onClick = null)
                         Text(folder?.name ?: stringResource(R.string.uncategorized), Modifier.padding(start = 16.dp), style = MaterialTheme.typography.bodyLarge)
                     }
+                }
+                Row(
+                    Modifier.fillMaxWidth().clickable { creating = true }.padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Filled.CreateNewFolder, null, tint = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.move_new_folder), Modifier.padding(start = 16.dp), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
                 }
             }
         },

@@ -141,6 +141,17 @@ class CategoriesViewModel @Inject constructor(
         runBusy { repo.createFolder(trimmed).onFailure { message.value = it.toUiText(R.string.create_folder_failed) } }
     }
 
+    /** Backs "New folder…" in the move dialog: the feed goes straight into the folder it just created. */
+    fun createFolderAndMove(feedId: Long, name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        runBusy {
+            repo.createFolder(trimmed)
+                .onSuccess { folder -> repo.moveFeed(feedId, folder.id).onFailure { message.value = it.toUiText(R.string.move_feed_failed) } }
+                .onFailure { message.value = it.toUiText(R.string.create_folder_failed) }
+        }
+    }
+
     fun toggleFolder(id: Long, collapsed: Boolean) { viewModelScope.launch { settingsRepo.setFolderCollapsed(id, collapsed) } }
     fun setAllFoldersCollapsed(collapsed: Boolean) {
         val ids = state.value.categories.mapNotNull { it.folder?.id }.toSet()

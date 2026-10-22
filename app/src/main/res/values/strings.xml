@@ -114,6 +114,7 @@
     <string name="cd_dismiss_suggestion">Dismiss %1$s</string>
     <string name="restore_suggestions">Show dismissed suggestions</string>
     <string name="move_to_folder">Move to folder…</string>
+    <string name="move_new_folder">New folder…</string>
     <string name="move_feed_title">Move “%1$s” to</string>
     <string name="cd_feed_options">Feed options</string>
     <string name="remove_feed">Remove feed</string>

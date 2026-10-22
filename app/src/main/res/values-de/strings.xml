@@ -111,6 +111,7 @@
     <string name="cd_dismiss_suggestion">%1$s ausblenden</string>
     <string name="restore_suggestions">Ausgeblendete Vorschläge anzeigen</string>
     <string name="move_to_folder">In Ordner verschieben…</string>
+    <string name="move_new_folder">Neuer Ordner…</string>
     <string name="move_feed_title">„%1$s“ verschieben nach</string>
     <string name="cd_feed_options">Feed-Optionen</string>
     <string name="remove_feed">Feed entfernen</string>

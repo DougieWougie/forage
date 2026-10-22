@@ -179,6 +179,27 @@ class CategoriesScreenTest {
         verify { vm.moveFeed(10, null) }
     }
 
+    @Test fun newFolderFromTheMoveDialogCreatesAndMoves() {
+        show()
+        feedMenu("LWN"); inMenu("Move to folder…")
+        inDialog("New folder…").performClick(); rule.waitForIdle()
+        inDialog("Create").assertIsNotEnabled()
+        field("Name", "Science")
+        inDialog("Create").assertIsEnabled().performClick(); rule.waitForIdle()
+        verify { vm.createFolderAndMove(10, "Science") }
+        verify(exactly = 0) { vm.moveFeed(any(), any()) }
+        rule.onNode(isDialog()).assertDoesNotExist()
+    }
+
+    @Test fun cancellingNewFolderReturnsToTheMoveList() {
+        show()
+        feedMenu("LWN"); inMenu("Move to folder…")
+        inDialog("New folder…").performClick(); rule.waitForIdle()
+        inDialog("Cancel").performClick(); rule.waitForIdle()
+        inDialog("Move “LWN” to").assertExists()
+        verify(exactly = 0) { vm.createFolderAndMove(any(), any()) }
+    }
+
     @Test fun cancellingAMoveLeavesTheFeed() {
         show()
         feedMenu("LWN"); inMenu("Move to folder…")
