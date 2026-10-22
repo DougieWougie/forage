@@ -207,6 +207,25 @@ class CategoriesViewModelTest {
         coVerify(exactly = 1) { repo.createFolder("News") }
     }
 
+    @Test fun newFolderFromTheMoveDialogMovesTheFeedStraightIn() = runTest {
+        coEvery { repo.createFolder(any()) } returns Result.success(Folder(5, "News"))
+        val v = vm
+        v.createFolderAndMove(9, "  ")
+        v.createFolderAndMove(9, " News ")
+        coVerify(exactly = 1) { repo.createFolder("News") }
+        coVerify(exactly = 1) { repo.moveFeed(9, 5) }
+    }
+
+    @Test fun failedFolderCreationLeavesTheFeedAlone() = runTest {
+        coEvery { repo.createFolder(any()) } returns Result.failure(java.io.IOException("no folders"))
+        val v = vm
+        v.state.test {
+            awaitItem(); v.createFolderAndMove(9, "News")
+            assertEquals(UiText.Raw("no folders"), awaitUntil { it.message != null }.message)
+        }
+        coVerify(exactly = 0) { repo.moveFeed(any(), any()) }
+    }
+
     @Test fun importReportsCounts() = runTest {
         coEvery { opml.import(any()) } returns Result.success(ImportResult(added = 2, skipped = 1, failed = 0))
         val v = vm

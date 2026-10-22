@@ -109,6 +109,7 @@
     <string name="cd_dismiss_suggestion">Descartar %1$s</string>
     <string name="restore_suggestions">Mostrar sugerencias descartadas</string>
     <string name="move_to_folder">Mover a carpeta…</string>
+    <string name="move_new_folder">Nueva carpeta…</string>
     <string name="move_feed_title">Mover «%1$s» a</string>
     <string name="cd_feed_options">Opciones del feed</string>
     <string name="remove_feed">Quitar feed</string>

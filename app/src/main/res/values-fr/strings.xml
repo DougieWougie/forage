@@ -109,6 +109,7 @@
     <string name="cd_dismiss_suggestion">Ignorer %1$s</string>
     <string name="restore_suggestions">Afficher les suggestions ignorées</string>
     <string name="move_to_folder">Déplacer vers un dossier…</string>
+    <string name="move_new_folder">Nouveau dossier…</string>
     <string name="move_feed_title">Déplacer « %1$s » vers</string>
     <string name="cd_feed_options">Options du flux</string>
     <string name="remove_feed">Supprimer le flux</string>
