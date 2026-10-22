@@ -37,6 +37,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.MoreVert
@@ -132,6 +134,14 @@ fun CategoriesScreen(onOpenFeed: (Long) -> Unit, vm: CategoriesViewModel = hiltV
                             onClick = { menuOpen = false; importLauncher.launch(arrayOf("*/*")) },
                         )
                         DropdownMenuItem(
+                            text = { Text(stringResource(R.string.expand_all_folders)) },
+                            onClick = { menuOpen = false; vm.setAllFoldersCollapsed(false) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.collapse_all_folders)) },
+                            onClick = { menuOpen = false; vm.setAllFoldersCollapsed(true) },
+                        )
+                        DropdownMenuItem(
                             text = { Text(stringResource(R.string.restore_suggestions)) },
                             onClick = { menuOpen = false; vm.restoreSuggestions() },
                         )
@@ -168,10 +178,15 @@ fun CategoriesScreen(onOpenFeed: (Long) -> Unit, vm: CategoriesViewModel = hiltV
                         }
                     }
                     state.categories.forEach { node ->
+                        val collapsed = node.folder?.id in state.collapsedFolderIds
                         item(key = "h-${node.folder?.id}") {
-                            FolderHeader(node.folder, node.unreadCount, onDelete = { node.folder?.let { vm.deleteFolder(it.id) } })
+                            FolderHeader(
+                                node.folder, node.unreadCount, collapsed,
+                                onToggle = { node.folder?.let { vm.toggleFolder(it.id, !collapsed) } },
+                                onDelete = { node.folder?.let { vm.deleteFolder(it.id) } },
+                            )
                         }
-                        items(node.feeds, key = { "f-${it.id}" }) { feed ->
+                        if (!collapsed) items(node.feeds, key = { "f-${it.id}" }) { feed ->
                             FeedRow(feed, onOpen = { onOpenFeed(feed.id) }, onMarkRead = { vm.markFeedRead(feed.id) }, onMove = { moving = feed }, onRemove = { vm.removeFeed(feed.id) })
                         }
                         item(key = "d-${node.folder?.id}") { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
@@ -303,9 +318,15 @@ private fun MoveFeedDialog(feed: Feed, folders: List<Folder>, onPick: (Long?) ->
 }
 
 @Composable
-private fun FolderHeader(folder: Folder?, unread: Int, onDelete: () -> Unit) {
+private fun FolderHeader(folder: Folder?, unread: Int, collapsed: Boolean, onToggle: () -> Unit, onDelete: () -> Unit) {
     var confirm by remember { mutableStateOf(false) }
-    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(start = if (folder != null) 8.dp else 20.dp, end = 8.dp, top = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (folder != null) {
+            val label = stringResource(if (collapsed) R.string.cd_expand_folder else R.string.cd_collapse_folder, folder.name)
+            IconButton(onToggle) {
+                Icon(if (collapsed) Icons.Filled.ExpandMore else Icons.Filled.ExpandLess, label)
+            }
+        }
         Text(
             (folder?.name ?: stringResource(R.string.uncategorized)).uppercase(), style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f),

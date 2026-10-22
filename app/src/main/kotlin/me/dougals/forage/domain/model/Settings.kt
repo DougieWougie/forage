@@ -39,6 +39,8 @@ data class AppSettings(
     val notifyFolderIds: Set<Long> = emptySet(),
     /** Feed URLs of suggestions the user waved away. */
     val dismissedSuggestions: Set<String> = emptySet(),
+    /** Local ids of the folders folded shut on the Categories screen. New folders start open. */
+    val collapsedFolderIds: Set<Long> = emptySet(),
 ) {
     companion object {
         const val MIN_SCALE = 0.8f

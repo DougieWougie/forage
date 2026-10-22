@@ -89,6 +89,15 @@ class SettingsRepositoryTest {
         assertEquals(false, r.settings.first().pullToRefresh)
     }
 
+    @Test fun collapsedFoldersPersistAndCanBeReplaced() = runTest {
+        val r = repo()
+        assertEquals(emptySet<Long>(), r.settings.first().collapsedFolderIds)
+        r.setFolderCollapsed(1, true); r.setFolderCollapsed(2, true); r.setFolderCollapsed(1, false)
+        assertEquals(setOf(2L), r.settings.first().collapsedFolderIds)
+        r.setCollapsedFolders(setOf(3, 4))
+        assertEquals(setOf(3L, 4L), r.settings.first().collapsedFolderIds)
+    }
+
     @Test fun dismissedSuggestionsPersistAndCanBeReset() = runTest {
         val r = repo()
         assertEquals(emptySet<String>(), r.settings.first().dismissedSuggestions)

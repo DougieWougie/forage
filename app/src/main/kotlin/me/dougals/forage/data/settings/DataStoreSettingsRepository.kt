@@ -42,6 +42,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             thumbnailSide = p[THUMB_SIDE]?.let { runCatching { ThumbnailSide.valueOf(it) }.getOrNull() } ?: ThumbnailSide.END,
             notifyFolderIds = p[NOTIFY_FOLDERS].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
             dismissedSuggestions = p[DISMISSED].orEmpty(),
+            collapsedFolderIds = p[COLLAPSED_FOLDERS].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
         )
     }
 
@@ -55,6 +56,13 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         store.edit {
             val current = it[NOTIFY_FOLDERS].orEmpty()
             it[NOTIFY_FOLDERS] = if (notify) current + folderId.toString() else current - folderId.toString()
+        }
+    }
+    override suspend fun setCollapsedFolders(folderIds: Set<Long>) { store.edit { it[COLLAPSED_FOLDERS] = folderIds.map(Long::toString).toSet() } }
+    override suspend fun setFolderCollapsed(folderId: Long, collapsed: Boolean) {
+        store.edit {
+            val current = it[COLLAPSED_FOLDERS].orEmpty()
+            it[COLLAPSED_FOLDERS] = if (collapsed) current + folderId.toString() else current - folderId.toString()
         }
     }
     override suspend fun setThumbnails(mode: ThumbnailMode) { store.edit { it[THUMBS] = mode.name } }
@@ -77,6 +85,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val THUMBS = stringPreferencesKey("thumbnails")
         val THUMB_SIDE = stringPreferencesKey("thumbnail_side")
         val NOTIFY_FOLDERS = stringSetPreferencesKey("notify_folder_ids")
+        val COLLAPSED_FOLDERS = stringSetPreferencesKey("collapsed_folder_ids")
         val DISMISSED = stringSetPreferencesKey("dismissed_suggestions")
     }
 }

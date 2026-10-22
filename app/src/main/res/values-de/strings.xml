@@ -101,6 +101,10 @@
     <string name="folder_none">Keiner</string>
     <string name="uncategorized">Ohne Kategorie</string>
     <string name="cd_delete_folder">Ordner %1$s löschen</string>
+    <string name="cd_expand_folder">Ordner %1$s aufklappen</string>
+    <string name="cd_collapse_folder">Ordner %1$s zuklappen</string>
+    <string name="expand_all_folders">Alle aufklappen</string>
+    <string name="collapse_all_folders">Alle zuklappen</string>
     <string name="delete_folder_title">„%1$s“ löschen?</string>
     <string name="delete_folder_body">Die Feeds bleiben erhalten und werden nach „Ohne Kategorie“ verschoben.</string>
     <string name="suggested_feeds">Vorgeschlagene Feeds</string>
