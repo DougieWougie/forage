@@ -29,6 +29,9 @@ interface SettingsRepository {
     /** Replaces every folder opted in to digests, e.g. to select or clear them all at once. */
     suspend fun setNotifyFolders(folderIds: Set<Long>)
     suspend fun setFolderNotifications(folderId: Long, notify: Boolean)
+    /** Replaces every collapsed folder, e.g. to expand or collapse them all at once. */
+    suspend fun setCollapsedFolders(folderIds: Set<Long>)
+    suspend fun setFolderCollapsed(folderId: Long, collapsed: Boolean)
     suspend fun setThumbnails(mode: ThumbnailMode)
     suspend fun setThumbnailSide(side: ThumbnailSide)
     suspend fun dismissSuggestion(feedUrl: String)

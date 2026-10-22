@@ -34,6 +34,7 @@ import me.dougals.forage.domain.suggest.FeedSuggester
 import me.dougals.forage.domain.suggest.SuggestionCatalogue
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.InputStream
 import javax.inject.Inject
@@ -51,6 +52,7 @@ data class CategoriesState(
     val isRefreshing: Boolean = false,
     val pullToRefresh: Boolean = true,
     val suggestions: List<FeedSuggestion> = emptyList(),
+    val collapsedFolderIds: Set<Long> = emptySet(),
 )
 
 fun buildCategories(folders: List<Folder>, feeds: List<Feed>): List<CategoryNode> {
@@ -76,11 +78,28 @@ class CategoriesViewModel @Inject constructor(
 
     val state: StateFlow<CategoriesState> = combine(
         repo.observeFolders(), repo.observeFeeds(), message, busy, refreshing, settingsRepo.settings.map { it.pullToRefresh },
-        suggestions(catalogue),
+        suggestions(catalogue), settingsRepo.settings.map { it.collapsedFolderIds }.distinctUntilChanged(),
     ) { v ->
         @Suppress("UNCHECKED_CAST")
-        CategoriesState(buildCategories(v[0] as List<Folder>, v[1] as List<Feed>), v[2] as UiText?, v[3] as Boolean, v[4] as Boolean, v[5] as Boolean, v[6] as List<FeedSuggestion>)
+        CategoriesState(buildCategories(v[0] as List<Folder>, v[1] as List<Feed>), v[2] as UiText?, v[3] as Boolean, v[4] as Boolean, v[5] as Boolean, v[6] as List<FeedSuggestion>, v[7] as Set<Long>)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoriesState())
+
+    init {
+        // New unread articles reopen the folder they land in; the first emission is only the baseline.
+        viewModelScope.launch {
+            var seen: Map<Long, Int>? = null
+            combine(repo.observeFolders(), repo.observeFeeds()) { folders, feeds -> buildCategories(folders, feeds) }.collect { tree ->
+                val unread = tree.mapNotNull { n -> n.folder?.let { it.id to n.unreadCount } }.toMap()
+                val before = seen
+                seen = unread
+                if (before != null) {
+                    val grown = unread.filter { (id, count) -> count > (before[id] ?: 0) }.keys
+                    val shut = settingsRepo.settings.first().collapsedFolderIds
+                    if ((grown intersect shut).isNotEmpty()) settingsRepo.setCollapsedFolders(shut - grown)
+                }
+            }
+        }
+    }
 
     private fun suggestions(catalogue: SuggestionCatalogue): Flow<List<FeedSuggestion>> {
         val suggester = flow { emit(runCatching { FeedSuggester(catalogue.load()) }.getOrDefault(FeedSuggester(emptyList()))) }
@@ -110,6 +129,7 @@ class CategoriesViewModel @Inject constructor(
         val normalized = if ("://" in url) url else "https://$url"
         runBusy {
             repo.addFeed(normalized, folderId)
+                .onSuccess { folderId?.let { id -> settingsRepo.setFolderCollapsed(id, false) } }
                 .onSuccess { message.value = UiText.Res(R.string.added_feed, listOf(it.title)) }
                 .onFailure { message.value = it.toUiText(R.string.add_feed_failed) }
         }
@@ -121,10 +141,22 @@ class CategoriesViewModel @Inject constructor(
         runBusy { repo.createFolder(trimmed).onFailure { message.value = it.toUiText(R.string.create_folder_failed) } }
     }
 
-    fun deleteFolder(id: Long) = runBusy { repo.deleteFolder(id).onFailure { message.value = it.toUiText(R.string.delete_folder_failed) } }
+    fun toggleFolder(id: Long, collapsed: Boolean) { viewModelScope.launch { settingsRepo.setFolderCollapsed(id, collapsed) } }
+    fun setAllFoldersCollapsed(collapsed: Boolean) {
+        val ids = state.value.categories.mapNotNull { it.folder?.id }.toSet()
+        viewModelScope.launch { settingsRepo.setCollapsedFolders(if (collapsed) ids else emptySet()) }
+    }
+
+    fun deleteFolder(id: Long) = runBusy {
+        repo.deleteFolder(id)
+            .onSuccess { settingsRepo.setFolderCollapsed(id, false) }
+            .onFailure { message.value = it.toUiText(R.string.delete_folder_failed) }
+    }
     fun removeFeed(id: Long) = runBusy { repo.removeFeed(id).onFailure { message.value = it.toUiText(R.string.remove_feed_failed) } }
     fun moveFeed(feedId: Long, folderId: Long?) = runBusy {
-        repo.moveFeed(feedId, folderId).onFailure { message.value = it.toUiText(R.string.move_feed_failed) }
+        repo.moveFeed(feedId, folderId)
+            .onSuccess { folderId?.let { id -> settingsRepo.setFolderCollapsed(id, false) } }
+            .onFailure { message.value = it.toUiText(R.string.move_feed_failed) }
     }
 
     fun markFeedRead(id: Long) { viewModelScope.launch { repo.markFeedRead(id) } }

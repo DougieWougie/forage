@@ -66,6 +66,8 @@ class CategoriesViewModelTest {
     private val repo = mockk<FeedRepository>(relaxed = true).also {
         every { it.observeFolders() } returns flowOf(listOf(Folder(1, "Tech")))
         every { it.observeFeeds() } returns flowOf(listOf(feed(1, "LWN", 1)))
+        coEvery { it.moveFeed(any(), any()) } returns Result.success(Unit)
+        coEvery { it.deleteFolder(any()) } returns Result.success(Unit)
     }
     private val opml = mockk<OpmlExchange>()
     private val settings = MutableStateFlow(AppSettings())
@@ -133,6 +135,45 @@ class CategoriesViewModelTest {
         coEvery { repo.addFeed(any(), any()) } returns Result.success(feed(7, "LWN"))
         vm.addSuggestion(catalogue[0])
         coVerify { repo.addFeed("https://lwn.net/rss", null) }
+    }
+
+    @Test fun togglingAFolderIsStored() = runTest {
+        vm.toggleFolder(1, true)
+        coVerify { settingsRepo.setFolderCollapsed(1, true) }
+    }
+
+    @Test fun collapseAllFoldsEveryFolderAndExpandAllClears() = runTest {
+        val v = vm
+        v.state.test {
+            awaitUntil { it.categories.isNotEmpty() }
+            v.setAllFoldersCollapsed(true)
+            v.setAllFoldersCollapsed(false)
+            cancelAndIgnoreRemainingEvents()
+        }
+        coVerify { settingsRepo.setCollapsedFolders(setOf(1L)) }
+        coVerify { settingsRepo.setCollapsedFolders(emptySet()) }
+    }
+
+    @Test fun movingOrAddingIntoAFolderOpensIt() = runTest {
+        coEvery { repo.addFeed(any(), any()) } returns Result.success(feed(7, "LWN"))
+        vm.moveFeed(5, 1)
+        vm.addFeed("https://a.example/f", 1)
+        coVerify(exactly = 2) { settingsRepo.setFolderCollapsed(1, false) }
+    }
+
+    @Test fun newUnreadArticlesReopenACollapsedFolder() = runTest {
+        val feeds = MutableStateFlow(listOf(feed(1, "LWN", 1)))
+        every { repo.observeFeeds() } returns feeds
+        settings.value = AppSettings(collapsedFolderIds = setOf(1L))
+        val v = vm
+        v.state.test {
+            awaitUntil { it.categories.isNotEmpty() }
+            coVerify(exactly = 0) { settingsRepo.setCollapsedFolders(any()) }
+            feeds.value = listOf(feed(1, "LWN", 1).copy(unreadCount = 2))
+            awaitUntil { it.categories.firstOrNull()?.unreadCount == 2 }
+            cancelAndIgnoreRemainingEvents()
+        }
+        coVerify { settingsRepo.setCollapsedFolders(emptySet()) }
     }
 
     @Test fun dismissedSuggestionsCanBeBroughtBack() = runTest {

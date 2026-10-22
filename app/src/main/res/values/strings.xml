@@ -104,6 +104,10 @@
     <string name="folder_none">None</string>
     <string name="uncategorized">Uncategorized</string>
     <string name="cd_delete_folder">Delete folder %1$s</string>
+    <string name="cd_expand_folder">Expand folder %1$s</string>
+    <string name="cd_collapse_folder">Collapse folder %1$s</string>
+    <string name="expand_all_folders">Expand all</string>
+    <string name="collapse_all_folders">Collapse all</string>
     <string name="delete_folder_title">Delete “%1$s”?</string>
     <string name="delete_folder_body">Its feeds are kept and moved to Uncategorized.</string>
     <string name="suggested_feeds">Suggested feeds</string>
