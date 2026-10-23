@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
 import me.dougals.forage.R
+import androidx.compose.ui.platform.LocalContext
+import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.articles.ToggleUndo
 
 /** Shows a short "Marked read / Saved / …" snackbar with Undo for [toggled], and reports how it ended. */
@@ -35,6 +37,22 @@ internal fun ToggleUndoSnackbar(toggled: ToggleUndo?, snackbar: SnackbarHostStat
     LaunchedEffect(toggled) {
         if (message == null) return@LaunchedEffect
         val result = snackbar.showSnackbar(message, actionLabel = undoLabel, duration = SnackbarDuration.Short)
+        if (result == SnackbarResult.ActionPerformed) onUndo() else onDismiss()
+    }
+}
+
+/** Shows "N articles marked read" with Undo for a bulk mark-read of [marked], and reports how it ended. */
+@Composable
+internal fun MarkedReadSnackbar(marked: List<Long>, snackbar: SnackbarHostState, onUndo: () -> Unit, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val undoLabel = stringResource(R.string.action_undo)
+    LaunchedEffect(marked) {
+        if (marked.isEmpty()) return@LaunchedEffect
+        val result = snackbar.showSnackbar(
+            UiText.Plural(R.plurals.articles_marked_read, marked.size).resolve(context),
+            actionLabel = undoLabel,
+            duration = SnackbarDuration.Long,
+        )
         if (result == SnackbarResult.ActionPerformed) onUndo() else onDismiss()
     }
 }

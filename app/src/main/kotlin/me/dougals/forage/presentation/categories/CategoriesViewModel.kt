@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import me.dougals.forage.R
 import me.dougals.forage.domain.opml.OpmlExchange
 import me.dougals.forage.presentation.UiText
+import me.dougals.forage.presentation.articles.BulkReadUndo
 import me.dougals.forage.presentation.toUiText
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.FeedSuggestion
@@ -53,6 +54,8 @@ data class CategoriesState(
     val pullToRefresh: Boolean = true,
     val suggestions: List<FeedSuggestion> = emptyList(),
     val collapsedFolderIds: Set<Long> = emptySet(),
+    /** Articles just bulk-marked read, kept so the snackbar can undo it. */
+    val markedRead: List<Long> = emptyList(),
 )
 
 fun buildCategories(folders: List<Folder>, feeds: List<Feed>): List<CategoryNode> {
@@ -75,13 +78,14 @@ class CategoriesViewModel @Inject constructor(
     private val busy = MutableStateFlow(false)
 
     private val refreshing = MutableStateFlow(false)
+    private val bulkRead = BulkReadUndo(repo, viewModelScope)
 
     val state: StateFlow<CategoriesState> = combine(
         repo.observeFolders(), repo.observeFeeds(), message, busy, refreshing, settingsRepo.settings.map { it.pullToRefresh },
-        suggestions(catalogue), settingsRepo.settings.map { it.collapsedFolderIds }.distinctUntilChanged(),
+        suggestions(catalogue), settingsRepo.settings.map { it.collapsedFolderIds }.distinctUntilChanged(), bulkRead.pending,
     ) { v ->
         @Suppress("UNCHECKED_CAST")
-        CategoriesState(buildCategories(v[0] as List<Folder>, v[1] as List<Feed>), v[2] as UiText?, v[3] as Boolean, v[4] as Boolean, v[5] as Boolean, v[6] as List<FeedSuggestion>, v[7] as Set<Long>)
+        CategoriesState(buildCategories(v[0] as List<Folder>, v[1] as List<Feed>), v[2] as UiText?, v[3] as Boolean, v[4] as Boolean, v[5] as Boolean, v[6] as List<FeedSuggestion>, v[7] as Set<Long>, v[8] as List<Long>)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoriesState())
 
     init {
@@ -170,8 +174,10 @@ class CategoriesViewModel @Inject constructor(
             .onFailure { message.value = it.toUiText(R.string.move_feed_failed) }
     }
 
-    fun markFeedRead(id: Long) { viewModelScope.launch { repo.markFeedRead(id) } }
-    fun markFeedsRead(ids: List<Long>) { viewModelScope.launch { ids.forEach { repo.markFeedRead(it) } } }
+    fun markFeedRead(id: Long) = markFeedsRead(listOf(id))
+    fun markFeedsRead(ids: List<Long>) { viewModelScope.launch { bulkRead.offer(ids.flatMap { repo.markFeedRead(it) }) } }
+    fun undoMarkedRead() = bulkRead.undo()
+    fun dismissMarkedRead() = bulkRead.dismiss()
 
     fun importOpml(input: InputStream) = runBusy {
         opml.import(input)

@@ -92,6 +92,7 @@ import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.FeedSuggestion
 import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.presentation.categories.CategoriesViewModel
+import me.dougals.forage.ui.articles.MarkedReadSnackbar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -109,6 +110,8 @@ fun CategoriesScreen(onOpenFeed: (Long) -> Unit, vm: CategoriesViewModel = hiltV
     LaunchedEffect(state.message) {
         state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() }
     }
+
+    MarkedReadSnackbar(state.markedRead, snackbar, onUndo = vm::undoMarkedRead, onDismiss = vm::dismissMarkedRead)
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) context.contentResolver.openInputStream(uri)?.let { vm.importOpml(it) }

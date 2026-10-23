@@ -173,6 +173,14 @@ class CategoriesScreenTest {
         verify { vm.markFeedRead(10) }
     }
 
+    @Test fun markingFeedsReadReportsTheCountAndCanBeUndone() {
+        show(tree.copy(markedRead = listOf(10, 11)))
+        rule.onNodeWithText("2 articles marked read").assertExists()
+        rule.onNodeWithText("Undo").performClick(); rule.waitForIdle()
+        verify { vm.undoMarkedRead() }
+        verify(exactly = 0) { vm.dismissMarkedRead() }
+    }
+
     @Test fun feedMenuRemovesTheFeed() {
         show()
         feedMenu("Loose"); inMenu("Remove feed")

@@ -61,11 +61,12 @@ abstract class RoomFeedRepository(
         onWritesDone()
     }
 
-    override suspend fun markFeedRead(feedId: Long) {
+    override suspend fun markFeedRead(feedId: Long): List<Long> {
         val ids = db.articleDao().unreadIds(feedId)
         db.articleDao().markFeedRead(feedId)
         ids.forEach { onStateChanged(it, SyncField.READ, true) }
         if (ids.isNotEmpty()) onWritesDone()
+        return ids
     }
 
     override suspend fun markOlderRead(articleId: Long): List<Long> {
