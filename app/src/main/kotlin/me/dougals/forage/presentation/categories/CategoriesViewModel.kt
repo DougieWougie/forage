@@ -171,6 +171,7 @@ class CategoriesViewModel @Inject constructor(
     }
 
     fun markFeedRead(id: Long) { viewModelScope.launch { repo.markFeedRead(id) } }
+    fun markFeedsRead(ids: List<Long>) { viewModelScope.launch { ids.forEach { repo.markFeedRead(it) } } }
 
     fun importOpml(input: InputStream) = runBusy {
         opml.import(input)

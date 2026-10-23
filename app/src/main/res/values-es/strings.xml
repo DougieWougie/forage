@@ -103,6 +103,7 @@
     <string name="folder_none">Ninguna</string>
     <string name="uncategorized">Sin categoría</string>
     <string name="cd_delete_folder">Eliminar la carpeta %1$s</string>
+    <string name="cd_mark_folder_read">Marcar todo en %1$s como leído</string>
     <string name="cd_expand_folder">Expandir la carpeta %1$s</string>
     <string name="cd_collapse_folder">Contraer la carpeta %1$s</string>
     <string name="expand_all_folders">Expandir todo</string>

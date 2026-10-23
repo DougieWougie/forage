@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FileDownload
@@ -183,6 +184,7 @@ fun CategoriesScreen(onOpenFeed: (Long) -> Unit, vm: CategoriesViewModel = hiltV
                             FolderHeader(
                                 node.folder, node.unreadCount, collapsed,
                                 onToggle = { node.folder?.let { vm.toggleFolder(it.id, !collapsed) } },
+                                onMarkRead = { vm.markFeedsRead(node.feeds.map { it.id }) },
                                 onDelete = { node.folder?.let { vm.deleteFolder(it.id) } },
                             )
                         }
@@ -318,7 +320,7 @@ private fun MoveFeedDialog(feed: Feed, folders: List<Folder>, onPick: (Long?) ->
 }
 
 @Composable
-private fun FolderHeader(folder: Folder?, unread: Int, collapsed: Boolean, onToggle: () -> Unit, onDelete: () -> Unit) {
+private fun FolderHeader(folder: Folder?, unread: Int, collapsed: Boolean, onToggle: () -> Unit, onMarkRead: () -> Unit, onDelete: () -> Unit) {
     var confirm by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().padding(start = if (folder != null) 8.dp else 20.dp, end = 8.dp, top = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         if (folder != null) {
@@ -331,7 +333,11 @@ private fun FolderHeader(folder: Folder?, unread: Int, collapsed: Boolean, onTog
             (folder?.name ?: stringResource(R.string.uncategorized)).uppercase(), style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f),
         )
-        if (unread > 0) Badge { Text(unread.toString()) }
+        if (unread > 0) {
+            Badge { Text(unread.toString()) }
+            val name = folder?.name ?: stringResource(R.string.uncategorized)
+            IconButton(onMarkRead) { Icon(Icons.Filled.DoneAll, stringResource(R.string.cd_mark_folder_read, name)) }
+        }
         if (folder != null) IconButton({ confirm = true }) { Icon(Icons.Filled.Delete, stringResource(R.string.cd_delete_folder, folder.name)) }
     }
     if (confirm && folder != null) {

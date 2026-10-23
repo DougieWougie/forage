@@ -137,6 +137,11 @@ class CategoriesViewModelTest {
         coVerify { repo.addFeed("https://lwn.net/rss", null) }
     }
 
+    @Test fun markingAFolderReadMarksEachOfItsFeeds() = runTest {
+        vm.markFeedsRead(listOf(3, 4))
+        coVerify { repo.markFeedRead(3); repo.markFeedRead(4) }
+    }
+
     @Test fun togglingAFolderIsStored() = runTest {
         vm.toggleFolder(1, true)
         coVerify { settingsRepo.setFolderCollapsed(1, true) }
