@@ -101,6 +101,7 @@
     <string name="folder_none">Keiner</string>
     <string name="uncategorized">Ohne Kategorie</string>
     <string name="cd_delete_folder">Ordner %1$s löschen</string>
+    <string name="cd_mark_folder_read">Alle in %1$s als gelesen markieren</string>
     <string name="cd_expand_folder">Ordner %1$s aufklappen</string>
     <string name="cd_collapse_folder">Ordner %1$s zuklappen</string>
     <string name="expand_all_folders">Alle aufklappen</string>

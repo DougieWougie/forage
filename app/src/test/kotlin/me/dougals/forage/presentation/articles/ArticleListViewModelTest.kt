@@ -213,6 +213,21 @@ class ArticleListViewModelTest {
         coVerify(exactly = 1) { repo.markFeedRead(2) }
     }
 
+    @Test fun markAllReadKeepsEveryChangedIdForUndo() = runTest {
+        every { repo.observeUnread() } returns flowOf(listOf(article(1, feedId = 1), article(2, feedId = 2), article(3, feedId = 2)))
+        coEvery { repo.markFeedRead(1) } returns listOf(1L)
+        coEvery { repo.markFeedRead(2) } returns listOf(2L, 3L)
+        val v = vm("source" to "unread")
+        v.state.test {
+            awaitUntil { it.articles.size == 3 }
+            v.markAllRead()
+            assertEquals(listOf(1L, 2L, 3L), awaitUntil { it.markedRead.isNotEmpty() }.markedRead)
+            v.undoMarkedRead()
+            awaitUntil { it.markedRead.isEmpty() }
+        }
+        coVerify { repo.setReadBatch(listOf(1L, 2L, 3L), false) }
+    }
+
     @Test fun markOlderReadKeepsTheMarkedIdsForUndo() = runTest {
         every { repo.observeUnread() } returns flowOf(listOf(article(1), article(2)))
         coEvery { repo.markOlderRead(2) } returns listOf(1L)
@@ -220,9 +235,9 @@ class ArticleListViewModelTest {
         v.state.test {
             awaitUntil { it.articles.size == 2 }
             v.markOlderRead(article(2))
-            assertEquals(listOf(1L), awaitUntil { it.markedOlder.isNotEmpty() }.markedOlder)
-            v.undoMarkOlderRead()
-            awaitUntil { it.markedOlder.isEmpty() }
+            assertEquals(listOf(1L), awaitUntil { it.markedRead.isNotEmpty() }.markedRead)
+            v.undoMarkedRead()
+            awaitUntil { it.markedRead.isEmpty() }
         }
         coVerify(exactly = 1) { repo.setReadBatch(listOf(1L), false) }
     }

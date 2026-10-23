@@ -137,6 +137,44 @@ class CategoriesViewModelTest {
         coVerify { repo.addFeed("https://lwn.net/rss", null) }
     }
 
+    @Test fun markingAFolderReadMarksEachOfItsFeeds() = runTest {
+        vm.markFeedsRead(listOf(3, 4))
+        coVerify { repo.markFeedRead(3); repo.markFeedRead(4) }
+    }
+
+    @Test fun markingFeedsReadOffersUndoForExactlyTheArticlesChanged() = runTest {
+        coEvery { repo.markFeedRead(3) } returns listOf(30L, 31L)
+        coEvery { repo.markFeedRead(4) } returns listOf(40L)
+        val v = vm
+        v.state.test {
+            awaitItem()
+            v.markFeedsRead(listOf(3, 4))
+            assertEquals(listOf(30L, 31L, 40L), awaitUntil { it.markedRead.isNotEmpty() }.markedRead)
+            v.undoMarkedRead()
+            awaitUntil { it.markedRead.isEmpty() }
+        }
+        coVerify { repo.setReadBatch(listOf(30L, 31L, 40L), false) }
+    }
+
+    @Test fun markingNothingNewReadOffersNoUndo() = runTest {
+        coEvery { repo.markFeedRead(3) } returns emptyList()
+        val v = vm
+        v.state.test { awaitItem(); v.markFeedRead(3); expectNoEvents() }
+    }
+
+    @Test fun aLaterBulkMarkReplacesTheEarlierUndo() = runTest {
+        coEvery { repo.markFeedRead(3) } returns listOf(30L)
+        coEvery { repo.markFeedRead(4) } returns listOf(40L)
+        val v = vm
+        v.state.test {
+            awaitItem()
+            v.markFeedRead(3); awaitUntil { it.markedRead == listOf(30L) }
+            v.markFeedRead(4); awaitUntil { it.markedRead == listOf(40L) }
+            v.dismissMarkedRead(); awaitUntil { it.markedRead.isEmpty() }
+        }
+        coVerify(exactly = 0) { repo.setReadBatch(any(), any()) }
+    }
+
     @Test fun togglingAFolderIsStored() = runTest {
         vm.toggleFolder(1, true)
         coVerify { settingsRepo.setFolderCollapsed(1, true) }

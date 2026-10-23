@@ -104,6 +104,7 @@
     <string name="folder_none">None</string>
     <string name="uncategorized">Uncategorized</string>
     <string name="cd_delete_folder">Delete folder %1$s</string>
+    <string name="cd_mark_folder_read">Mark all in %1$s read</string>
     <string name="cd_expand_folder">Expand folder %1$s</string>
     <string name="cd_collapse_folder">Collapse folder %1$s</string>
     <string name="expand_all_folders">Expand all</string>

@@ -37,10 +37,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -58,7 +56,6 @@ import me.dougals.forage.ui.FolderRequest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
-import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.ui.rememberMeteredConnection
 import me.dougals.forage.presentation.articles.ListSource
@@ -86,16 +83,7 @@ fun ArticleListScreen(
         state.message?.let { snackbar.showSnackbar(it.resolve(context)); vm.dismissMessage() }
     }
 
-    val undoLabel = stringResource(R.string.action_undo)
-    LaunchedEffect(state.markedOlder) {
-        if (state.markedOlder.isEmpty()) return@LaunchedEffect
-        val result = snackbar.showSnackbar(
-            UiText.Plural(R.plurals.articles_marked_read, state.markedOlder.size).resolve(context),
-            actionLabel = undoLabel,
-            duration = SnackbarDuration.Long,
-        )
-        if (result == SnackbarResult.ActionPerformed) vm.undoMarkOlderRead() else vm.dismissMarkedOlder()
-    }
+    MarkedReadSnackbar(state.markedRead, snackbar, onUndo = vm::undoMarkedRead, onDismiss = vm::dismissMarkedRead)
 
     ToggleUndoSnackbar(state.toggled, snackbar, onUndo = vm::undoToggle, onDismiss = vm::dismissToggle)
 

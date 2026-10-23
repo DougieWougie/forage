@@ -128,6 +128,24 @@ class CategoriesScreenTest {
         verify { vm.setAllFoldersCollapsed(false) }
     }
 
+    @Test fun folderHeaderMarksItsFeedsRead() {
+        show()
+        rule.onNodeWithContentDescription("Mark all in Tech read").performClick()
+        verify { vm.markFeedsRead(listOf(10L)) }
+    }
+
+    @Test fun foldersWithNothingUnreadOfferNoMarkRead() {
+        show()
+        rule.onNodeWithContentDescription("Mark all in News read").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Mark all in Uncategorized read").assertDoesNotExist()
+    }
+
+    @Test fun uncategorizedCanBeMarkedReadToo() {
+        show(tree.copy(categories = listOf(CategoryNode(null, listOf(loose.copy(unreadCount = 2))))))
+        rule.onNodeWithContentDescription("Mark all in Uncategorized read").performClick()
+        verify { vm.markFeedsRead(listOf(11L)) }
+    }
+
     @Test fun tappingAFeedOpensIt() {
         show()
         click("LWN")
@@ -153,6 +171,14 @@ class CategoriesScreenTest {
         show()
         feedMenu("LWN"); inMenu("Mark all as read")
         verify { vm.markFeedRead(10) }
+    }
+
+    @Test fun markingFeedsReadReportsTheCountAndCanBeUndone() {
+        show(tree.copy(markedRead = listOf(10, 11)))
+        rule.onNodeWithText("2 articles marked read").assertExists()
+        rule.onNodeWithText("Undo").performClick(); rule.waitForIdle()
+        verify { vm.undoMarkedRead() }
+        verify(exactly = 0) { vm.dismissMarkedRead() }
     }
 
     @Test fun feedMenuRemovesTheFeed() {

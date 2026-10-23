@@ -218,20 +218,20 @@ class ArticleListScreenTest {
     }
 
     @Test fun markingOlderAsReadReportsTheCountAndCanBeUndone() {
-        show(dated.copy(markedOlder = listOf(1, 3, 4)))
+        show(dated.copy(markedRead = listOf(1, 3, 4)))
         rule.onNodeWithText("3 articles marked read").assertExists()
         rule.onNodeWithText("Undo").performClick(); rule.waitForIdle()
-        verify { vm.undoMarkOlderRead() }
-        verify(exactly = 0) { vm.dismissMarkedOlder() }
+        verify { vm.undoMarkedRead() }
+        verify(exactly = 0) { vm.dismissMarkedRead() }
     }
 
     @Test fun markedArticlesAreForgottenOnceTheSnackbarTimesOut() {
-        show(dated.copy(markedOlder = listOf(1)))
+        show(dated.copy(markedRead = listOf(1)))
         rule.onNodeWithText("1 article marked read").assertExists()
         rule.mainClock.advanceTimeBy(15_000)
         rule.onNodeWithText("1 article marked read").assertDoesNotExist()
-        verify { vm.dismissMarkedOlder() }
-        verify(exactly = 0) { vm.undoMarkOlderRead() }
+        verify { vm.dismissMarkedRead() }
+        verify(exactly = 0) { vm.undoMarkedRead() }
     }
 
     @Test fun aSwipeToggleOffersUndo() {

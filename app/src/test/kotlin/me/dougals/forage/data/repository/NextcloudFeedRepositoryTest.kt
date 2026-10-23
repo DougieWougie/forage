@@ -100,7 +100,9 @@ class NextcloudFeedRepositoryTest : DbTestBase() {
     @Test fun markFeedReadQueuesEveryPreviouslyUnreadArticle() = runTest {
         syncUnread(2)
         val feedId = db.feedDao().getAll().single().id
-        repo.markFeedRead(feedId)
+        val marked = repo.markFeedRead(feedId)
+        assertEquals(2, marked.size)
+        assertEquals(emptyList<Long>(), repo.markFeedRead(feedId))
         assertEquals(0, repo.observeUnread().first().size)
         assertEquals(2, db.pendingChangeDao().getAll().size)
     }
