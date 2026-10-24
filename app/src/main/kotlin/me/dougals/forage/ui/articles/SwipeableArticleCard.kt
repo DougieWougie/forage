@@ -12,6 +12,8 @@
 package me.dougals.forage.ui.articles
 
 import me.dougals.forage.R
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedContent
@@ -79,6 +81,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ThumbnailSide
+import me.dougals.forage.presentation.articles.ArticleFreshness
 import me.dougals.forage.presentation.articles.ArticleSnippet
 
 /**
@@ -211,9 +214,7 @@ private fun ArticleCardContent(
             if (image != null && thumbnailSide == ThumbnailSide.START) Thumbnail(image, thumbnailFromCacheOnly)
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!article.isRead) {
-                        Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                    }
+                    if (!article.isRead) UnreadMarker(ArticleFreshness.of(article.publishedAt, System.currentTimeMillis()))
                     Text(
                         listOfNotNull(feedTitle?.uppercase(), relativeTime(article.publishedAt)).joinToString("  ·  "),
                         style = MaterialTheme.typography.labelSmall,
@@ -274,3 +275,19 @@ private fun Thumbnail(url: String, fromCacheOnly: Boolean) {
 private fun relativeTime(millis: Long): String? =
     if (millis <= 0) null
     else DateUtils.getRelativeTimeSpanString(millis, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE).toString()
+
+/** The unread marker: a leaf that wilts then browns with age, or the plain dot when the date is unknown. */
+@Composable
+private fun UnreadMarker(freshness: ArticleFreshness?) {
+    if (freshness == null) {
+        Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+        return
+    }
+    // Shape differs per stage as well as colour, so the age does not rest on telling green from brown.
+    val (icon, tint, description) = when (freshness) {
+        ArticleFreshness.FRESH -> Triple(R.drawable.ic_leaf_fresh, R.color.freshness_fresh, R.string.cd_freshness_fresh)
+        ArticleFreshness.WILTING -> Triple(R.drawable.ic_leaf_wilting, R.color.freshness_wilting, R.string.cd_freshness_wilting)
+        ArticleFreshness.OLD -> Triple(R.drawable.ic_leaf_old, R.color.freshness_old, R.string.cd_freshness_old)
+    }
+    Icon(painterResource(icon), stringResource(description), Modifier.size(22.dp), colorResource(tint))
+}

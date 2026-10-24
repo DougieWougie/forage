@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="splash_background">#0E0E0C</color>
+    <color name="freshness_fresh">#7ED6A9</color>
+    <color name="freshness_wilting">#E0A94A</color>
+    <color name="freshness_old">#B08968</color>
 </resources>
