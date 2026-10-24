@@ -14,8 +14,6 @@ package me.dougals.forage.presentation
 import android.content.Context
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
 /**
  * Text a view model wants shown, without resolving it itself: view models stay free of a [Context],
@@ -37,9 +35,6 @@ sealed interface UiText {
 }
 
 private fun List<Any>.resolved(context: Context): Array<Any> = map { if (it is UiText) it.resolve(context) else it }.toTypedArray()
-
-@Composable
-fun UiText.asString(): String = resolve(LocalContext.current)
 
 /** The failure's own message when it has one (it comes from a server or the network), otherwise [fallback]. */
 fun Throwable.toUiText(@StringRes fallback: Int): UiText = message?.let(UiText::Raw) ?: UiText.Res(fallback)

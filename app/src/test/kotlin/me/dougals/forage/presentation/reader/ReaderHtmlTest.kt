@@ -37,6 +37,23 @@ class ReaderHtmlTest {
         assertTrue(h.contains("&quot;&lt;b&gt;&quot;"))
     }
 
+    @Test fun feedMarkupThatCouldRestyleOrRedirectThePageIsStripped() {
+        val h = page(
+            body = "<p>ok</p><script>x()</script><style>p{position:fixed}</style><form action=\"https://evil\"><input></form>" +
+                "<meta http-equiv=\"refresh\" content=\"0;url=https://evil\"><p style=\"position:fixed\" onclick=\"x()\">hi</p>" +
+                "<iframe src=\"https://evil\"></iframe><a href=\"javascript:x()\">j</a>",
+        )
+        assertTrue(h.contains("<p>ok</p>"))
+        listOf("<script>x()", "position:fixed", "<form", "<input", "http-equiv=\"refresh\"", "onclick", "<iframe", "javascript:")
+            .forEach { assertFalse(h.contains(it), it) }
+    }
+
+    @Test fun relativeLinksAndImagesResolveAgainstTheArticleUrl() {
+        val h = ReaderHtml.wrap("T", null, "<a href=\"/a\">l</a><img src=\"pic.png\">", style, "https://site.example/post/1")
+        assertTrue(h.contains("href=\"https://site.example/a\""))
+        assertTrue(h.contains("src=\"https://site.example/post/pic.png\""))
+    }
+
     @Test fun serifAndSansFontStacks() {
         assertTrue(page(s = style.copy(font = ReaderFont.SERIF)).contains("Georgia"))
         val sans = page(s = style.copy(font = ReaderFont.SANS))

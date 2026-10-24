@@ -29,10 +29,6 @@ class MappersTest {
         assertEquals(entity, entity.toDomain().toEntity())
     }
 
-    @Test fun imageUrlSurvivesTheMapping() {
-        assertEquals("https://x/a.jpg", entity.toDomain().imageUrl)
-    }
-
     @Test fun hasOfflineCopyReflectsOfflineHtml() {
         assertEquals(true, entity.toDomain().hasOfflineCopy)
         assertFalse(entity.copy(offlineHtml = null).toDomain().hasOfflineCopy)

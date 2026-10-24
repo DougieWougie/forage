@@ -14,6 +14,8 @@ package me.dougals.forage.presentation.reader
 import android.content.Intent
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ReaderFont
+import org.jsoup.Jsoup
+import org.jsoup.safety.Safelist
 import kotlin.math.roundToInt
 
 /** Colours are CSS values (e.g. `#101010`) so the page matches the Material theme. */
@@ -43,7 +45,12 @@ object ReaderFonts {
 }
 
 object ReaderHtml {
-    fun wrap(title: String, byline: String?, bodyHtml: String, style: ReaderStyle): String {
+    /**
+     * [bodyHtml] comes from a feed or a server and is untrusted, so it is sanitised here whatever its source;
+     * [baseUrl] lets relative links and images survive (they are resolved against it, and dropped without one).
+     */
+    fun wrap(title: String, byline: String?, bodyHtml: String, style: ReaderStyle, baseUrl: String = ""): String {
+        val body = Jsoup.clean(bodyHtml, baseUrl, Safelist.relaxed())
         val family = when (style.font) {
             ReaderFont.SERIF -> "Georgia, 'Noto Serif', serif"
             ReaderFont.SANS -> "system-ui, Roboto, sans-serif"
@@ -74,7 +81,7 @@ object ReaderHtml {
             </style></head><body>
             <h1>${escape(title)}</h1>
             ${byline?.let { "<p class=\"byline\">${escape(it)}</p>" }.orEmpty()}
-            $bodyHtml
+            $body
             </body></html>
         """.trimIndent()
     }
