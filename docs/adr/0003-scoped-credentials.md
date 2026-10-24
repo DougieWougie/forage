@@ -9,7 +9,11 @@ reach other hosts, including through redirects, and the app also fetches attacke
 
 ## Decision
 
-- Both are stored in `EncryptedSharedPreferences`. Auto-backup is disabled (`allowBackup="false"`).
+- Both are stored in app-private `SharedPreferences` (`securePrefs`). Auto-backup is disabled (`allowBackup="false"`).
+  They were previously in `EncryptedSharedPreferences`, which Jetpack has deprecated; the recommended replacement is plain
+  prefs under Android's file-based encryption. That is a weaker posture (a rooted device can read them), accepted to avoid
+  a deprecated dependency or hand-rolled crypto. Old encrypted files are copied across once at first launch (`migrateLegacyPrefs`),
+  and the security-crypto dependency can be removed once that has shipped for a release or two.
 - Two `OkHttpClient`s: `@WebClient` (feeds and pages) carries `SessionCookieInterceptor`; `@ApiClient` (Nextcloud, images)
   does not. Nextcloud Basic auth is added only by its own API client.
 - Both interceptors are network interceptors, so they run per redirect hop, match the exact host, and attach only over HTTPS
@@ -21,4 +25,4 @@ reach other hosts, including through redirects, and the app also fetches attacke
 
 - Users must sign in from the host that serves the feed.
 - A redirect to another host never receives the original host's credentials.
-- The Keystore-backed factories (`encryptedSessionStore`, `encryptedCredentialStore`) need a real device, so tests use `PrefsSessionStore` and `PrefsCredentialStore`; the encrypted wrappers are not unit-tested.
+- The stores are tested through `PrefsSessionStore` and `PrefsCredentialStore`; `migrateLegacyPrefs` is unit-tested, but opening the legacy encrypted file needs a real device and is not.

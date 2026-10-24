@@ -68,8 +68,8 @@ private suspend fun clearWebSession() {
 
 /**
  * In-app login. The WebView cookie jar is wiped before the page loads and again when the screen closes: the only
- * lasting copy of the session is the one [SessionCapture] writes to encrypted storage, scoped to a single host.
- * In-app login: the user signs in normally, then taps “Save session” to keep that host's cookies (encrypted). */
+ * lasting copy of the session is the one [SessionCapture] writes to private storage, scoped to a single host.
+ * In-app login: the user signs in normally, then taps “Save session” to keep that host's cookies. */
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
 @Composable

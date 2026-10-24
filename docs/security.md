@@ -28,8 +28,11 @@ Content-Security-Policy of `default-src 'none'` (images, inline styles and the b
 
 | Secret | Stored in | Sent to |
 | --- | --- | --- |
-| Nextcloud app password | `EncryptedSharedPreferences` (`CredentialStore`) | the configured Nextcloud host only, HTTPS only (`BasicAuthInterceptor`) |
-| Site session cookies | `EncryptedSharedPreferences` (`SessionStore`), keyed by exact host | that exact host only, HTTPS only (`SessionCookieInterceptor`, a network interceptor so it runs per redirect hop) |
+| Nextcloud app password | app-private `SharedPreferences` (`CredentialStore`) | the configured Nextcloud host only, HTTPS only (`BasicAuthInterceptor`) |
+| Site session cookies | app-private `SharedPreferences` (`SessionStore`), keyed by exact host | that exact host only, HTTPS only (`SessionCookieInterceptor`, a network interceptor so it runs per redirect hop) |
 
 Cookies are captured from the in-app login WebView (`SessionCapture`). `@ApiClient` has no cookie interceptor, so
 image fetches and Nextcloud calls never carry site cookies. `allowBackup` is `false`.
+
+Secrets are not encrypted by the app: Jetpack's `EncryptedSharedPreferences` is deprecated, so they rely on Android's file-based
+encryption and app sandbox (see [ADR 0003](adr/0003-scoped-credentials.md)). A rooted device or a debuggable build can read them.

@@ -25,7 +25,8 @@ import kotlinx.coroutines.flow.map
 import me.dougals.forage.domain.auth.SessionCapture
 import me.dougals.forage.data.auth.SessionCookieInterceptor
 import me.dougals.forage.domain.auth.SessionStore
-import me.dougals.forage.data.auth.encryptedSessionStore
+import me.dougals.forage.data.auth.PrefsSessionStore
+import me.dougals.forage.data.auth.securePrefs
 import me.dougals.forage.data.content.ImageResourceFetcher
 import me.dougals.forage.data.content.OfflineArchiver
 import me.dougals.forage.data.content.OkHttpPageFetcher
@@ -40,7 +41,7 @@ import me.dougals.forage.data.nextcloud.PendingChangeFlusher
 import me.dougals.forage.data.nextcloud.PrefsSyncStateStore
 import me.dougals.forage.data.nextcloud.RetrofitNextcloudApiProvider
 import me.dougals.forage.domain.nextcloud.SyncStateStore
-import me.dougals.forage.data.nextcloud.encryptedCredentialStore
+import me.dougals.forage.data.nextcloud.PrefsCredentialStore
 import me.dougals.forage.data.opml.OpmlTransfer
 import me.dougals.forage.domain.opml.OpmlExchange
 import me.dougals.forage.data.suggestions.AssetSuggestionCatalogue
@@ -81,8 +82,8 @@ object AppModule {
         Room.databaseBuilder(c, ForageDatabase::class.java, "forage.db")
             .addMigrations(ForageDatabase.MIGRATION_1_2).build()
 
-    @Provides @Singleton fun sessionStore(@ApplicationContext c: Context): SessionStore = encryptedSessionStore(c)
-    @Provides @Singleton fun credentialStore(@ApplicationContext c: Context): CredentialStore = encryptedCredentialStore(c)
+    @Provides @Singleton fun sessionStore(@ApplicationContext c: Context): SessionStore = PrefsSessionStore(securePrefs(c, "sessions", legacyName = "forage_sessions"))
+    @Provides @Singleton fun credentialStore(@ApplicationContext c: Context): CredentialStore = PrefsCredentialStore(securePrefs(c, "nextcloud", legacyName = "forage_nextcloud"))
     @Provides @Singleton
     fun syncState(@ApplicationContext c: Context): SyncStateStore =
         PrefsSyncStateStore(c.getSharedPreferences("sync_state", Context.MODE_PRIVATE))

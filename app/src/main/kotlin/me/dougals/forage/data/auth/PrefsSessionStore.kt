@@ -15,7 +15,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import me.dougals.forage.domain.auth.SessionStore
 
-/** Pass EncryptedSharedPreferences in production; plain prefs are fine in tests. */
+/** Backed by app-private prefs (see [securePrefs]). */
 class PrefsSessionStore(private val prefs: SharedPreferences) : SessionStore {
     override fun save(domain: String, cookieHeader: String) {
         prefs.edit { putString(domain.lowercase(), cookieHeader) }
