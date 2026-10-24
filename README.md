@@ -23,7 +23,7 @@ Local-first, no accounts, no tracking.
 - **Saving, three ways:** offline archive of the full article, sync to Nextcloud as a starred item, or
   share through the Android share sheet.
 - **Authenticated feeds:** paste a tokenized feed URL, or sign in to a site in a built-in browser; the
-  session cookie is kept per domain in encrypted storage and sent only to that exact host.
+  session cookie is kept per domain in private app storage and sent only to that exact host.
 - **Two modes:**
   - *Local:* Forage fetches feeds itself.
   - *Nextcloud:* Forage syncs with your Nextcloud News server (API v1-3). Read and saved changes are queued
@@ -115,7 +115,7 @@ More detail: [architecture](docs/architecture.md), [Nextcloud sync](docs/sync.md
 and [decision records](docs/adr/README.md).
 
 Stack: Kotlin, coroutines and Flow, Compose with Material 3, Hilt, Room, DataStore, OkHttp, Retrofit,
-kotlinx-serialization, WorkManager, EncryptedSharedPreferences.
+kotlinx-serialization, WorkManager.
 
 The project was built test-first. Tests use JUnit 5, MockK, Turbine, MockWebServer and Robolectric.
 

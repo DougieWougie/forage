@@ -11,13 +11,11 @@
  */
 package me.dougals.forage.data.nextcloud
 
-import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import me.dougals.forage.domain.nextcloud.CredentialStore
 import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import me.dougals.forage.domain.nextcloud.SyncStateStore
-import me.dougals.forage.data.auth.encryptedPrefs
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -49,10 +47,6 @@ class PrefsCredentialStore(private val prefs: SharedPreferences) : CredentialSto
 
     private companion object { const val URL = "url"; const val USER = "user"; const val PASS = "pass"; const val FLOW = "flow" }
 }
-
-/** Keystore-backed; needs a device/emulator, so tests use [PrefsCredentialStore] with plain prefs. */
-fun encryptedCredentialStore(context: Context): CredentialStore =
-    PrefsCredentialStore(encryptedPrefs(context, "forage_nextcloud"))
 
 fun interface NextcloudApiProvider {
     /** @throws NextcloudNotConfiguredException when no (valid) credentials are stored. */

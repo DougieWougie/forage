@@ -288,4 +288,18 @@ class SettingsViewModelTest {
         v.setFontScale(1.3f)
         coVerify { settings.setReaderFont(me.dougals.forage.domain.model.ReaderFont.SANS); settings.setFontScale(1.3f) }
     }
+
+    @Test fun notificationAndThumbnailChoicesAreWrittenToSettings() = runTest {
+        val v = vm()
+        v.setNotifyFolders(setOf(1L, 2L))
+        v.setFolderNotifications(3L, true)
+        v.setThumbnails(me.dougals.forage.domain.model.ThumbnailMode.OFF)
+        v.setThumbnailSide(me.dougals.forage.domain.model.ThumbnailSide.START)
+        v.setPullToRefresh(false)
+        coVerify {
+            settings.setNotifyFolders(setOf(1L, 2L)); settings.setFolderNotifications(3L, true)
+            settings.setThumbnails(me.dougals.forage.domain.model.ThumbnailMode.OFF)
+            settings.setThumbnailSide(me.dougals.forage.domain.model.ThumbnailSide.START); settings.setPullToRefresh(false)
+        }
+    }
 }

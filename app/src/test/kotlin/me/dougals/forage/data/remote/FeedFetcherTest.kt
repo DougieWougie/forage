@@ -59,6 +59,13 @@ class FeedFetcherTest {
         assertEquals(403, e.httpCode)
     }
 
+    @Test fun aMalformedUrlIsRefusedWithoutAnyRequest() = runTest {
+        val e = assertThrows(FeedFetchException::class.java) {
+            kotlinx.coroutines.runBlocking { FeedFetcher(OkHttpClient(), FeedParser()).fetch("not a url") }
+        }
+        assertEquals(null, e.httpCode)
+    }
+
     @Test fun loopbackIsRefusedByDefaultAndNothingIsSent() = runTest {
         MockWebServer().use { server ->
             server.start()
