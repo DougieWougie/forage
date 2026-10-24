@@ -289,5 +289,5 @@ private fun UnreadMarker(freshness: ArticleFreshness?) {
         ArticleFreshness.WILTING -> Triple(R.drawable.ic_leaf_wilting, R.color.freshness_wilting, R.string.cd_freshness_wilting)
         ArticleFreshness.OLD -> Triple(R.drawable.ic_leaf_old, R.color.freshness_old, R.string.cd_freshness_old)
     }
-    Icon(painterResource(icon), stringResource(description), Modifier.size(16.dp), colorResource(tint))
+    Icon(painterResource(icon), stringResource(description), Modifier.size(22.dp), colorResource(tint))
 }
