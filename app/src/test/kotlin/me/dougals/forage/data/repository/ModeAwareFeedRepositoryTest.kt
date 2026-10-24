@@ -70,6 +70,27 @@ class ModeAwareFeedRepositoryTest {
         assertEquals(articles, repo.observeUnread())
     }
 
+    @Test fun everyReadIsServedByLocalRoomInBothModes() = runTest {
+        val articles = flowOf(emptyList<me.dougals.forage.domain.model.Article>())
+        val folders = flowOf(emptyList<me.dougals.forage.domain.model.Folder>())
+        val feeds = flowOf(emptyList<me.dougals.forage.domain.model.Feed>())
+        every { local.observeSaved() } returns articles
+        every { local.observeFeedArticles(7) } returns articles
+        every { local.observeArticle(8) } returns flowOf(null)
+        every { local.observeFolders() } returns folders
+        every { local.observeFeeds() } returns feeds
+        listOf(SyncMode.LOCAL, SyncMode.NEXTCLOUD).forEach {
+            mode.value = it
+            assertEquals(articles, repo.observeSaved())
+            assertEquals(articles, repo.observeFeedArticles(7))
+            assertEquals(folders, repo.observeFolders())
+            assertEquals(feeds, repo.observeFeeds())
+            repo.observeArticle(8)
+        }
+        coVerify { local.observeArticle(8) }
+        coVerify(exactly = 0) { nextcloud.observeSaved(); nextcloud.observeFeedArticles(any()); nextcloud.observeArticle(any()); nextcloud.observeFolders(); nextcloud.observeFeeds() }
+    }
+
     @Test fun resultsAreReturnedUnchanged() = runTest {
         coEvery { local.refresh() } returns Result.failure(RuntimeException("x"))
         assertEquals("x", repo.refresh().exceptionOrNull()!!.message)
