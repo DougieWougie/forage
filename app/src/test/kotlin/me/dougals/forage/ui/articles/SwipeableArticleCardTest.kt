@@ -14,6 +14,7 @@ package me.dougals.forage.ui.articles
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -26,6 +27,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.GraphicsMode
 
@@ -104,5 +106,37 @@ class SwipeableArticleCardTest {
     @Test fun showsFeedNameAndTitle() {
         show()
         rule.onNodeWithText("LWN", substring = true, ignoreCase = true).assertExists()
+    }
+
+    private fun agedDays(days: Long) = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days)
+    private val markers = listOf("Fresh", "Wilting", "Old")
+
+    private fun assertOnlyMarker(expected: String?) = markers.forEach {
+        if (it == expected) rule.onNodeWithContentDescription(it).assertExists() else rule.onNodeWithContentDescription(it).assertDoesNotExist()
+    }
+
+    @Test fun anUnreadArticleFromTodayShowsTheFreshLeaf() {
+        show(article(1, publishedAt = agedDays(0)))
+        assertOnlyMarker("Fresh")
+    }
+
+    @Test fun anUnreadArticleFromAFewDaysAgoShowsTheWiltingLeaf() {
+        show(article(1, publishedAt = agedDays(4)))
+        assertOnlyMarker("Wilting")
+    }
+
+    @Test fun anUnreadArticleOverAWeekOldShowsTheBrownLeaf() {
+        show(article(1, publishedAt = agedDays(10)))
+        assertOnlyMarker("Old")
+    }
+
+    @Test fun anUnreadArticleWithAnUnknownDateShowsNoLeaf() {
+        show(article(1, publishedAt = 0))
+        assertOnlyMarker(null)
+    }
+
+    @Test fun aReadArticleShowsNoLeaf() {
+        show(article(1, read = true, publishedAt = agedDays(0)))
+        assertOnlyMarker(null)
     }
 }

@@ -137,7 +137,7 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, images: ImageRe
             article.publishedAt.takeIf { it > 0 }?.let { DateFormat.getMediumDateFormat(context).format(Date(it)) },
         ).joinToString(" · ").ifEmpty { null }
     }
-    val html = remember(article.id, article.readerHtml, style, byline) { ReaderHtml.wrap(article.title, byline, article.readerHtml, style) }
+    val html = remember(article.id, article.readerHtml, style, byline) { ReaderHtml.wrap(article.title, byline, article.readerHtml, style, article.url) }
 
     val allowLocal by rememberUpdatedState(prefs.allowLocalNetwork)
 
