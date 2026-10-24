@@ -40,10 +40,4 @@ class FeedDaoTest : DbTestBase() {
         assertEquals(-1L, db.feedDao().insertIgnore(FeedEntity(url = "https://a/feed", title = "Dup")))
     }
 
-    @Test fun observeFeedsInFolder() = runTest {
-        val folder = db.folderDao().insert(FolderEntity(name = "Tech"))
-        newFeed("https://a/feed", folderId = folder)
-        newFeed("https://b/feed")
-        assertEquals(listOf("https://a/feed"), db.feedDao().observeByFolder(folder).first().map { it.url })
-    }
 }

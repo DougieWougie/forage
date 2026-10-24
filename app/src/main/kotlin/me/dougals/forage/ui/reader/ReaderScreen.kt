@@ -13,7 +13,6 @@ package me.dougals.forage.ui.reader
 
 import me.dougals.forage.R
 import androidx.compose.ui.res.stringResource
-import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -125,7 +124,6 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
     }
 }
 
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun ArticleWebView(article: Article, prefs: AppSettings, images: ImageResourceFetcher, modifier: Modifier) {
     val scheme = MaterialTheme.colorScheme

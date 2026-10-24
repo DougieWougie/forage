@@ -51,8 +51,6 @@ interface FeedDao {
     @Query("SELECT * FROM feeds WHERE url = :url") suspend fun getByUrl(url: String): FeedEntity?
     @Query("SELECT * FROM feeds") suspend fun getAll(): List<FeedEntity>
     @Query("SELECT * FROM feeds ORDER BY title") fun observeAll(): Flow<List<FeedEntity>>
-    @Query("SELECT * FROM feeds WHERE folderId = :folderId ORDER BY title")
-    fun observeByFolder(folderId: Long): Flow<List<FeedEntity>>
 }
 
 @Dao
