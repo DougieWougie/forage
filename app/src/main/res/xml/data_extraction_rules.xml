@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backup is off (allowBackup="false"); these rules keep the secrets out of cloud backup and device transfer even if that changes. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="sessions.xml" />
+        <exclude domain="sharedpref" path="nextcloud.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="sessions.xml" />
+        <exclude domain="sharedpref" path="nextcloud.xml" />
+    </device-transfer>
+</data-extraction-rules>
