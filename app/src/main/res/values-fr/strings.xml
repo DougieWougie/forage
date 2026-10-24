@@ -52,6 +52,9 @@
     <string name="action_remove_saved">Retirer des enregistrés</string>
     <string name="cd_saved">Enregistré</string>
     <string name="cd_available_offline">Disponible hors connexion</string>
+    <string name="cd_freshness_fresh">Récent</string>
+    <string name="cd_freshness_wilting">Fané</string>
+    <string name="cd_freshness_old">Ancien</string>
 
     <!-- Article lists -->
     <string name="title_feed_fallback">Flux</string>

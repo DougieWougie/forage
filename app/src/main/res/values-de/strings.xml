@@ -50,6 +50,9 @@
     <string name="action_remove_saved">Aus Gespeichert entfernen</string>
     <string name="cd_saved">Gespeichert</string>
     <string name="cd_available_offline">Offline verfügbar</string>
+    <string name="cd_freshness_fresh">Neu</string>
+    <string name="cd_freshness_wilting">Welkend</string>
+    <string name="cd_freshness_old">Alt</string>
 
     <!-- Article lists -->
     <string name="title_feed_fallback">Feed</string>

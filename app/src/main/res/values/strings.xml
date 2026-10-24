@@ -52,6 +52,9 @@
     <string name="action_remove_saved">Remove from saved</string>
     <string name="cd_saved">Saved</string>
     <string name="cd_available_offline">Available offline</string>
+    <string name="cd_freshness_fresh">Fresh</string>
+    <string name="cd_freshness_wilting">Wilting</string>
+    <string name="cd_freshness_old">Old</string>
 
     <!-- Article lists -->
     <string name="title_feed_fallback">Feed</string>
