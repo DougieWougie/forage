@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.BookmarkRemove
 import androidx.compose.material.icons.filled.MarkEmailRead
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
@@ -71,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -147,18 +149,33 @@ fun SwipeableArticleCard(
     }
 }
 
+/** Solid background and icon colours for a swipe: one pair per action, so each reads differently at a glance. */
+internal data class SwipeColors(val container: Color, val content: Color)
+
+internal fun swipeColors(scheme: ColorScheme, direction: SwipeToDismissBoxValue, article: Article, armed: Boolean): SwipeColors {
+    // Before the threshold the colour is the softer container; past it, the full role colour confirms the action.
+    return when (direction) {
+        SwipeToDismissBoxValue.StartToEnd ->
+            if (article.isRead) {
+                if (armed) SwipeColors(scheme.secondary, scheme.onSecondary) else SwipeColors(scheme.secondaryContainer, scheme.onSecondaryContainer)
+            } else {
+                if (armed) SwipeColors(scheme.tertiary, scheme.onTertiary) else SwipeColors(scheme.tertiaryContainer, scheme.onTertiaryContainer)
+            }
+        SwipeToDismissBoxValue.EndToStart ->
+            if (article.isSaved) {
+                if (armed) SwipeColors(scheme.error, scheme.onError) else SwipeColors(scheme.errorContainer, scheme.onErrorContainer)
+            } else {
+                if (armed) SwipeColors(scheme.primary, scheme.onPrimary) else SwipeColors(scheme.primaryContainer, scheme.onPrimaryContainer)
+            }
+        SwipeToDismissBoxValue.Settled -> SwipeColors(scheme.surface, scheme.onSurface)
+    }
+}
+
 @Composable
 private fun SwipeBackground(direction: SwipeToDismissBoxValue, target: SwipeToDismissBoxValue, article: Article) {
-    val scheme = MaterialTheme.colorScheme
     val armed = target != SwipeToDismissBoxValue.Settled
-    val container by animateColorAsState(
-        when (direction) {
-            SwipeToDismissBoxValue.StartToEnd -> if (armed) scheme.tertiaryContainer else scheme.surfaceVariant
-            SwipeToDismissBoxValue.EndToStart -> if (armed) scheme.primaryContainer else scheme.surfaceVariant
-            SwipeToDismissBoxValue.Settled -> scheme.surface
-        },
-        label = "swipe-bg",
-    )
+    val colors = swipeColors(MaterialTheme.colorScheme, direction, article, armed)
+    val container by animateColorAsState(colors.container, label = "swipe-bg")
     val iconScale by animateFloatAsState(if (armed) 1.25f else 0.85f, spring(dampingRatio = 0.5f), label = "swipe-icon")
     val icon: ImageVector? = when (direction) {
         SwipeToDismissBoxValue.StartToEnd -> if (article.isRead) Icons.Filled.MarkEmailUnread else Icons.Filled.MarkEmailRead
@@ -175,10 +192,7 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue, target: SwipeToDi
             label = "swipe-icon-swap",
         ) { vector ->
             if (vector != null) {
-                Icon(
-                    vector, contentDescription = null, modifier = Modifier.size(28.dp).scale(iconScale),
-                    tint = if (direction == SwipeToDismissBoxValue.StartToEnd) scheme.onTertiaryContainer else scheme.onPrimaryContainer,
-                )
+                Icon(vector, contentDescription = null, modifier = Modifier.size(28.dp).scale(iconScale), tint = colors.content)
             }
         }
     }
