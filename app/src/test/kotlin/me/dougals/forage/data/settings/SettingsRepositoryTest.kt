@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
+import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.RefreshInterval
@@ -96,6 +97,13 @@ class SettingsRepositoryTest {
         assertEquals(setOf(2L), r.settings.first().collapsedFolderIds)
         r.setCollapsedFolders(setOf(3, 4))
         assertEquals(setOf(3L, 4L), r.settings.first().collapsedFolderIds)
+    }
+
+    @Test fun readFilterPersists() = runTest {
+        val r = repo()
+        assertEquals(ReadFilter.ALL, r.settings.first().readFilter)
+        r.setReadFilter(ReadFilter.UNREAD)
+        assertEquals(ReadFilter.UNREAD, r.settings.first().readFilter)
     }
 
     @Test fun dismissedSuggestionsPersistAndCanBeReset() = runTest {

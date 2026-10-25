@@ -21,6 +21,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import me.dougals.forage.domain.model.AppSettings
+import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.SyncMode
@@ -43,6 +44,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             notifyFolderIds = p[NOTIFY_FOLDERS].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
             dismissedSuggestions = p[DISMISSED].orEmpty(),
             collapsedFolderIds = p[COLLAPSED_FOLDERS].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
+            readFilter = p[READ_FILTER]?.let { runCatching { ReadFilter.valueOf(it) }.getOrNull() } ?: ReadFilter.ALL,
         )
     }
 
@@ -65,6 +67,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             it[COLLAPSED_FOLDERS] = if (collapsed) current + folderId.toString() else current - folderId.toString()
         }
     }
+    override suspend fun setReadFilter(filter: ReadFilter) { store.edit { it[READ_FILTER] = filter.name } }
     override suspend fun setThumbnails(mode: ThumbnailMode) { store.edit { it[THUMBS] = mode.name } }
     override suspend fun setThumbnailSide(side: ThumbnailSide) { store.edit { it[THUMB_SIDE] = side.name } }
     override suspend fun dismissSuggestion(feedUrl: String) { store.edit { it[DISMISSED] = it[DISMISSED].orEmpty() + feedUrl } }
@@ -86,6 +89,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val THUMB_SIDE = stringPreferencesKey("thumbnail_side")
         val NOTIFY_FOLDERS = stringSetPreferencesKey("notify_folder_ids")
         val COLLAPSED_FOLDERS = stringSetPreferencesKey("collapsed_folder_ids")
+        val READ_FILTER = stringPreferencesKey("read_filter")
         val DISMISSED = stringSetPreferencesKey("dismissed_suggestions")
     }
 }

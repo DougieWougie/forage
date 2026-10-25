@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,6 +28,7 @@ import me.dougals.forage.R
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.UiText
@@ -48,8 +51,6 @@ sealed interface ListSource {
         }
     }
 }
-
-enum class ReadFilter { ALL, UNREAD, READ }
 
 data class ArticleListState(
     val articles: List<Article> = emptyList(),
@@ -75,14 +76,13 @@ data class ArticleListState(
 class ArticleListViewModel @Inject constructor(
     private val handle: SavedStateHandle,
     private val repo: FeedRepository,
-    settingsRepo: SettingsRepository,
+    private val settingsRepo: SettingsRepository,
 ) : ViewModel() {
     val source = ListSource.from(handle)
     private val refreshing = MutableStateFlow(false)
     private val message = MutableStateFlow<UiText?>(null)
     private val toggles = ArticleToggles(repo, viewModelScope)
     private val bulkRead = BulkReadUndo(repo, viewModelScope)
-    private val filter = MutableStateFlow(ReadFilter.ALL)
     // Kept in the saved state so the chosen chips survive the process being killed in the background.
     private val folderChoice = handle.getStateFlow(FOLDER_CHOICE_KEY, LongArray(0))
 
@@ -102,7 +102,7 @@ class ArticleListViewModel @Inject constructor(
         val folderIds: Set<Long>,
     )
 
-    private val shownArticles = combine(articles, filter, folderChoice, repo.observeFeeds(), repo.observeFolders()) { list, readFilter, saved, feeds, allFolders ->
+    private val shownArticles = combine(articles, settingsRepo.settings.map { it.readFilter }.distinctUntilChanged(), folderChoice, repo.observeFeeds(), repo.observeFolders()) { list, readFilter, saved, feeds, allFolders ->
         val choice = saved.toSet()
         val folderOf = feeds.associate { it.id to (it.folderId ?: UNCATEGORISED) }
         val present = list.map { folderOf[it.feedId] ?: UNCATEGORISED }.toSet()
@@ -135,7 +135,7 @@ class ArticleListViewModel @Inject constructor(
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
 
-    fun setFilter(value: ReadFilter) { filter.value = value }
+    fun setFilter(value: ReadFilter) { viewModelScope.launch { settingsRepo.setReadFilter(value) } }
     fun toggleFolder(id: Long) {
         val now = folderChoice.value.toSet()
         chooseFolders(if (id in now) now - id else now + id)

@@ -34,7 +34,7 @@ import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.articles.ArticleListState
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.presentation.articles.ListSource
-import me.dougals.forage.presentation.articles.ReadFilter
+import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.presentation.articles.ToggleUndo
 import me.dougals.forage.testutil.article
 import me.dougals.forage.ui.FolderRequest
