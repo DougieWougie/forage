@@ -218,6 +218,11 @@
         <item quantity="many">%1$d enregistrés</item>
         <item quantity="other">%1$d enregistrés</item>
     </plurals>
+    <plurals name="cd_unread_count">
+        <item quantity="one">%1$d non lu</item>
+        <item quantity="many">%1$d non lus</item>
+        <item quantity="other">%1$d non lus</item>
+    </plurals>
     <plurals name="feeds_added_to_nextcloud">
         <item quantity="one">%1$d flux ajouté à Nextcloud</item>
         <item quantity="many">%1$d flux ajoutés à Nextcloud</item>

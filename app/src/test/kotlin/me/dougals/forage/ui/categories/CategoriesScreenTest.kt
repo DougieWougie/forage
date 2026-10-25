@@ -70,6 +70,23 @@ class CategoriesScreenTest {
         rule.setContent { ForageTheme { CategoriesScreen(onOpenFeed = { opened += it }, vm = vm) } }
     }
 
+    @Test fun badgesAreDescribedWithTheTrueCount() {
+        show(tree.copy(categories = listOf(CategoryNode(tech, listOf(lwn, lwn.copy(id = 12, title = "Other", unreadCount = 1), lwn.copy(id = 13, title = "Big", unreadCount = 250))))))
+        rule.onNodeWithContentDescription("3 unread", useUnmergedTree = true).assertExists()
+        rule.onNodeWithContentDescription("1 unread", useUnmergedTree = true).assertExists()
+        rule.onNodeWithContentDescription("250 unread", useUnmergedTree = true).assertExists()
+        rule.onNodeWithContentDescription("254 unread", useUnmergedTree = true).assertExists()
+        // The raw number is not also read out as a separate item.
+        rule.onNodeWithText("250", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test fun badgeCapsLargeCountsAndHidesZero() {
+        assertEquals("99", badgeText(99))
+        assertEquals("99+", badgeText(100))
+        rule.setContent { ForageTheme { UnreadBadge(0) } }
+        rule.onNodeWithText("0").assertDoesNotExist()
+    }
+
     private fun click(text: String) = rule.onNodeWithText(text).performClick().also { rule.waitForIdle() }
     private fun inDialog(text: String) = rule.onNode(hasText(text) and hasAnyAncestor(isDialog()))
     private fun inMenu(text: String) = rule.onNode(hasText(text) and hasAnyAncestor(isPopup())).performClick().also { rule.waitForIdle() }
@@ -91,7 +108,7 @@ class CategoriesScreenTest {
         rule.onNodeWithText("TECH").assertExists()
         rule.onNodeWithText("UNCATEGORIZED").assertExists()
         rule.onNodeWithText("LWN").assertExists()
-        rule.onAllNodes(hasText("3")).fetchSemanticsNodes().let { assertEquals(2, it.size) } // folder badge and feed chip
+        rule.onAllNodes(hasContentDescription("3 unread"), useUnmergedTree = true).fetchSemanticsNodes().let { assertEquals(2, it.size) } // folder and feed badges
         rule.onNodeWithText("No feeds yet").assertDoesNotExist()
     }
 
@@ -99,7 +116,7 @@ class CategoriesScreenTest {
         show(tree.copy(collapsedFolderIds = setOf(1L)))
         rule.onNodeWithText("TECH").assertExists()
         rule.onNodeWithText("LWN").assertDoesNotExist()
-        rule.onNodeWithText("3").assertExists() // folder badge only
+        rule.onAllNodes(hasContentDescription("3 unread"), useUnmergedTree = true).fetchSemanticsNodes().let { assertEquals(1, it.size) } // folder badge only
         rule.onNodeWithText("Loose").assertExists()
     }
 
