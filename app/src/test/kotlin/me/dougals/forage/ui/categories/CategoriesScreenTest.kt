@@ -23,6 +23,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -68,6 +69,20 @@ class CategoriesScreenTest {
     private fun show(initial: CategoriesState = tree) {
         state.value = initial
         rule.setContent { ForageTheme { CategoriesScreen(onOpenFeed = { opened += it }, vm = vm) } }
+    }
+
+    @Test fun feedAndFolderShowTheirUnreadCountsAsBadges() {
+        show(tree.copy(categories = listOf(CategoryNode(tech, listOf(lwn, lwn.copy(id = 12, title = "Other", unreadCount = 250))))))
+        rule.onNodeWithText("3", useUnmergedTree = true).assertExists()
+        // The "Other" feed (250) and the folder total (253) both cap.
+        assertEquals(2, rule.onAllNodesWithText("99+", useUnmergedTree = true).fetchSemanticsNodes().size)
+    }
+
+    @Test fun badgeCapsLargeCountsAndHidesZero() {
+        assertEquals("99", badgeText(99))
+        assertEquals("99+", badgeText(100))
+        rule.setContent { ForageTheme { UnreadBadge(0) } }
+        rule.onNodeWithText("0").assertDoesNotExist()
     }
 
     private fun click(text: String) = rule.onNodeWithText(text).performClick().also { rule.waitForIdle() }

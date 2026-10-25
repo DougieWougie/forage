@@ -44,8 +44,6 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -337,7 +335,7 @@ private fun FolderHeader(folder: Folder?, unread: Int, collapsed: Boolean, onTog
             color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f),
         )
         if (unread > 0) {
-            Badge { Text(unread.toString()) }
+            UnreadBadge(unread)
             val name = folder?.name ?: stringResource(R.string.uncategorized)
             IconButton(onMarkRead) { Icon(Icons.Filled.DoneAll, stringResource(R.string.cd_mark_folder_read, name)) }
         }
@@ -362,7 +360,7 @@ private fun FeedRow(feed: Feed, onOpen: () -> Unit, onMarkRead: () -> Unit, onMo
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(feed.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        if (feed.unreadCount > 0) AssistChip(onClick = onOpen, label = { Text(feed.unreadCount.toString()) })
+        UnreadBadge(feed.unreadCount)
         IconButton({ menu = true }) { Icon(Icons.Filled.MoreVert, stringResource(R.string.cd_feed_options)) }
         DropdownMenu(menu, { menu = false }) {
             DropdownMenuItem(text = { Text(stringResource(R.string.action_mark_all_read)) }, onClick = { menu = false; onMarkRead() })
