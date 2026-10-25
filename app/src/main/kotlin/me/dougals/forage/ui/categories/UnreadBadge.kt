@@ -16,6 +16,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import me.dougals.forage.R
 
 internal const val MAX_BADGE_COUNT = 99
 
@@ -25,7 +29,9 @@ internal fun badgeText(count: Int): String = if (count > MAX_BADGE_COUNT) "$MAX_
 @Composable
 internal fun UnreadBadge(count: Int, modifier: Modifier = Modifier) {
     if (count <= 0) return
-    Badge(modifier, containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
+    // Spoken as "N unread" with the true count, even where the badge itself shows "99+".
+    val description = pluralStringResource(R.plurals.cd_unread_count, count, count)
+    Badge(modifier.clearAndSetSemantics { contentDescription = description }, containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
         Text(badgeText(count))
     }
 }

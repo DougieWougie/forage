@@ -218,6 +218,10 @@
         <item quantity="one">%1$d saved</item>
         <item quantity="other">%1$d saved</item>
     </plurals>
+    <plurals name="cd_unread_count">
+        <item quantity="one">%1$d unread</item>
+        <item quantity="other">%1$d unread</item>
+    </plurals>
     <plurals name="feeds_added_to_nextcloud">
         <item quantity="one">%1$d feed added to Nextcloud</item>
         <item quantity="other">%1$d feeds added to Nextcloud</item>

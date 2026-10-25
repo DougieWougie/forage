@@ -23,7 +23,6 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -71,11 +70,14 @@ class CategoriesScreenTest {
         rule.setContent { ForageTheme { CategoriesScreen(onOpenFeed = { opened += it }, vm = vm) } }
     }
 
-    @Test fun feedAndFolderShowTheirUnreadCountsAsBadges() {
-        show(tree.copy(categories = listOf(CategoryNode(tech, listOf(lwn, lwn.copy(id = 12, title = "Other", unreadCount = 250))))))
-        rule.onNodeWithText("3", useUnmergedTree = true).assertExists()
-        // The "Other" feed (250) and the folder total (253) both cap.
-        assertEquals(2, rule.onAllNodesWithText("99+", useUnmergedTree = true).fetchSemanticsNodes().size)
+    @Test fun badgesAreDescribedWithTheTrueCount() {
+        show(tree.copy(categories = listOf(CategoryNode(tech, listOf(lwn, lwn.copy(id = 12, title = "Other", unreadCount = 1), lwn.copy(id = 13, title = "Big", unreadCount = 250))))))
+        rule.onNodeWithContentDescription("3 unread", useUnmergedTree = true).assertExists()
+        rule.onNodeWithContentDescription("1 unread", useUnmergedTree = true).assertExists()
+        rule.onNodeWithContentDescription("250 unread", useUnmergedTree = true).assertExists()
+        rule.onNodeWithContentDescription("254 unread", useUnmergedTree = true).assertExists()
+        // The raw number is not also read out as a separate item.
+        rule.onNodeWithText("250", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test fun badgeCapsLargeCountsAndHidesZero() {
@@ -106,7 +108,7 @@ class CategoriesScreenTest {
         rule.onNodeWithText("TECH").assertExists()
         rule.onNodeWithText("UNCATEGORIZED").assertExists()
         rule.onNodeWithText("LWN").assertExists()
-        rule.onAllNodes(hasText("3")).fetchSemanticsNodes().let { assertEquals(2, it.size) } // folder badge and feed chip
+        rule.onAllNodes(hasContentDescription("3 unread"), useUnmergedTree = true).fetchSemanticsNodes().let { assertEquals(2, it.size) } // folder and feed badges
         rule.onNodeWithText("No feeds yet").assertDoesNotExist()
     }
 
@@ -114,7 +116,7 @@ class CategoriesScreenTest {
         show(tree.copy(collapsedFolderIds = setOf(1L)))
         rule.onNodeWithText("TECH").assertExists()
         rule.onNodeWithText("LWN").assertDoesNotExist()
-        rule.onNodeWithText("3").assertExists() // folder badge only
+        rule.onAllNodes(hasContentDescription("3 unread"), useUnmergedTree = true).fetchSemanticsNodes().let { assertEquals(1, it.size) } // folder badge only
         rule.onNodeWithText("Loose").assertExists()
     }
 
