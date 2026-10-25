@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.semantics.SemanticsActions.CustomActions
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.testutil.article
 import me.dougals.forage.ui.theme.ForageTheme
@@ -42,9 +43,9 @@ class SwipeableArticleCardTest {
 
     private var older = 0
 
-    private fun show(a: Article = article(1), canMarkOlder: Boolean = true) = rule.setContent {
+    private fun show(a: Article = article(1), canMarkOlder: Boolean = true, savedOnly: Boolean = false) = rule.setContent {
         ForageTheme {
-            SwipeableArticleCard(a, "LWN", { clicked++ }, { read++ }, { saved++ }, onMarkOlderRead = if (canMarkOlder) ({ older++ }) else null)
+            SwipeableArticleCard(a, "LWN", { clicked++ }, { read++ }, { saved++ }, onMarkOlderRead = if (canMarkOlder) ({ older++ }) else null, savedOnly = savedOnly)
         }
     }
 
@@ -84,6 +85,35 @@ class SwipeableArticleCardTest {
         rule.waitForIdle()
         assertEquals(1, saved)
         assertEquals(0, read)
+    }
+
+    @Test fun onTheSavedTabSwipingRightDoesNothing() {
+        show(article(1, saved = true), canMarkOlder = false, savedOnly = true)
+        rule.onNodeWithText("Title 1").performTouchInput { swipeRight() }
+        rule.waitForIdle()
+        assertEquals(0, read)
+        assertEquals(0, saved)
+    }
+
+    @Test fun onTheSavedTabSwipingLeftTogglesSavedOnly() {
+        show(article(1, saved = true), canMarkOlder = false, savedOnly = true)
+        rule.onNodeWithText("Title 1").performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        assertEquals(1, saved)
+        assertEquals(0, read)
+    }
+
+    @Test fun onTheSavedTabAccessibilityOffersNoReadAction() {
+        show(article(1, saved = true), canMarkOlder = false, savedOnly = true)
+        val labels = rule.onNodeWithText("Title 1").fetchSemanticsNode().config[CustomActions].map { it.label }
+        assertEquals(listOf("Remove from saved"), labels)
+    }
+
+    @Test fun aReadSavedArticleIsNotDimmedOnTheSavedTab() {
+        val a = article(1, read = true, saved = true)
+        assertEquals(1f, cardAlpha(a, dimWhenRead = false))
+        assertEquals(true, cardAlpha(a, dimWhenRead = true) < 1f)
+        assertEquals(1f, cardAlpha(article(2), dimWhenRead = true))
     }
 
     @Test fun cardSnapsBackSoItCanBeSwipedAgain() {

@@ -168,6 +168,7 @@ fun ArticleListScreen(
                             onClick = { onOpenArticle(article.id) },
                             onToggleRead = { vm.toggleRead(article) },
                             onToggleSaved = { vm.toggleSaved(article) },
+                            savedOnly = vm.source == ListSource.Saved,
                             onMarkOlderRead = if (vm.source != ListSource.Saved && (oldestUnread[article.feedId] ?: Long.MAX_VALUE) < article.publishedAt) {
                                 { vm.markOlderRead(article) }
                             } else null,
