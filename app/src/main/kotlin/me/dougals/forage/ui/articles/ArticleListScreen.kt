@@ -59,7 +59,7 @@ import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.ui.rememberMeteredConnection
 import me.dougals.forage.presentation.articles.ListSource
-import me.dougals.forage.presentation.articles.ReadFilter
+import me.dougals.forage.domain.model.ReadFilter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

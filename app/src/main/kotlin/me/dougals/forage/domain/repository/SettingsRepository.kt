@@ -13,6 +13,7 @@ package me.dougals.forage.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import me.dougals.forage.domain.model.AppSettings
+import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.SyncMode
@@ -32,6 +33,7 @@ interface SettingsRepository {
     /** Replaces every collapsed folder, e.g. to expand or collapse them all at once. */
     suspend fun setCollapsedFolders(folderIds: Set<Long>)
     suspend fun setFolderCollapsed(folderId: Long, collapsed: Boolean)
+    suspend fun setReadFilter(filter: ReadFilter)
     suspend fun setThumbnails(mode: ThumbnailMode)
     suspend fun setThumbnailSide(side: ThumbnailSide)
     suspend fun dismissSuggestion(feedUrl: String)

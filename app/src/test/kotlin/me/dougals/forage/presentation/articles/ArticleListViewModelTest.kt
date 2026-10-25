@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
+import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.model.Feed
@@ -46,7 +47,10 @@ class ArticleListViewModelTest {
 
     private val repo = mockk<FeedRepository>(relaxed = true)
     private val settings = MutableStateFlow(AppSettings())
-    private val settingsRepo = mockk<SettingsRepository>(relaxed = true).also { every { it.settings } returns settings }
+    private val settingsRepo = mockk<SettingsRepository>(relaxed = true).also {
+        every { it.settings } returns settings
+        coEvery { it.setReadFilter(any()) } answers { settings.value = settings.value.copy(readFilter = firstArg()) }
+    }
     private fun vm(vararg args: Pair<String, Any>) = ArticleListViewModel(SavedStateHandle(mapOf(*args)), repo, settingsRepo)
 
     init {
@@ -82,6 +86,14 @@ class ArticleListViewModelTest {
             assertEquals(listOf(1L), awaitUntil { it.filter == ReadFilter.UNREAD }.articles.map { it.id })
             vm.setFilter(ReadFilter.READ)
             awaitUntil { it.filter == ReadFilter.READ }.let { assertEquals(listOf(2L), it.articles.map { a -> a.id }); assertEquals(true, it.hasArticles) }
+        }
+    }
+
+    @Test fun readFilterComesFromTheSavedSetting() = runTest {
+        every { repo.observeFeedArticles(3) } returns flowOf(listOf(article(1), article(2, read = true)))
+        settings.value = AppSettings(readFilter = ReadFilter.READ)
+        vm("source" to "feed", "feedId" to 3L).state.test {
+            awaitUntil { it.filter == ReadFilter.READ }.let { assertEquals(listOf(2L), it.articles.map { a -> a.id }) }
         }
     }
 

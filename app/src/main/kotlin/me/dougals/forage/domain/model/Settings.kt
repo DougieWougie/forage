@@ -22,6 +22,9 @@ enum class RefreshInterval(val hours: Long) { OFF(0), HOURLY(1), EVERY_3_HOURS(3
 /** Which side of the article card the thumbnail sits on. */
 enum class ThumbnailSide { START, END }
 
+/** Which articles a feed's list shows, by read state. */
+enum class ReadFilter { ALL, UNREAD, READ }
+
 data class AppSettings(
     val syncMode: SyncMode = SyncMode.LOCAL,
     val readerFont: ReaderFont = ReaderFont.SERIF,
@@ -41,6 +44,8 @@ data class AppSettings(
     val dismissedSuggestions: Set<String> = emptySet(),
     /** Local ids of the folders folded shut on the Categories screen. New folders start open. */
     val collapsedFolderIds: Set<Long> = emptySet(),
+    /** The All / Unread / Read chip chosen on a feed's article list, kept across launches. */
+    val readFilter: ReadFilter = ReadFilter.ALL,
 ) {
     companion object {
         const val MIN_SCALE = 0.8f
