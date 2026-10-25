@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
@@ -52,6 +53,7 @@ import me.dougals.forage.R
 import me.dougals.forage.presentation.splash.SplashViewModel
 
 private const val FADE_MS = 300
+private val STATUS_HEIGHT = 136.dp
 
 /** Covers [content] with the wordmark and refresh progress on a cold start; not repeated on rotation. */
 @Composable
@@ -78,40 +80,49 @@ private fun SplashOverlay(onFinished: () -> Unit, vm: SplashViewModel = hiltView
                 .clickable(enabled = state.ready, interactionSource = null, indication = null, onClick = vm::continueNow),
             contentAlignment = Alignment.Center,
         ) {
-            Column(Modifier.height(140.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Image(
                     painterResource(R.drawable.logo_wordmark),
                     contentDescription = stringResource(R.string.app_name),
                     modifier = Modifier.width(240.dp),
                 )
-                val progress = state.progress
-                if (state.ready) {
-                    val found = state.newArticles
-                    Text(
-                        if (found == null) stringResource(R.string.splash_update_failed)
-                        else if (found == 0) stringResource(R.string.splash_no_new)
-                        else pluralStringResource(R.plurals.splash_new_articles, found, found),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Text(
-                        stringResource(R.string.splash_tap_to_continue),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.alpha(pulse),
-                    )
-                } else {
-                    val fraction = progress?.takeIf { it.total > 0 }?.let { it.done.toFloat() / it.total }
-                    if (fraction != null) {
-                        LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.width(160.dp))
+                // A fixed slot so the wordmark doesn't shift between progress and result.
+                Column(Modifier.padding(top = 16.dp).height(STATUS_HEIGHT), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    val progress = state.progress
+                    if (state.ready) {
+                        val found = state.newArticles
+                        Text(
+                            if (found == null) stringResource(R.string.splash_update_failed)
+                            else if (found == 0) stringResource(R.string.splash_no_new)
+                            else pluralStringResource(R.plurals.splash_new_articles, found, found),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        if (found != null && found > 0 && state.categories > 0) {
+                            Text(
+                                pluralStringResource(R.plurals.splash_in_categories, state.categories, state.categories),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                        Text(
+                            stringResource(R.string.splash_tap_to_continue),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.alpha(pulse),
+                        )
                     } else {
-                        LinearWavyProgressIndicator(Modifier.width(160.dp))
+                        val fraction = progress?.takeIf { it.total > 0 }?.let { it.done.toFloat() / it.total }
+                        if (fraction != null) {
+                            LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.width(160.dp))
+                        } else {
+                            LinearWavyProgressIndicator(Modifier.width(160.dp))
+                        }
+                        Text(
+                            if (progress != null) stringResource(R.string.splash_updating_progress, progress.done + 1, progress.total)
+                            else stringResource(R.string.splash_updating),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
-                    Text(
-                        if (progress != null) stringResource(R.string.splash_updating_progress, progress.done + 1, progress.total)
-                        else stringResource(R.string.splash_updating),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
         }

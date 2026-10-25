@@ -9,6 +9,10 @@
         <item quantity="one">%1$d neuer Artikel</item>
         <item quantity="other">%1$d neue Artikel</item>
     </plurals>
+    <plurals name="splash_in_categories">
+        <item quantity="one">in %1$d Kategorie</item>
+        <item quantity="other">in %1$d Kategorien</item>
+    </plurals>
     <string name="splash_updating_progress">Feed %1$d von %2$d wird aktualisiert</string>
 
     <!-- Navigation -->

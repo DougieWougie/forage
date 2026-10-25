@@ -10,6 +10,11 @@
         <item quantity="many">%1$d nouveaux articles</item>
         <item quantity="other">%1$d nouveaux articles</item>
     </plurals>
+    <plurals name="splash_in_categories">
+        <item quantity="one">dans %1$d catégorie</item>
+        <item quantity="many">dans %1$d catégories</item>
+        <item quantity="other">dans %1$d catégories</item>
+    </plurals>
     <string name="splash_updating_progress">Mise à jour du flux %1$d sur %2$d</string>
 
     <!-- Navigation -->
