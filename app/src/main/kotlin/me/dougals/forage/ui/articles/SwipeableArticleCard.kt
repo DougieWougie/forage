@@ -90,6 +90,7 @@ import me.dougals.forage.presentation.articles.ArticleSnippet
  * Swipe right: toggle read/unread. Swipe left: toggle saved (bookmark + offline copy).
  * The card always snaps back after firing; whether it leaves the list is up to the list's own filter.
  * The list offers an undo snackbar for each toggle.
+ * [savedOnly] is for the Saved tab: no read/unread swipe or action, and the card is never dimmed.
  */
 @Composable
 fun SwipeableArticleCard(
@@ -103,6 +104,7 @@ fun SwipeableArticleCard(
     showThumbnail: Boolean = false,
     thumbnailFromCacheOnly: Boolean = false,
     thumbnailSide: ThumbnailSide = ThumbnailSide.END,
+    savedOnly: Boolean = false,
 ) {
     val haptics = LocalHapticFeedback.current
     val currentArticle by rememberUpdatedState(article)
@@ -134,13 +136,14 @@ fun SwipeableArticleCard(
     SwipeToDismissBox(
         state = state,
         modifier = modifier,
+        enableDismissFromStartToEnd = !savedOnly,
         backgroundContent = { SwipeBackground(state.dismissDirection, state.targetValue, article) },
     ) {
         ArticleCardContent(
-            article, feedTitle, onClick, showThumbnail, thumbnailFromCacheOnly, thumbnailSide, onMarkOlderRead,
+            article, feedTitle, onClick, showThumbnail, thumbnailFromCacheOnly, thumbnailSide, onMarkOlderRead, dimWhenRead = !savedOnly,
             Modifier.semantics {
                 customActions = listOfNotNull(
-                    CustomAccessibilityAction(readLabel) { onToggleRead(); true },
+                    if (savedOnly) null else CustomAccessibilityAction(readLabel) { onToggleRead(); true },
                     CustomAccessibilityAction(saveLabel) { onToggleSaved(); true },
                     onMarkOlderRead?.let { action -> CustomAccessibilityAction(olderLabel) { action(); true } },
                 )
@@ -198,6 +201,9 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue, target: SwipeToDi
     }
 }
 
+/** Read articles recede, except where read state is not the point (the Saved tab). */
+internal fun cardAlpha(article: Article, dimWhenRead: Boolean): Float = if (article.isRead && dimWhenRead) 0.62f else 1f
+
 @Composable
 private fun ArticleCardContent(
     article: Article,
@@ -207,6 +213,7 @@ private fun ArticleCardContent(
     thumbnailFromCacheOnly: Boolean,
     thumbnailSide: ThumbnailSide,
     onMarkOlderRead: (() -> Unit)?,
+    dimWhenRead: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -221,7 +228,7 @@ private fun ArticleCardContent(
         ),
     ) {
         Row(
-            Modifier.padding(horizontal = 20.dp, vertical = 16.dp).alpha(if (article.isRead) 0.62f else 1f),
+            Modifier.padding(horizontal = 20.dp, vertical = 16.dp).alpha(cardAlpha(article, dimWhenRead)),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             val image = article.imageUrl.takeIf { showThumbnail }
