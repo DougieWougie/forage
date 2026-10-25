@@ -15,8 +15,10 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
+import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.FeedProgress
 import me.dougals.forage.domain.model.RefreshProgress
 import me.dougals.forage.domain.model.SyncReport
@@ -85,5 +87,26 @@ class SplashViewModelTest {
         val vm = SplashViewModel(repo, progress)
         progress.report(2, 5)
         assertEquals(FeedProgress(2, 5), vm.state.value.progress)
+    }
+
+    private fun feed(id: Long, folderId: Long?) = mockk<Feed>().also {
+        io.mockk.every { it.id } returns id
+        io.mockk.every { it.folderId } returns folderId
+    }
+
+    @Test fun countsTheDistinctCategoriesThatGotNewArticles() = runTest {
+        coEvery { repo.refresh() } returns Result.success(SyncReport(newArticles = 10, newByFeed = mapOf(1L to 4, 2L to 4, 3L to 2)))
+        io.mockk.every { repo.observeFeeds() } returns flowOf(listOf(feed(1, 7), feed(2, 7), feed(3, 8), feed(4, 9), feed(5, null)))
+        val vm = SplashViewModel(repo, progress)
+        advanceTimeBy(1)
+        assertEquals(2, vm.state.value.categories)
+    }
+
+    @Test fun uncategorisedFeedsDontCountAsCategories() = runTest {
+        coEvery { repo.refresh() } returns Result.success(SyncReport(newArticles = 3, newByFeed = mapOf(5L to 3)))
+        io.mockk.every { repo.observeFeeds() } returns flowOf(listOf(feed(5, null)))
+        val vm = SplashViewModel(repo, progress)
+        advanceTimeBy(1)
+        assertEquals(0, vm.state.value.categories)
     }
 }
