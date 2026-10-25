@@ -168,6 +168,8 @@
     <string name="digest_more_feeds">%1$s and %2$d more</string>
     <string name="refresh_wifi_only">Wi-Fi only</string>
     <string name="refresh_wifi_only_body">Skip background refreshes on mobile data and other metered connections.</string>
+    <string name="mark_read_on_open">Mark as read when opened</string>
+    <string name="mark_read_on_open_body">Turn off to leave articles unread after you open them. Swipe or use mark all read to clear them yourself.</string>
     <string name="pull_to_refresh">Pull down to refresh</string>
     <string name="pull_to_refresh_body">Drag down from the top of Unread or Categories to sync and fetch new articles.</string>
     <string name="allow_local_network">Allow feeds on local network</string>

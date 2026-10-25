@@ -166,6 +166,8 @@
     <string name="digest_more_feeds">%1$s et %2$d autres</string>
     <string name="refresh_wifi_only">Wi-Fi uniquement</string>
     <string name="refresh_wifi_only_body">Ignorer les actualisations en arrière-plan sur données mobiles et autres connexions limitées.</string>
+    <string name="mark_read_on_open">Marquer comme lu à l’ouverture</string>
+    <string name="mark_read_on_open_body">Désactivez pour laisser les articles non lus après ouverture. Balayez ou utilisez « Tout marquer comme lu » pour les effacer vous-même.</string>
     <string name="pull_to_refresh">Tirer pour actualiser</string>
     <string name="pull_to_refresh_body">Tirez vers le bas depuis le haut de Non lus ou de Catégories pour synchroniser et récupérer de nouveaux articles.</string>
     <string name="allow_local_network">Autoriser les flux du réseau local</string>

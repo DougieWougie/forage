@@ -164,6 +164,8 @@
     <string name="digest_more_feeds">%1$s und %2$d weitere</string>
     <string name="refresh_wifi_only">Nur WLAN</string>
     <string name="refresh_wifi_only_body">Hintergrundaktualisierungen bei mobilen Daten und anderen getakteten Verbindungen überspringen.</string>
+    <string name="mark_read_on_open">Beim Öffnen als gelesen markieren</string>
+    <string name="mark_read_on_open_body">Ausschalten, damit Artikel nach dem Öffnen ungelesen bleiben. Zum Aufräumen wischen oder „Alle als gelesen markieren“ nutzen.</string>
     <string name="pull_to_refresh">Zum Aktualisieren nach unten ziehen</string>
     <string name="pull_to_refresh_body">Ziehe oben in Ungelesen oder Kategorien nach unten, um zu synchronisieren und neue Artikel abzurufen.</string>
     <string name="allow_local_network">Feeds im lokalen Netzwerk erlauben</string>

@@ -25,6 +25,7 @@ interface SettingsRepository {
     suspend fun setSyncMode(mode: SyncMode)
     suspend fun setAllowLocalNetwork(allow: Boolean)
     suspend fun setPullToRefresh(enabled: Boolean)
+    suspend fun setMarkReadOnOpen(enabled: Boolean)
     suspend fun setRefreshInterval(interval: RefreshInterval)
     suspend fun setRefreshWifiOnly(wifiOnly: Boolean)
     /** Replaces every folder opted in to digests, e.g. to select or clear them all at once. */

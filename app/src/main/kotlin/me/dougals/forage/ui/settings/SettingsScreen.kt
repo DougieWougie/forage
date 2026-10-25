@@ -171,7 +171,19 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                     FilterChip(state.settings.readerFont == ReaderFont.DYSLEXIC, { vm.setFont(ReaderFont.DYSLEXIC) }, label = { Text(stringResource(R.string.font_dyslexic)) })
                 }
                 Text(stringResource(R.string.text_size, (scale * 100).toInt()), style = MaterialTheme.typography.labelMedium)
-                Slider(scale, { scale = it }, onValueChangeFinished = { vm.setFontScale(scale) }, valueRange = AppSettings.MIN_SCALE..AppSettings.MAX_SCALE)
+                Slider(scale, { scale = it }, Modifier.padding(vertical = 8.dp), onValueChangeFinished = { vm.setFontScale(scale) }, valueRange = AppSettings.MIN_SCALE..AppSettings.MAX_SCALE)
+            }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.mark_read_on_open), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            stringResource(R.string.mark_read_on_open_body),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(state.settings.markReadOnOpen, vm::setMarkReadOnOpen)
+                }
             }
             item { Section(stringResource(R.string.section_article_list)) }
             item {

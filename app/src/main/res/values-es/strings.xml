@@ -166,6 +166,8 @@
     <string name="digest_more_feeds">%1$s y %2$d más</string>
     <string name="refresh_wifi_only">Solo con Wi-Fi</string>
     <string name="refresh_wifi_only_body">Omitir las actualizaciones en segundo plano con datos móviles y otras conexiones de uso medido.</string>
+    <string name="mark_read_on_open">Marcar como leído al abrir</string>
+    <string name="mark_read_on_open_body">Desactívalo para dejar los artículos sin leer tras abrirlos. Desliza o usa «Marcar todo como leído» para limpiarlos manualmente.</string>
     <string name="pull_to_refresh">Desliza para actualizar</string>
     <string name="pull_to_refresh_body">Desliza hacia abajo desde la parte superior de No leídos o Categorías para sincronizar y obtener artículos nuevos.</string>
     <string name="allow_local_network">Permitir feeds en la red local</string>

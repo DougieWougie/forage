@@ -296,7 +296,9 @@ class SettingsViewModelTest {
         v.setThumbnails(me.dougals.forage.domain.model.ThumbnailMode.OFF)
         v.setThumbnailSide(me.dougals.forage.domain.model.ThumbnailSide.START)
         v.setPullToRefresh(false)
+        v.setMarkReadOnOpen(false)
         coVerify {
+            settings.setMarkReadOnOpen(false)
             settings.setNotifyFolders(setOf(1L, 2L)); settings.setFolderNotifications(3L, true)
             settings.setThumbnails(me.dougals.forage.domain.model.ThumbnailMode.OFF)
             settings.setThumbnailSide(me.dougals.forage.domain.model.ThumbnailSide.START); settings.setPullToRefresh(false)

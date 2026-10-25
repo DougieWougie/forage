@@ -200,6 +200,7 @@ class SettingsViewModel @Inject constructor(
     fun reloadSessions() { ui.update { it.copy(sessionDomains = sessions.domains()) }; refreshLastSynced() }
     fun setAllowLocalNetwork(allow: Boolean) = change { setAllowLocalNetwork(allow) }
     fun setPullToRefresh(enabled: Boolean) = change { setPullToRefresh(enabled) }
+    fun setMarkReadOnOpen(enabled: Boolean) = change { setMarkReadOnOpen(enabled) }
     fun setRefreshInterval(interval: RefreshInterval) = change { setRefreshInterval(interval) }
     fun setNotifyFolders(folderIds: Set<Long>) = change { setNotifyFolders(folderIds) }
     fun setFolderNotifications(folderId: Long, notify: Boolean) = change { setFolderNotifications(folderId, notify) }

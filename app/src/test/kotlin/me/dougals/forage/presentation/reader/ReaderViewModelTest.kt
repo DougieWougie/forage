@@ -39,7 +39,8 @@ class ReaderViewModelTest {
     private val settings = mockk<SettingsRepository>(relaxed = true).also {
         every { it.settings } returns flowOf(AppSettings(readerFont = ReaderFont.SANS, fontScale = 1.2f))
     }
-    private fun vm(a: me.dougals.forage.domain.model.Article) = run {
+    private fun vm(a: me.dougals.forage.domain.model.Article, markReadOnOpen: Boolean = true) = run {
+        every { settings.settings } returns flowOf(AppSettings(readerFont = ReaderFont.SANS, fontScale = 1.2f, markReadOnOpen = markReadOnOpen))
         every { repo.observeArticle(a.id) } returns MutableStateFlow(a)
         ReaderViewModel(SavedStateHandle(mapOf("articleId" to a.id)), repo, settings, ImageResourceFetcher(OkHttpClient()))
     }
@@ -57,6 +58,12 @@ class ReaderViewModelTest {
         val v = vm(article(5, read = false))
         v.state.test { awaitUntil { it.article != null } }
         coVerify(exactly = 1) { repo.setRead(5, true) }
+    }
+
+    @Test fun openingAnUnreadArticleLeavesItUnreadWhenMarkReadOnOpenIsOff() = runTest {
+        val v = vm(article(5, read = false), markReadOnOpen = false)
+        v.state.test { awaitUntil { it.article != null } }
+        coVerify(exactly = 0) { repo.setRead(any(), any()) }
     }
 
     @Test fun openingAReadArticleDoesNotTouchIt() = runTest {

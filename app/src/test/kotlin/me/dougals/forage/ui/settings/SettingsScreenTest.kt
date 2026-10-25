@@ -109,6 +109,14 @@ class SettingsScreenTest {
         rule.onNodeWithText("Skip background refreshes on mobile data and other metered connections.").assertDoesNotExist()
     }
 
+    @Test fun markReadOnOpenSwitchGoesToTheViewModel() {
+        show()
+        scrollTo("Mark as read when opened")
+        rule.onAllNodes(switch)[0].performClick()
+        rule.waitForIdle()
+        verify { vm.setMarkReadOnOpen(false) }
+    }
+
     @Test fun switchesGoToTheViewModel() {
         show()
         scrollTo("Pull down to refresh")
