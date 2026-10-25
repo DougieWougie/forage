@@ -48,7 +48,7 @@ class ReaderViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val opened = article.first { it != null }!!
-            if (!opened.isRead) repo.setRead(articleId, true)
+            if (!opened.isRead && settingsRepo.settings.first().markReadOnOpen) repo.setRead(articleId, true)
         }
     }
 

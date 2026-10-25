@@ -83,6 +83,13 @@ class SettingsRepositoryTest {
         assertEquals(true, r.settings.first().allowLocalNetwork)
     }
 
+    @Test fun markReadOnOpenIsOnByDefaultAndPersists() = runTest {
+        val r = repo()
+        assertEquals(true, r.settings.first().markReadOnOpen)
+        r.setMarkReadOnOpen(false)
+        assertEquals(false, r.settings.first().markReadOnOpen)
+    }
+
     @Test fun pullToRefreshIsOnByDefaultAndPersists() = runTest {
         val r = repo()
         assertEquals(true, r.settings.first().pullToRefresh)

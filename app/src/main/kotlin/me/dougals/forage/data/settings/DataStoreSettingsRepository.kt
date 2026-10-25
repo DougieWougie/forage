@@ -37,6 +37,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             fontScale = p[SCALE] ?: 1.0f,
             allowLocalNetwork = p[LOCAL_NET] ?: false,
             pullToRefresh = p[PULL] ?: true,
+            markReadOnOpen = p[MARK_READ_ON_OPEN] ?: true,
             refreshInterval = p[REFRESH]?.let { runCatching { RefreshInterval.valueOf(it) }.getOrNull() } ?: RefreshInterval.HOURLY,
             refreshWifiOnly = p[REFRESH_WIFI] ?: false,
             thumbnails = p[THUMBS]?.let { runCatching { ThumbnailMode.valueOf(it) }.getOrNull() } ?: ThumbnailMode.ALWAYS,
@@ -51,6 +52,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
     override suspend fun setSyncMode(mode: SyncMode) { store.edit { it[MODE] = mode.name } }
     override suspend fun setAllowLocalNetwork(allow: Boolean) { store.edit { it[LOCAL_NET] = allow } }
     override suspend fun setPullToRefresh(enabled: Boolean) { store.edit { it[PULL] = enabled } }
+    override suspend fun setMarkReadOnOpen(enabled: Boolean) { store.edit { it[MARK_READ_ON_OPEN] = enabled } }
     override suspend fun setRefreshInterval(interval: RefreshInterval) { store.edit { it[REFRESH] = interval.name } }
     override suspend fun setRefreshWifiOnly(wifiOnly: Boolean) { store.edit { it[REFRESH_WIFI] = wifiOnly } }
     override suspend fun setNotifyFolders(folderIds: Set<Long>) { store.edit { it[NOTIFY_FOLDERS] = folderIds.map(Long::toString).toSet() } }
@@ -83,6 +85,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val SCALE = floatPreferencesKey("font_scale")
         val LOCAL_NET = booleanPreferencesKey("allow_local_network")
         val PULL = booleanPreferencesKey("pull_to_refresh")
+        val MARK_READ_ON_OPEN = booleanPreferencesKey("mark_read_on_open")
         val REFRESH = stringPreferencesKey("refresh_interval")
         val REFRESH_WIFI = booleanPreferencesKey("refresh_wifi_only")
         val THUMBS = stringPreferencesKey("thumbnails")

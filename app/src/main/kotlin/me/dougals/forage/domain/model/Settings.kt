@@ -33,6 +33,8 @@ data class AppSettings(
     val allowLocalNetwork: Boolean = false,
     /** Pulling down on an article list refreshes feeds. */
     val pullToRefresh: Boolean = true,
+    /** Opening an article in the reader marks it read. Off leaves it unread until marked by hand. */
+    val markReadOnOpen: Boolean = true,
     val thumbnails: ThumbnailMode = ThumbnailMode.ALWAYS,
     val thumbnailSide: ThumbnailSide = ThumbnailSide.END,
     val refreshInterval: RefreshInterval = RefreshInterval.HOURLY,
