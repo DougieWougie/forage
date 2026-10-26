@@ -23,6 +23,7 @@ import me.dougals.forage.data.work.ArchiveScheduler
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.OfflineUsage
 import me.dougals.forage.domain.repository.FeedRepository
 
 /** Reads and local state changes shared by both modes; room is always the source of truth for the UI. */
@@ -59,6 +60,13 @@ abstract class RoomFeedRepository(
         if (saved) archive.schedule(articleId) else db.articleDao().clearOfflineHtml(articleId)
         onStateChanged(articleId, SyncField.STARRED, saved)
         onWritesDone()
+    }
+
+    override fun observeOfflineUsage(): Flow<OfflineUsage> =
+        db.articleDao().observeOfflineStats().map { OfflineUsage(it.count, it.bytes) }
+
+    override suspend fun clearOfflineCopies(includeSaved: Boolean) {
+        if (includeSaved) db.articleDao().clearAllOfflineHtml() else db.articleDao().clearUnsavedOfflineHtml()
     }
 
     override suspend fun markFeedRead(feedId: Long): List<Long> {

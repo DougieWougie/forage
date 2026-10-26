@@ -115,6 +115,29 @@ class ReaderScreenTest {
         rule.onNodeWithContentDescription("Remove from saved").assertExists()
     }
 
+    @Test fun downloadButtonFetchesTheFullArticleAndShowsProgressThenDone() {
+        show()
+        rule.onNodeWithContentDescription("Download full article").performClick()
+        verify { vm.downloadFullArticle() }
+        state.value = state.value.copy(downloading = true)
+        rule.onNodeWithContentDescription("Downloading full article").assertExists()
+        state.value = state.value.copy(downloading = false, article = story.copy(offlineHtml = "<p>Full</p>"))
+        rule.onNodeWithContentDescription("Full article downloaded").assertExists()
+    }
+
+    @Test fun downloadFailureShowsASnackbarAndClearsTheError() {
+        show()
+        state.value = state.value.copy(downloadFailed = true)
+        rule.waitForIdle()
+        rule.onNodeWithText("Couldn't download the full article").assertExists()
+        verify { vm.dismissDownloadError() }
+    }
+
+    @Test fun downloadButtonIsHiddenForNonWebAddresses() {
+        show(article = story.copy(url = "urn:isbn:0451450523"))
+        rule.onNodeWithContentDescription("Download full article").assertDoesNotExist()
+    }
+
     @Test fun shareOffersTheArticleThroughTheSystemChooser() {
         show()
         rule.onNodeWithContentDescription("Share").performClick()

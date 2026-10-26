@@ -18,6 +18,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.rememberCoroutineScope
+import android.text.format.Formatter
 import kotlinx.coroutines.launch
 import me.dougals.forage.R
 import androidx.compose.ui.res.stringResource
@@ -110,6 +111,7 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
     var showConnect by rememberSaveable { mutableStateOf(false) }
     var showLogin by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var confirmClear by rememberSaveable { mutableStateOf<ClearKind?>(null) }
     val uncategorisedLabel = stringResource(R.string.uncategorized)
     val notificationsBlocked = stringResource(R.string.notifications_blocked)
     // Android 13+ asks at runtime; earlier versions grant it at install. Re-read on resume, as it can change in system settings.
@@ -340,6 +342,21 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                 }
             }
             item { OutlinedButton({ showLogin = true }, Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.log_in_to_site_button)) } }
+            item { Section(stringResource(R.string.section_storage)) }
+            item {
+                Text(
+                    stringResource(R.string.storage_offline_usage, state.offlineArticles, Formatter.formatShortFileSize(context, state.offlineBytes)),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    stringResource(R.string.storage_thumbnail_usage, Formatter.formatShortFileSize(context, state.thumbnailBytes)),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton({ confirmClear = ClearKind.DOWNLOADS }) { Text(stringResource(R.string.storage_clear_downloads)) }
+                    OutlinedButton({ confirmClear = ClearKind.ALL }) { Text(stringResource(R.string.storage_clear_all)) }
+                }
+            }
             item { Section(stringResource(R.string.section_network)) }
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -354,6 +371,20 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                 }
             }
         }
+    }
+
+    confirmClear?.let { kind ->
+        AlertDialog(
+            onDismissRequest = { confirmClear = null },
+            title = { Text(stringResource(if (kind == ClearKind.ALL) R.string.storage_clear_all else R.string.storage_clear_downloads)) },
+            text = { Text(stringResource(if (kind == ClearKind.ALL) R.string.storage_clear_all_body else R.string.storage_clear_downloads_body)) },
+            confirmButton = {
+                TextButton({ confirmClear = null; if (kind == ClearKind.ALL) vm.clearAllOffline() else vm.clearDownloads() }) {
+                    Text(stringResource(R.string.action_clear))
+                }
+            },
+            dismissButton = { TextButton({ confirmClear = null }) { Text(stringResource(R.string.action_cancel)) } },
+        )
     }
 
     if (showConnect) ConnectDialog(
@@ -377,6 +408,8 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
         )
     }
 }
+
+private enum class ClearKind { DOWNLOADS, ALL }
 
 @Composable
 private fun Section(title: String, divider: Boolean = true) {

@@ -82,6 +82,10 @@
     <!-- Reader -->
     <string name="cd_typography">Tipografía</string>
     <string name="action_save_offline">Guardar para leer sin conexión</string>
+    <string name="action_download_full_article">Descargar el artículo completo</string>
+    <string name="cd_downloading_full_article">Descargando el artículo completo</string>
+    <string name="cd_full_article_downloaded">Artículo completo descargado</string>
+    <string name="download_full_article_failed">No se pudo descargar el artículo completo</string>
     <string name="share_article">Compartir artículo</string>
     <string name="cd_share">Compartir</string>
     <string name="cd_open_in_browser">Abrir en el navegador</string>
@@ -145,6 +149,15 @@
     <string name="thumbnail_side_right">Derecha</string>
     <string name="section_signed_in">Sitios con sesión iniciada</string>
     <string name="section_refresh">Actualización</string>
+    <string name="section_storage">Almacenamiento</string>
+    <string name="storage_offline_usage">Artículos sin conexión: %1$d (%2$s)</string>
+    <string name="storage_thumbnail_usage">Caché de miniaturas: %1$s</string>
+    <string name="storage_clear_downloads">Borrar descargas</string>
+    <string name="storage_clear_all">Borrar todos los datos sin conexión</string>
+    <string name="storage_clear_downloads_body">Elimina el texto descargado de los artículos que no has guardado. Los artículos guardados conservan su copia sin conexión.</string>
+    <string name="storage_clear_all_body">Elimina todas las copias sin conexión, incluidas las de los artículos guardados, y la caché de miniaturas. Los artículos guardados siguen guardados.</string>
+    <string name="action_clear">Borrar</string>
+    <string name="storage_cleared">Datos sin conexión borrados</string>
     <string name="section_network">Red</string>
     <string name="sync_now">Sincronizar ahora</string>
     <string name="syncing">Sincronizando…</string>

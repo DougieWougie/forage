@@ -71,4 +71,25 @@ class OfflineArchiverTest : DbTestBase() {
         assertTrue(archiver.archive(id).isFailure)
         assertNull(db.articleDao().getById(id)!!.offlineHtml)
     }
+
+    @Test fun downloadStoresTheCleanCopyOfAnUnsavedArticle() = runTest {
+        val feed = newFeed()
+        val id = db.articleDao().insertIgnore(listOf(articleEntity(feed, "a", isSaved = false))).single()
+        assertTrue(archiver.download(id).isSuccess)
+        assertEquals(listOf("https://example.com/a"), fetched)
+        assertTrue(db.articleDao().getById(id)!!.offlineHtml!!.contains("Body text"))
+        assertTrue(!db.articleDao().getById(id)!!.isSaved)
+    }
+
+    @Test fun downloadFailureLeavesArticleUntouched() = runTest {
+        val id = savedArticle()
+        html = null
+        assertTrue(archiver.download(id).isFailure)
+        assertNull(db.articleDao().getById(id)!!.offlineHtml)
+    }
+
+    @Test fun downloadOfUnknownArticleFails() = runTest {
+        assertTrue(archiver.download(12345).isFailure)
+        assertEquals(emptyList<String>(), fetched)
+    }
 }

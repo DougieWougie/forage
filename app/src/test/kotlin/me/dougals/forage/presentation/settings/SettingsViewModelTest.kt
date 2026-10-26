@@ -26,10 +26,12 @@ import me.dougals.forage.domain.nextcloud.LoginFlowSession
 import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import me.dougals.forage.domain.nextcloud.NextcloudLoginFlow
 import me.dougals.forage.domain.model.AppSettings
+import me.dougals.forage.domain.model.OfflineUsage
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.SyncReport
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
+import me.dougals.forage.domain.repository.ThumbnailCache
 import me.dougals.forage.testutil.MainDispatcherExtension
 import me.dougals.forage.testutil.MemCredentialStore
 import me.dougals.forage.testutil.MemSessionStore
@@ -49,9 +51,13 @@ class SettingsViewModelTest {
     private val creds = MemCredentialStore()
     private val sync = MemSyncState(lastModified = 999)
     private val sessions = MemSessionStore()
-    private val repo = mockk<FeedRepository>(relaxed = true).also { every { it.observeFolders() } returns flowOf(emptyList()) }
+    private val repo = mockk<FeedRepository>(relaxed = true).also {
+        every { it.observeFolders() } returns flowOf(emptyList())
+        every { it.observeOfflineUsage() } returns flowOf(OfflineUsage(3, 2048))
+    }
     private val loginFlow = mockk<NextcloudLoginFlow>(relaxed = true)
-    private fun vm() = SettingsViewModel(settings, creds, sync, sessions, repo, loginFlow)
+    private val thumbs = mockk<ThumbnailCache>(relaxed = true).also { coEvery { it.sizeBytes() } returns 512 }
+    private fun vm() = SettingsViewModel(settings, creds, sync, sessions, repo, loginFlow, thumbs)
 
     private val session = LoginFlowSession("https://cloud.example.com", "https://cloud.example.com/login/v2/flow/x", "https://cloud.example.com/login/v2/poll", "t")
     private val granted = NextcloudCredentials("https://cloud.example.com", "dougie", "app-pw", fromLoginFlow = true)
@@ -303,5 +309,33 @@ class SettingsViewModelTest {
             settings.setThumbnails(me.dougals.forage.domain.model.ThumbnailMode.OFF)
             settings.setThumbnailSide(me.dougals.forage.domain.model.ThumbnailSide.START); settings.setPullToRefresh(false)
         }
+    }
+
+    @Test fun stateReportsOfflineAndThumbnailUsage() = runTest {
+        vm().state.test {
+            val s = awaitUntil { it.thumbnailBytes > 0 }
+            assertEquals(3, s.offlineArticles)
+            assertEquals(2048L, s.offlineBytes)
+            assertEquals(512L, s.thumbnailBytes)
+        }
+    }
+
+    @Test fun clearDownloadsKeepsSavedCopiesAndLeavesThumbnails() = runTest {
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.clearDownloads()
+            assertEquals(UiText.Res(R.string.storage_cleared), awaitUntil { it.message != null }.message)
+        }
+        coVerify { repo.clearOfflineCopies(false) }
+        coVerify(exactly = 0) { thumbs.clear() }
+    }
+
+    @Test fun clearAllDropsEveryCopyAndTheThumbnailCache() = runTest {
+        val v = vm()
+        v.state.test {
+            awaitItem(); v.clearAllOffline()
+            awaitUntil { it.message != null }
+        }
+        coVerify { repo.clearOfflineCopies(true); thumbs.clear() }
     }
 }

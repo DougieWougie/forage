@@ -41,6 +41,7 @@ import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
+import me.dougals.forage.domain.repository.ThumbnailCache
 import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.toUiText
 import java.io.IOException
@@ -63,6 +64,9 @@ data class SettingsUiState(
     val isSyncing: Boolean = false,
     val lastSyncedAt: Long? = null,
     val loginUrl: String? = null,
+    val offlineArticles: Int = 0,
+    val offlineBytes: Long = 0,
+    val thumbnailBytes: Long = 0,
 )
 
 @HiltViewModel
@@ -73,6 +77,7 @@ class SettingsViewModel @Inject constructor(
     private val sessions: SessionStore,
     private val repo: FeedRepository,
     private val loginFlow: NextcloudLoginFlow,
+    private val thumbnails: ThumbnailCache,
 ) : ViewModel() {
     /** Everything but [SettingsUiState.settings], which is merged in from the settings store. */
     private val ui = MutableStateFlow(
@@ -81,10 +86,32 @@ class SettingsViewModel @Inject constructor(
     )
     private var loginJob: Job? = null
 
-    val state: StateFlow<SettingsUiState> = combine(settingsRepo.settings, repo.observeFolders(), ui) { settings, folders, rest ->
-        rest.copy(settings = settings, folders = folders)
+    val state: StateFlow<SettingsUiState> = combine(settingsRepo.settings, repo.observeFolders(), repo.observeOfflineUsage(), ui) { settings, folders, offline, rest ->
+        rest.copy(settings = settings, folders = folders, offlineArticles = offline.articles, offlineBytes = offline.bytes)
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    init { refreshThumbnailSize() }
+
+    private fun refreshThumbnailSize() { viewModelScope.launch { ui.update { it.copy(thumbnailBytes = thumbnails.sizeBytes()) } } }
+
+    /** Drops the downloaded text of articles that aren't saved. */
+    fun clearDownloads() {
+        viewModelScope.launch {
+            repo.clearOfflineCopies(includeSaved = false)
+            showMessage(UiText.Res(R.string.storage_cleared))
+        }
+    }
+
+    /** Drops every offline copy, including those of saved articles, and the thumbnail cache. */
+    fun clearAllOffline() {
+        viewModelScope.launch {
+            repo.clearOfflineCopies(includeSaved = true)
+            thumbnails.clear()
+            refreshThumbnailSize()
+            showMessage(UiText.Res(R.string.storage_cleared))
+        }
+    }
 
     private fun SettingsUiState.withCredentials(c: NextcloudCredentials?) = copy(nextcloudServer = c?.serverUrl, nextcloudUser = c?.username)
     private fun showMessage(text: UiText?) = ui.update { it.copy(message = text) }

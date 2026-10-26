@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.Flow
 
 data class UnreadCount(val feedId: Long, val count: Int)
 
+data class OfflineStats(val count: Int, val bytes: Long)
+
 /**
  * Columns for article lists. Bodies are truncated and the offline copy is reduced to a presence marker, so
  * a few large articles can't overflow the 2MB CursorWindow; the reader loads the full row via observeById.
@@ -70,6 +72,10 @@ interface ArticleDao {
     @Query("UPDATE articles SET imageUrl = :url WHERE feedId = :feedId AND guid = :guid AND imageUrl IS NULL")
     suspend fun fillImageUrl(feedId: Long, guid: String, url: String)
     @Query("UPDATE articles SET offlineHtml = NULL WHERE id = :id") suspend fun clearOfflineHtml(id: Long)
+    @Query("UPDATE articles SET offlineHtml = NULL WHERE isSaved = 0 AND offlineHtml IS NOT NULL") suspend fun clearUnsavedOfflineHtml()
+    @Query("UPDATE articles SET offlineHtml = NULL WHERE offlineHtml IS NOT NULL") suspend fun clearAllOfflineHtml()
+    @Query("SELECT COUNT(*) AS count, COALESCE(SUM(length(CAST(offlineHtml AS BLOB))), 0) AS bytes FROM articles WHERE offlineHtml IS NOT NULL")
+    fun observeOfflineStats(): Flow<OfflineStats>
     @Query("SELECT " + LIST_COLUMNS + " FROM articles WHERE isRead = 0 ORDER BY publishedAt DESC")
     fun observeUnread(): Flow<List<ArticleEntity>>
     @Query("SELECT " + LIST_COLUMNS + " FROM articles WHERE feedId = :feedId ORDER BY publishedAt DESC")

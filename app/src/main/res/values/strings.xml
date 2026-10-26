@@ -81,6 +81,10 @@
     <!-- Reader -->
     <string name="cd_typography">Typography</string>
     <string name="action_save_offline">Save for offline</string>
+    <string name="action_download_full_article">Download full article</string>
+    <string name="cd_downloading_full_article">Downloading full article</string>
+    <string name="cd_full_article_downloaded">Full article downloaded</string>
+    <string name="download_full_article_failed">Couldn\'t download the full article</string>
     <string name="share_article">Share article</string>
     <string name="cd_share">Share</string>
     <string name="cd_open_in_browser">Open in browser</string>
@@ -145,6 +149,15 @@
     <string name="thumbnail_side_right">Right</string>
     <string name="section_signed_in">Signed-in sites</string>
     <string name="section_refresh">Refresh</string>
+    <string name="section_storage">Storage</string>
+    <string name="storage_offline_usage">Offline articles: %1$d (%2$s)</string>
+    <string name="storage_thumbnail_usage">Thumbnail cache: %1$s</string>
+    <string name="storage_clear_downloads">Clear downloads</string>
+    <string name="storage_clear_all">Clear all offline data</string>
+    <string name="storage_clear_downloads_body">Removes the downloaded text of articles you haven\'t saved. Saved articles keep their offline copy.</string>
+    <string name="storage_clear_all_body">Removes every offline copy, including those of saved articles, and the thumbnail cache. Saved articles stay saved.</string>
+    <string name="action_clear">Clear</string>
+    <string name="storage_cleared">Offline data cleared</string>
     <string name="section_network">Network</string>
     <string name="nextcloud_news" translatable="false">Nextcloud News</string>
     <string name="sync_now">Sync now</string>

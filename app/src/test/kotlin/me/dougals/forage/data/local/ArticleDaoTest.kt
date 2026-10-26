@@ -173,4 +173,32 @@ class ArticleDaoTest : DbTestBase() {
         assertEquals("", row.offlineHtml)
         assertEquals(10_000, dao.getById(id)!!.offlineHtml!!.length)
     }
+
+    @Test fun offlineStatsCountCopiesAndTheirBytes() = runTest {
+        val f = newFeed("https://a/feed")
+        val ids = dao.insertIgnore(listOf(articleEntity(f, "1"), articleEntity(f, "2"), articleEntity(f, "3")))
+        assertEquals(OfflineStats(0, 0), dao.observeOfflineStats().first())
+        dao.saveOfflineHtml(ids[0], "abc")
+        dao.saveOfflineHtml(ids[1], "é") // two bytes in UTF-8
+        assertEquals(OfflineStats(2, 5), dao.observeOfflineStats().first())
+    }
+
+    @Test fun clearingUnsavedOfflineCopiesKeepsThoseOfSavedArticles() = runTest {
+        val f = newFeed("https://a/feed")
+        val ids = dao.insertIgnore(listOf(articleEntity(f, "kept", isSaved = true), articleEntity(f, "dropped")))
+        ids.forEach { dao.saveOfflineHtml(it, "<p/>") }
+        dao.clearUnsavedOfflineHtml()
+        assertEquals("<p/>", dao.getById(ids[0])!!.offlineHtml)
+        assertNull(dao.getById(ids[1])!!.offlineHtml)
+        assertTrue(dao.getById(ids[0])!!.isSaved)
+    }
+
+    @Test fun clearingAllOfflineCopiesLeavesBookmarksAlone() = runTest {
+        val f = newFeed("https://a/feed")
+        val ids = dao.insertIgnore(listOf(articleEntity(f, "saved", isSaved = true), articleEntity(f, "plain")))
+        ids.forEach { dao.saveOfflineHtml(it, "<p/>") }
+        dao.clearAllOfflineHtml()
+        assertEquals(OfflineStats(0, 0), dao.observeOfflineStats().first())
+        assertTrue(dao.getById(ids[0])!!.isSaved)
+    }
 }

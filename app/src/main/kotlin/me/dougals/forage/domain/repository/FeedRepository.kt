@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.OfflineUsage
 import me.dougals.forage.domain.model.SyncReport
 
 /**
@@ -40,6 +41,9 @@ interface FeedRepository {
 
     suspend fun setRead(articleId: Long, read: Boolean)
     suspend fun setSaved(articleId: Long, saved: Boolean)
+    fun observeOfflineUsage(): Flow<OfflineUsage>
+    /** Drops downloaded article text; copies of saved articles are kept unless [includeSaved]. Bookmarks are never touched. */
+    suspend fun clearOfflineCopies(includeSaved: Boolean)
     /** Returns the ids that were unread, so the caller can offer to undo. */
     suspend fun markFeedRead(feedId: Long): List<Long>
     /** Marks every unread article in the same feed published before [articleId] as read, and returns their ids. */

@@ -121,7 +121,9 @@ class SettingsScreenTest {
         show()
         scrollTo("Pull down to refresh")
         rule.onAllNodes(switch)[0].performClick()
+        // The row sits at the bottom edge once scrolled to, so bring the switch itself into view.
         scrollTo("Allow feeds on local network")
+        rule.onNode(hasScrollToNodeAction()).performScrollToNode(switch and hasAnyAncestor(hasScrollToNodeAction()))
         rule.onAllNodes(switch).onLast().performClick()
         rule.waitForIdle()
         verify { vm.setPullToRefresh(false); vm.setAllowLocalNetwork(true) }
@@ -288,5 +290,26 @@ class SettingsScreenTest {
         inDialog("Open").assertIsEnabled().performClick()
         rule.waitForIdle()
         assertEquals(listOf("https://lwn.net"), siteLogins)
+    }
+
+    @Test fun storageShowsUsageAndClearActionsAskForConfirmation() {
+        show(SettingsUiState(offlineArticles = 4, offlineBytes = 2048, thumbnailBytes = 1024))
+        scrollTo("Clear downloads")
+        val formatter = { bytes: Long -> android.text.format.Formatter.formatShortFileSize(rule.activity, bytes) }
+        rule.onNodeWithText("Offline articles: 4 (${formatter(2048)})").assertExists()
+        rule.onNodeWithText("Thumbnail cache: ${formatter(1024)}").assertExists()
+
+        click("Clear downloads")
+        verify(exactly = 0) { vm.clearDownloads() }
+        inDialog("Cancel").performClick(); rule.waitForIdle()
+        verify(exactly = 0) { vm.clearDownloads() }
+
+        click("Clear downloads")
+        inDialog("Clear").performClick(); rule.waitForIdle()
+        verify(exactly = 1) { vm.clearDownloads() }
+
+        click("Clear all offline data")
+        inDialog("Clear").performClick(); rule.waitForIdle()
+        verify(exactly = 1) { vm.clearAllOffline() }
     }
 }

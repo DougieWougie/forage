@@ -15,7 +15,11 @@ import me.dougals.forage.data.content.ImageResourceFetcher
 import okhttp3.OkHttpClient
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import io.mockk.coEvery
 import io.mockk.coVerify
+import me.dougals.forage.data.content.OfflineArchiver
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,10 +43,11 @@ class ReaderViewModelTest {
     private val settings = mockk<SettingsRepository>(relaxed = true).also {
         every { it.settings } returns flowOf(AppSettings(readerFont = ReaderFont.SANS, fontScale = 1.2f))
     }
+    private val archiver = mockk<OfflineArchiver>(relaxed = true)
     private fun vm(a: me.dougals.forage.domain.model.Article, markReadOnOpen: Boolean = true) = run {
         every { settings.settings } returns flowOf(AppSettings(readerFont = ReaderFont.SANS, fontScale = 1.2f, markReadOnOpen = markReadOnOpen))
         every { repo.observeArticle(a.id) } returns MutableStateFlow(a)
-        ReaderViewModel(SavedStateHandle(mapOf("articleId" to a.id)), repo, settings, ImageResourceFetcher(OkHttpClient()))
+        ReaderViewModel(SavedStateHandle(mapOf("articleId" to a.id)), repo, settings, archiver, ImageResourceFetcher(OkHttpClient()))
     }
 
     @Test fun exposesArticleAndReaderSettings() = runTest {
@@ -83,5 +88,41 @@ class ReaderViewModelTest {
         v.setFont(ReaderFont.SERIF)
         v.setFontScale(1.4f)
         coVerify { settings.setReaderFont(ReaderFont.SERIF); settings.setFontScale(1.4f) }
+    }
+
+    @Test fun downloadFetchesTheFullArticleWithoutSavingIt() = runTest {
+        coEvery { archiver.download(5) } returns Result.success(Unit)
+        val v = vm(article(5, read = true, saved = false))
+        v.state.test { awaitUntil { it.article != null }; v.downloadFullArticle(); awaitUntil { !it.downloading } }
+        coVerify(exactly = 1) { archiver.download(5) }
+        coVerify(exactly = 0) { repo.setSaved(any(), any()) }
+        assertFalse(v.state.value.downloadFailed)
+    }
+
+    @Test fun failedDownloadIsReportedUntilDismissed() = runTest {
+        coEvery { archiver.download(5) } returns Result.failure(java.io.IOException("offline"))
+        val v = vm(article(5, read = true))
+        v.state.test {
+            awaitUntil { it.article != null }
+            v.downloadFullArticle()
+            assertTrue(awaitUntil { it.downloadFailed }.downloadFailed)
+            v.dismissDownloadError()
+            awaitUntil { !it.downloadFailed }
+        }
+    }
+
+    @Test fun downloadingTwiceAtOnceFetchesOnce() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Result<Unit>>()
+        coEvery { archiver.download(5) } coAnswers { gate.await() }
+        val v = vm(article(5, read = true))
+        v.state.test {
+            awaitUntil { it.article != null }
+            v.downloadFullArticle()
+            awaitUntil { it.downloading }
+            v.downloadFullArticle()
+            gate.complete(Result.success(Unit))
+            awaitUntil { !it.downloading }
+        }
+        coVerify(exactly = 1) { archiver.download(5) }
     }
 }
