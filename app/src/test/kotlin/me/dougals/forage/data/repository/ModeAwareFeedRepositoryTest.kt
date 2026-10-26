@@ -41,6 +41,13 @@ class ModeAwareFeedRepositoryTest {
         coVerify(exactly = 0) { local.refresh() }
     }
 
+    @Test fun offlineStorageAlwaysLivesInLocalRoom() = runTest {
+        mode.value = SyncMode.NEXTCLOUD
+        repo.clearOfflineCopies(true); repo.observeOfflineUsage()
+        coVerify { local.clearOfflineCopies(true); local.observeOfflineUsage() }
+        coVerify(exactly = 0) { nextcloud.clearOfflineCopies(any()) }
+    }
+
     @Test fun structuralChangesFollowTheModeToo() = runTest {
         repo.addFeed("u", 1); repo.createFolder("f"); repo.removeFeed(1); repo.deleteFolder(1)
         coVerify { local.addFeed("u", 1); local.createFolder("f"); local.removeFeed(1); local.deleteFolder(1) }

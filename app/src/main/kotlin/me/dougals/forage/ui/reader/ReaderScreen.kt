@@ -30,11 +30,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,23 +45,31 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -86,8 +97,20 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
     var showType by remember { mutableStateOf(false) }
     val article = state.article
     val shareTitle = stringResource(R.string.share_article)
+    val downloadingText = stringResource(R.string.cd_downloading_full_article)
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val downloadFailedText = stringResource(R.string.download_full_article_failed)
+    LaunchedEffect(state.downloadFailed) {
+        if (state.downloadFailed) {
+            // Clear the flag first: the snackbar suspends until dismissed, and a key change would cancel it.
+            vm.dismissDownloadError()
+            scope.launch { snackbar.showSnackbar(downloadFailedText) }
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = {},
@@ -95,6 +118,19 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
                 actions = {
                     if (article != null) {
                         IconButton({ showType = true }) { Icon(Icons.Filled.TextFormat, stringResource(R.string.cd_typography)) }
+                        if (isWebUrl(article.url)) {
+                            val downloaded = article.hasOfflineCopy
+                            IconButton({ vm.downloadFullArticle() }, enabled = !downloaded && !state.downloading) {
+                                when {
+                                    state.downloading -> CircularProgressIndicator(
+                                        Modifier.size(20.dp).semantics { contentDescription = downloadingText },
+                                        strokeWidth = 2.dp,
+                                    )
+                                    downloaded -> Icon(Icons.Filled.DownloadDone, stringResource(R.string.cd_full_article_downloaded))
+                                    else -> Icon(Icons.Filled.Download, stringResource(R.string.action_download_full_article))
+                                }
+                            }
+                        }
                         IconButton({ vm.toggleSaved() }) {
                             Icon(
                                 if (article.isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,

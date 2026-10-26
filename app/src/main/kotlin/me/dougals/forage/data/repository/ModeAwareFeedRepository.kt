@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.OfflineUsage
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.repository.FeedRepository
 
@@ -45,6 +46,8 @@ class ModeAwareFeedRepository(
     override suspend fun deleteFolder(folderId: Long) = current().deleteFolder(folderId)
     override suspend fun setRead(articleId: Long, read: Boolean) = current().setRead(articleId, read)
     override suspend fun setSaved(articleId: Long, saved: Boolean) = current().setSaved(articleId, saved)
+    override fun observeOfflineUsage(): Flow<OfflineUsage> = local.observeOfflineUsage()
+    override suspend fun clearOfflineCopies(includeSaved: Boolean) = local.clearOfflineCopies(includeSaved)
     override suspend fun markFeedRead(feedId: Long) = current().markFeedRead(feedId)
     override suspend fun markOlderRead(articleId: Long) = current().markOlderRead(articleId)
     override suspend fun setReadBatch(articleIds: List<Long>, read: Boolean) = current().setReadBatch(articleIds, read)

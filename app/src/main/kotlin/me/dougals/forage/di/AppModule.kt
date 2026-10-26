@@ -28,7 +28,9 @@ import me.dougals.forage.domain.auth.SessionStore
 import me.dougals.forage.data.auth.PrefsSessionStore
 import me.dougals.forage.data.auth.securePrefs
 import me.dougals.forage.data.content.ImageResourceFetcher
+import me.dougals.forage.data.content.CoilThumbnailCache
 import me.dougals.forage.data.content.OfflineArchiver
+import me.dougals.forage.domain.repository.ThumbnailCache
 import me.dougals.forage.data.content.OkHttpPageFetcher
 import me.dougals.forage.data.content.PageFetcher
 import me.dougals.forage.data.local.ForageDatabase
@@ -128,6 +130,8 @@ object AppModule {
     fun syncer(db: ForageDatabase, api: NextcloudApiProvider, state: SyncStateStore, archive: ArchiveScheduler) =
         NextcloudSyncer(db, api, state, archive)
     @Provides @Singleton fun archiver(db: ForageDatabase, fetcher: PageFetcher) = OfflineArchiver(db, fetcher)
+
+    @Provides @Singleton fun thumbnailCache(@ApplicationContext c: Context): ThumbnailCache = CoilThumbnailCache(c)
 
     @Provides @Singleton fun refreshProgress() = RefreshProgress()
 

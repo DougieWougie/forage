@@ -79,6 +79,10 @@
     <!-- Reader -->
     <string name="cd_typography">Typografie</string>
     <string name="action_save_offline">Für Offline-Lesen speichern</string>
+    <string name="action_download_full_article">Vollständigen Artikel herunterladen</string>
+    <string name="cd_downloading_full_article">Vollständiger Artikel wird heruntergeladen</string>
+    <string name="cd_full_article_downloaded">Vollständiger Artikel heruntergeladen</string>
+    <string name="download_full_article_failed">Der vollständige Artikel konnte nicht heruntergeladen werden</string>
     <string name="share_article">Artikel teilen</string>
     <string name="cd_share">Teilen</string>
     <string name="cd_open_in_browser">Im Browser öffnen</string>
@@ -142,6 +146,15 @@
     <string name="thumbnail_side_right">Rechts</string>
     <string name="section_signed_in">Angemeldete Websites</string>
     <string name="section_refresh">Aktualisierung</string>
+    <string name="section_storage">Speicher</string>
+    <string name="storage_offline_usage">Offline-Artikel: %1$d (%2$s)</string>
+    <string name="storage_thumbnail_usage">Vorschaubild-Cache: %1$s</string>
+    <string name="storage_clear_downloads">Downloads löschen</string>
+    <string name="storage_clear_all">Alle Offline-Daten löschen</string>
+    <string name="storage_clear_downloads_body">Entfernt den heruntergeladenen Text von Artikeln, die du nicht gespeichert hast. Gespeicherte Artikel behalten ihre Offline-Kopie.</string>
+    <string name="storage_clear_all_body">Entfernt alle Offline-Kopien, auch die gespeicherter Artikel, sowie den Vorschaubild-Cache. Gespeicherte Artikel bleiben gespeichert.</string>
+    <string name="action_clear">Löschen</string>
+    <string name="storage_cleared">Offline-Daten gelöscht</string>
     <string name="section_network">Netzwerk</string>
     <string name="sync_now">Jetzt synchronisieren</string>
     <string name="syncing">Synchronisiere…</string>

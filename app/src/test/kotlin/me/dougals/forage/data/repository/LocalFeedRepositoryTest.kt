@@ -208,6 +208,21 @@ class LocalFeedRepositoryTest : DbTestBase() {
         assertEquals(0, repo.observeSaved().first().size)
     }
 
+    @Test fun offlineUsageAndClearingFollowTheStoredCopies() = runTest {
+        source.feeds["https://a/feed"] = parsed("A", "1", "2")
+        repo.addFeed("https://a/feed").getOrThrow()
+        val (a, b) = repo.observeUnread().first().map { it.id }
+        repo.setSaved(a, true)
+        db.articleDao().saveOfflineHtml(a, "1234")
+        db.articleDao().saveOfflineHtml(b, "56")
+        assertEquals(me.dougals.forage.domain.model.OfflineUsage(2, 6), repo.observeOfflineUsage().first())
+        repo.clearOfflineCopies(includeSaved = false)
+        assertEquals(me.dougals.forage.domain.model.OfflineUsage(1, 4), repo.observeOfflineUsage().first())
+        repo.clearOfflineCopies(includeSaved = true)
+        assertEquals(me.dougals.forage.domain.model.OfflineUsage(), repo.observeOfflineUsage().first())
+        assertEquals(listOf(a), repo.observeSaved().first().map { it.id })
+    }
+
     @Test fun localModeNeverQueuesSyncChangesOrSchedulesFlush() = runTest {
         source.feeds["https://a/feed"] = parsed("A", "1")
         repo.addFeed("https://a/feed").getOrThrow()

@@ -82,6 +82,10 @@
     <!-- Reader -->
     <string name="cd_typography">Typographie</string>
     <string name="action_save_offline">Enregistrer pour la lecture hors connexion</string>
+    <string name="action_download_full_article">Télécharger l\'article complet</string>
+    <string name="cd_downloading_full_article">Téléchargement de l\'article complet</string>
+    <string name="cd_full_article_downloaded">Article complet téléchargé</string>
+    <string name="download_full_article_failed">Impossible de télécharger l\'article complet</string>
     <string name="share_article">Partager l’article</string>
     <string name="cd_share">Partager</string>
     <string name="cd_open_in_browser">Ouvrir dans le navigateur</string>
@@ -145,6 +149,15 @@
     <string name="thumbnail_side_right">Droite</string>
     <string name="section_signed_in">Sites connectés</string>
     <string name="section_refresh">Actualisation</string>
+    <string name="section_storage">Stockage</string>
+    <string name="storage_offline_usage">Articles hors connexion : %1$d (%2$s)</string>
+    <string name="storage_thumbnail_usage">Cache des miniatures : %1$s</string>
+    <string name="storage_clear_downloads">Effacer les téléchargements</string>
+    <string name="storage_clear_all">Effacer toutes les données hors connexion</string>
+    <string name="storage_clear_downloads_body">Supprime le texte téléchargé des articles que vous n’avez pas enregistrés. Les articles enregistrés conservent leur copie hors connexion.</string>
+    <string name="storage_clear_all_body">Supprime toutes les copies hors connexion, y compris celles des articles enregistrés, ainsi que le cache des miniatures. Les articles enregistrés restent enregistrés.</string>
+    <string name="action_clear">Effacer</string>
+    <string name="storage_cleared">Données hors connexion effacées</string>
     <string name="section_network">Réseau</string>
     <string name="sync_now">Synchroniser maintenant</string>
     <string name="syncing">Synchronisation…</string>

@@ -44,10 +44,15 @@ class OfflineArchiver(
     private val fetcher: PageFetcher,
     private val extractor: ArticleExtractor = ArticleExtractor(),
 ) {
-    suspend fun archive(articleId: Long): Result<Unit> {
+    suspend fun archive(articleId: Long): Result<Unit> = fetchAndStore(articleId, onlyIfSaved = true)
+
+    /** Same as [archive] but for the reader's explicit download, which doesn't require the article to be saved. */
+    suspend fun download(articleId: Long): Result<Unit> = fetchAndStore(articleId, onlyIfSaved = false)
+
+    private suspend fun fetchAndStore(articleId: Long, onlyIfSaved: Boolean): Result<Unit> {
         val article = db.articleDao().getById(articleId)
             ?: return Result.failure(IllegalArgumentException("No article $articleId"))
-        if (!article.isSaved) return Result.success(Unit)
+        if (onlyIfSaved && !article.isSaved) return Result.success(Unit)
         return try {
             val html = fetcher.fetchHtml(article.url)
             val clean = extractor.extract(html, article.url).contentHtml
