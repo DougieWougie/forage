@@ -36,6 +36,13 @@ class ArticleExtractorTest {
         assertEquals("Page title", r.title)
     }
 
+    @Test fun dropsThePagesOwnHeadlineSoTheReaderTitleIsNotRepeated() {
+        val html = """<article><h1>Headline</h1><p>Body.</p><h2>Section</h2></article>"""
+        val out = extractor.extract(html, base).contentHtml
+        assertFalse(out.contains("Headline"))
+        assertTrue(out.contains("Section"))
+    }
+
     @Test fun withoutArticlePicksTextDensestBlock() {
         val long = "<p>" + "Lorem ipsum dolor sit amet. ".repeat(10) + "</p>"
         val html = """
