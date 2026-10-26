@@ -23,6 +23,8 @@ class ArticleExtractor {
         val doc = Jsoup.parse(html, baseUrl)
         doc.select("script, style, noscript, nav, aside, footer, form, iframe, svg").remove()
         val main = doc.selectFirst("article") ?: doc.selectFirst("main, [role=main]") ?: densestBlock(doc.body())
+        // The reader renders the article title itself, so the page's own headline would show twice.
+        main.selectFirst("h1")?.remove()
         val clean = Jsoup.clean(main.html(), baseUrl, Safelist.relaxed())
         return ExtractedArticle(doc.title(), clean)
     }
