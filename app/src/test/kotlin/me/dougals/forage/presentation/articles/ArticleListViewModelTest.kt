@@ -72,6 +72,14 @@ class ArticleListViewModelTest {
         vm("source" to "saved").state.test { assertEquals(listOf(2L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id }) }
     }
 
+    @Test fun savedSourceIgnoresTheReadFilter() = runTest {
+        every { repo.observeSaved() } returns flowOf(listOf(article(1, saved = true), article(2, saved = true, read = true)))
+        settings.value = AppSettings(readFilter = ReadFilter.UNREAD)
+        vm("source" to "saved").state.test {
+            assertEquals(listOf(1L, 2L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id })
+        }
+    }
+
     @Test fun feedSourceShowsThatFeedsArticles() = runTest {
         every { repo.observeFeedArticles(3) } returns flowOf(listOf(article(4)))
         vm("source" to "feed", "feedId" to 3L).state.test { assertEquals(listOf(4L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id }) }
