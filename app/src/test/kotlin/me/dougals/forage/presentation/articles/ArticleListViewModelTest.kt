@@ -36,6 +36,7 @@ import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
 import me.dougals.forage.testutil.article
 import me.dougals.forage.testutil.awaitUntil
+import me.dougals.forage.testutil.feed
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -83,6 +84,25 @@ class ArticleListViewModelTest {
     @Test fun feedSourceShowsThatFeedsArticles() = runTest {
         every { repo.observeFeedArticles(3) } returns flowOf(listOf(article(4)))
         vm("source" to "feed", "feedId" to 3L).state.test { assertEquals(listOf(4L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id }) }
+    }
+
+    @Test fun folderSourceMergesItsFeedsNewestFirst() = runTest {
+        every { repo.observeFolders() } returns flowOf(listOf(Folder(9, "Tech")))
+        every { repo.observeFeeds() } returns flowOf(listOf(feed(1, folder = 9), feed(2, folder = 9), feed(3, folder = null)))
+        every { repo.observeFeedArticles(1) } returns flowOf(listOf(article(10, feedId = 1, publishedAt = 100)))
+        every { repo.observeFeedArticles(2) } returns flowOf(listOf(article(20, feedId = 2, publishedAt = 200)))
+        vm("source" to "folder", "folderId" to 9L).state.test {
+            val s = awaitUntil { it.articles.size == 2 }
+            assertEquals(listOf(20L, 10L), s.articles.map { it.id })
+            assertEquals("Tech", s.folderName)
+        }
+    }
+
+    @Test fun uncategorisedFolderSourceShowsFeedsInNoFolder() = runTest {
+        every { repo.observeFolders() } returns flowOf(listOf(Folder(9, "Tech")))
+        every { repo.observeFeeds() } returns flowOf(listOf(feed(1, folder = 9), feed(3, folder = null)))
+        every { repo.observeFeedArticles(3) } returns flowOf(listOf(article(30, feedId = 3)))
+        vm("source" to "folder", "folderId" to -1L).state.test { assertEquals(listOf(30L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id }) }
     }
 
     @Test fun feedSourceFiltersByReadState() = runTest {

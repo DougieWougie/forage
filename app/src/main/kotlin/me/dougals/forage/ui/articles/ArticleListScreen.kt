@@ -96,6 +96,7 @@ fun ArticleListScreen(
         ListSource.Unread -> stringResource(R.string.title_unread)
         ListSource.Saved -> stringResource(R.string.title_saved)
         is ListSource.Feed -> state.feedTitles[s.feedId] ?: stringResource(R.string.title_feed_fallback)
+        is ListSource.Folder -> state.folderName ?: stringResource(if (s.folderId == ArticleListViewModel.UNCATEGORISED) R.string.uncategorized else R.string.title_feed_fallback)
     }
 
     Scaffold(
@@ -119,7 +120,7 @@ fun ArticleListScreen(
     ) { inner ->
         val content: @Composable () -> Unit = {
             Column(Modifier.fillMaxSize()) {
-            if (vm.source is ListSource.Feed && state.hasArticles) {
+            if ((vm.source is ListSource.Feed || vm.source is ListSource.Folder) && state.hasArticles) {
                 Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ReadFilter.entries.forEach { f ->
                         FilterChip(
@@ -209,7 +210,7 @@ internal fun EmptyState(source: ListSource, canPull: Boolean) {
                 when (source) {
                     ListSource.Unread -> stringResource(R.string.empty_unread_title)
                     ListSource.Saved -> stringResource(R.string.empty_saved_title)
-                    is ListSource.Feed -> stringResource(R.string.empty_feed_title)
+                    is ListSource.Feed, is ListSource.Folder -> stringResource(R.string.empty_feed_title)
                 },
                 style = MaterialTheme.typography.headlineSmall,
             )
@@ -217,7 +218,7 @@ internal fun EmptyState(source: ListSource, canPull: Boolean) {
                 when (source) {
                     ListSource.Unread -> if (canPull) stringResource(R.string.empty_unread_pull) else stringResource(R.string.empty_unread_no_pull)
                     ListSource.Saved -> stringResource(R.string.empty_saved_body)
-                    is ListSource.Feed -> if (canPull) stringResource(R.string.empty_feed_pull) else stringResource(R.string.empty_feed_no_pull)
+                    is ListSource.Feed, is ListSource.Folder -> if (canPull) stringResource(R.string.empty_feed_pull) else stringResource(R.string.empty_feed_no_pull)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

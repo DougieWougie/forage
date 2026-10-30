@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.presentation.nav.TabBadgesViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -75,6 +76,7 @@ private enum class Tab(val route: String, @StringRes val label: Int, val icon: I
 private const val UNREAD_ROUTE = "list/unread"
 private const val SAVED_ROUTE = "list/saved"
 private const val FEED_ROUTE = "list/feed?feedId={feedId}"
+private const val FOLDER_ROUTE = "list/folder?folderId={folderId}"
 private fun isListRoute(route: String?) = route != null && route.startsWith("list/")
 private const val READER_ROUTE = "reader/{articleId}"
 private const val SEARCH_ROUTE = "search"
@@ -97,10 +99,13 @@ private val RealScreens = ForageScreens(
             onFolderRequestHandled = handled,
             onOpenArticle = { nav.navigate("reader/$it") },
             onSearch = { nav.navigate(SEARCH_ROUTE) },
-            onBack = if (kind == "feed") ({ nav.popBackStack() }) else null,
+            onBack = if (kind == "feed" || kind == "folder") ({ nav.popBackStack() }) else null,
         )
     },
-    categories = { nav -> CategoriesScreen(onOpenFeed = { nav.navigate("list/feed?feedId=$it") }) },
+    categories = { nav -> CategoriesScreen(
+        onOpenFeed = { nav.navigate("list/feed?feedId=$it") },
+        onOpenFolder = { nav.navigate("list/folder?folderId=$it") },
+    ) },
     settings = { nav -> SettingsScreen(onLogin = { url -> nav.navigate("login?url=${android.net.Uri.encode(url)}") }) },
     reader = { nav -> ReaderScreen(onBack = { nav.popBackStack() }) },
     login = { url, nav -> LoginScreen(startUrl = url, onDone = { nav.popBackStack() }) },
@@ -174,12 +179,14 @@ fun ForageNavScaffold(
                 UNREAD_ROUTE to "unread",
                 SAVED_ROUTE to "saved",
                 FEED_ROUTE to "feed",
+                FOLDER_ROUTE to "folder",
             ).forEach { (route, kind) ->
                 composable(
                     route,
                     arguments = listOf(
                         navArgument("source") { type = NavType.StringType; defaultValue = kind },
                         navArgument("feedId") { type = NavType.LongType; defaultValue = -1L },
+                        navArgument("folderId") { type = NavType.LongType; defaultValue = ArticleListViewModel.NO_FOLDER },
                     ),
                 ) { screens.list(kind, nav, request.takeIf { kind == "unread" }) { handled() } }
             }

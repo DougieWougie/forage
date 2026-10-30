@@ -15,11 +15,15 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -41,12 +45,15 @@ sealed interface ListSource {
     data object Unread : ListSource
     data object Saved : ListSource
     data class Feed(val feedId: Long) : ListSource
+    /** Every feed in a folder, merged newest first; [UNCATEGORISED_FOLDER_ID] stands for the feeds in none. */
+    data class Folder(val folderId: Long) : ListSource
 
     companion object {
         fun from(handle: SavedStateHandle): ListSource = when (val s = handle.get<String>("source")) {
             "unread" -> Unread
             "saved" -> Saved
             "feed" -> Feed(requireNotNull(handle.get<Long>("feedId")?.takeIf { it >= 0 }) { "feed list needs a feedId" })
+            "folder" -> Folder(requireNotNull(handle.get<Long>("folderId")?.takeIf { it != ArticleListViewModel.NO_FOLDER }) { "folder list needs a folderId" })
             else -> throw IllegalArgumentException("Unknown article list source: $s")
         }
     }
@@ -62,6 +69,8 @@ data class ArticleListState(
     /** The chosen folders, which may include [ArticleListViewModel.UNCATEGORISED] for feeds in none. Empty means all. */
     val folderIds: Set<Long> = emptySet(),
     val feedTitles: Map<Long, String> = emptyMap(),
+    /** Name of the folder being listed; null for the uncategorised group and for other lists. */
+    val folderName: String? = null,
     val isRefreshing: Boolean = false,
     val pullToRefresh: Boolean = true,
     val thumbnails: ThumbnailMode = ThumbnailMode.ALWAYS,
@@ -90,7 +99,22 @@ class ArticleListViewModel @Inject constructor(
         ListSource.Unread -> repo.observeUnread()
         ListSource.Saved -> repo.observeSaved()
         is ListSource.Feed -> repo.observeFeedArticles(source.feedId)
+        is ListSource.Folder -> observeFolderArticles(source.folderId)
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeFolderArticles(folderId: Long): Flow<List<Article>> =
+        combine(repo.observeFeeds(), repo.observeFolders()) { feeds, folders ->
+            val known = folders.map { it.id }.toSet()
+            feeds.filter { f ->
+                if (folderId == UNCATEGORISED) f.folderId == null || f.folderId !in known else f.folderId == folderId
+            }.map { it.id }
+        }
+            .distinctUntilChanged()
+            .flatMapLatest { ids ->
+                if (ids.isEmpty()) flowOf(emptyList())
+                else combine(ids.map { repo.observeFeedArticles(it) }) { lists -> lists.toList().flatten().sortedByDescending { it.publishedAt } }
+            }
 
     private class Shown(
         val all: List<Article>,
@@ -100,6 +124,7 @@ class ArticleListViewModel @Inject constructor(
         val folders: List<Folder>,
         val hasUncategorised: Boolean,
         val folderIds: Set<Long>,
+        val folderName: String?,
     )
 
     private val shownArticles = combine(articles, settingsRepo.settings.map { it.readFilter }.distinctUntilChanged(), folderChoice, repo.observeFeeds(), repo.observeFolders()) { list, readFilter, saved, feeds, allFolders ->
@@ -123,6 +148,7 @@ class ArticleListViewModel @Inject constructor(
             offered,
             UNCATEGORISED in present,
             folderIds,
+            (source as? ListSource.Folder)?.let { s -> allFolders.firstOrNull { it.id == s.folderId }?.name },
         )
     }
 
@@ -130,7 +156,7 @@ class ArticleListViewModel @Inject constructor(
 
     val state: StateFlow<ArticleListState> = combine(shownArticles, refreshing, message, settingsRepo.settings, undos) { list, isRefreshing, msg, settings, (marked, toggle) ->
         ArticleListState(
-            list.shown, list.filter, list.all.isNotEmpty(), list.folders, list.hasUncategorised, list.folderIds, list.titles,
+            list.shown, list.filter, list.all.isNotEmpty(), list.folders, list.hasUncategorised, list.folderIds, list.titles, list.folderName,
             isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg, marked, toggle,
         )
     }
@@ -179,6 +205,8 @@ class ArticleListViewModel @Inject constructor(
 
     companion object {
         const val UNCATEGORISED = UNCATEGORISED_FOLDER_ID
+        /** Default of the nav argument, meaning none was given. */
+        const val NO_FOLDER = Long.MIN_VALUE
         private const val FOLDER_CHOICE_KEY = "folderChoice"
     }
 }
