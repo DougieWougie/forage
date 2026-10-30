@@ -89,12 +89,13 @@ import kotlinx.coroutines.withContext
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.FeedSuggestion
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
 import me.dougals.forage.presentation.categories.CategoriesViewModel
 import me.dougals.forage.ui.articles.MarkedReadSnackbar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun CategoriesScreen(onOpenFeed: (Long) -> Unit, vm: CategoriesViewModel = hiltViewModel()) {
+fun CategoriesScreen(onOpenFeed: (Long) -> Unit, onOpenFolder: (Long) -> Unit = {}, vm: CategoriesViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -185,6 +186,7 @@ fun CategoriesScreen(onOpenFeed: (Long) -> Unit, vm: CategoriesViewModel = hiltV
                             FolderHeader(
                                 node.folder, node.unreadCount, collapsed,
                                 onToggle = { node.folder?.let { vm.toggleFolder(it.id, !collapsed) } },
+                                onOpen = { onOpenFolder(node.folder?.id ?: UNCATEGORISED_FOLDER_ID) },
                                 onMarkRead = { vm.markFeedsRead(node.feeds.map { it.id }) },
                                 onDelete = { node.folder?.let { vm.deleteFolder(it.id) } },
                             )
@@ -321,7 +323,7 @@ private fun MoveFeedDialog(feed: Feed, folders: List<Folder>, onPick: (Long?) ->
 }
 
 @Composable
-private fun FolderHeader(folder: Folder?, unread: Int, collapsed: Boolean, onToggle: () -> Unit, onMarkRead: () -> Unit, onDelete: () -> Unit) {
+private fun FolderHeader(folder: Folder?, unread: Int, collapsed: Boolean, onToggle: () -> Unit, onOpen: () -> Unit, onMarkRead: () -> Unit, onDelete: () -> Unit) {
     var confirm by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().padding(start = if (folder != null) 8.dp else 20.dp, end = 8.dp, top = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         if (folder != null) {
@@ -332,7 +334,7 @@ private fun FolderHeader(folder: Folder?, unread: Int, collapsed: Boolean, onTog
         }
         Text(
             (folder?.name ?: stringResource(R.string.uncategorized)).uppercase(), style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f).clickable(onClick = onOpen).padding(vertical = 12.dp),
         )
         if (unread > 0) {
             UnreadBadge(unread)
