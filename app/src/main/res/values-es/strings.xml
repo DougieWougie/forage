@@ -181,6 +181,8 @@
     <string name="refresh_12h">12 h</string>
     <string name="channel_new_articles">Artículos nuevos</string>
     <string name="channel_new_articles_body">Un resumen discreto de los artículos nuevos de las categorías que elijas.</string>
+    <string name="channel_unread">Contador de no leídos</string>
+    <string name="channel_unread_body">Mantiene el número de artículos sin leer en el icono de la app.</string>
     <string name="digest_more_feeds">%1$s y %2$d más</string>
     <string name="refresh_wifi_only">Solo con Wi-Fi</string>
     <string name="refresh_wifi_only_body">Omitir las actualizaciones en segundo plano con datos móviles y otras conexiones de uso medido.</string>
@@ -262,6 +264,11 @@
         <item quantity="one">%1$d artículo nuevo</item>
         <item quantity="many">%1$d artículos nuevos</item>
         <item quantity="other">%1$d artículos nuevos</item>
+    </plurals>
+    <plurals name="unread_articles">
+        <item quantity="one">%1$d artículo sin leer</item>
+        <item quantity="many">%1$d artículos sin leer</item>
+        <item quantity="other">%1$d artículos sin leer</item>
     </plurals>
     <plurals name="changes_sent">
         <item quantity="one">%1$d cambio enviado</item>
