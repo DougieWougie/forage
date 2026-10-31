@@ -183,6 +183,8 @@
     <string name="channel_new_articles_body">Un resumen discreto de los artículos nuevos de las categorías que elijas.</string>
     <string name="channel_unread">Contador de no leídos</string>
     <string name="channel_unread_body">Mantiene el número de artículos sin leer en el icono de la app.</string>
+    <string name="unread_badge">Contador de no leídos en el icono</string>
+    <string name="unread_badge_body">Muestra cuántos artículos están sin leer como insignia en el icono de la app, mediante una notificación silenciosa.</string>
     <string name="digest_more_feeds">%1$s y %2$d más</string>
     <string name="refresh_wifi_only">Solo con Wi-Fi</string>
     <string name="refresh_wifi_only_body">Omitir las actualizaciones en segundo plano con datos móviles y otras conexiones de uso medido.</string>

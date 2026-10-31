@@ -43,6 +43,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             thumbnails = p[THUMBS]?.let { runCatching { ThumbnailMode.valueOf(it) }.getOrNull() } ?: ThumbnailMode.ALWAYS,
             thumbnailSide = p[THUMB_SIDE]?.let { runCatching { ThumbnailSide.valueOf(it) }.getOrNull() } ?: ThumbnailSide.END,
             notifyFolderIds = p[NOTIFY_FOLDERS].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
+            unreadBadge = p[UNREAD_BADGE] ?: true,
             dismissedSuggestions = p[DISMISSED].orEmpty(),
             collapsedFolderIds = p[COLLAPSED_FOLDERS].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
             readFilter = p[READ_FILTER]?.let { runCatching { ReadFilter.valueOf(it) }.getOrNull() } ?: ReadFilter.ALL,
@@ -56,6 +57,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
     override suspend fun setRefreshInterval(interval: RefreshInterval) { store.edit { it[REFRESH] = interval.name } }
     override suspend fun setRefreshWifiOnly(wifiOnly: Boolean) { store.edit { it[REFRESH_WIFI] = wifiOnly } }
     override suspend fun setNotifyFolders(folderIds: Set<Long>) { store.edit { it[NOTIFY_FOLDERS] = folderIds.map(Long::toString).toSet() } }
+    override suspend fun setUnreadBadge(enabled: Boolean) { store.edit { it[UNREAD_BADGE] = enabled } }
     override suspend fun setFolderNotifications(folderId: Long, notify: Boolean) {
         store.edit {
             val current = it[NOTIFY_FOLDERS].orEmpty()
@@ -91,6 +93,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val THUMBS = stringPreferencesKey("thumbnails")
         val THUMB_SIDE = stringPreferencesKey("thumbnail_side")
         val NOTIFY_FOLDERS = stringSetPreferencesKey("notify_folder_ids")
+        val UNREAD_BADGE = booleanPreferencesKey("unread_badge")
         val COLLAPSED_FOLDERS = stringSetPreferencesKey("collapsed_folder_ids")
         val READ_FILTER = stringPreferencesKey("read_filter")
         val DISMISSED = stringSetPreferencesKey("dismissed_suggestions")

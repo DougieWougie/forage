@@ -230,6 +230,7 @@ class SettingsViewModel @Inject constructor(
     fun setMarkReadOnOpen(enabled: Boolean) = change { setMarkReadOnOpen(enabled) }
     fun setRefreshInterval(interval: RefreshInterval) = change { setRefreshInterval(interval) }
     fun setNotifyFolders(folderIds: Set<Long>) = change { setNotifyFolders(folderIds) }
+    fun setUnreadBadge(enabled: Boolean) = change { setUnreadBadge(enabled) }
     fun setFolderNotifications(folderId: Long, notify: Boolean) = change { setFolderNotifications(folderId, notify) }
     fun setRefreshWifiOnly(wifiOnly: Boolean) = change { setRefreshWifiOnly(wifiOnly) }
     fun setThumbnails(mode: ThumbnailMode) = change { setThumbnails(mode) }

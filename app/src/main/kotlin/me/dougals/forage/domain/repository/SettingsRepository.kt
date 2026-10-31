@@ -30,6 +30,7 @@ interface SettingsRepository {
     suspend fun setRefreshWifiOnly(wifiOnly: Boolean)
     /** Replaces every folder opted in to digests, e.g. to select or clear them all at once. */
     suspend fun setNotifyFolders(folderIds: Set<Long>)
+    suspend fun setUnreadBadge(enabled: Boolean)
     suspend fun setFolderNotifications(folderId: Long, notify: Boolean)
     /** Replaces every collapsed folder, e.g. to expand or collapse them all at once. */
     suspend fun setCollapsedFolders(folderIds: Set<Long>)

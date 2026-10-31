@@ -272,6 +272,19 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                     }
                 }
             }
+            item {
+                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.unread_badge), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            stringResource(R.string.unread_badge_body),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    val on = state.settings.unreadBadge && permitted
+                    Switch(on, { changeNotifications(enabling = it) { vm.setUnreadBadge(it) } })
+                }
+            }
             item { Section(stringResource(R.string.section_sync)) }
             item {
                 val nextcloud = state.settings.syncMode == SyncMode.NEXTCLOUD
