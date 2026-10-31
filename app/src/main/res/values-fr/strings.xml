@@ -183,6 +183,8 @@
     <string name="channel_new_articles_body">Un résumé discret des nouveaux articles dans les catégories que vous choisissez.</string>
     <string name="channel_unread">Compteur de non lus</string>
     <string name="channel_unread_body">Affiche le nombre d\'articles non lus sur l\'icône de l\'appli.</string>
+    <string name="unread_badge">Compteur de non lus sur l\'icône</string>
+    <string name="unread_badge_body">Affiche le nombre d\'articles non lus en badge sur l\'icône de l\'appli, via une notification silencieuse.</string>
     <string name="digest_more_feeds">%1$s et %2$d autres</string>
     <string name="refresh_wifi_only">Wi-Fi uniquement</string>
     <string name="refresh_wifi_only_body">Ignorer les actualisations en arrière-plan sur données mobiles et autres connexions limitées.</string>

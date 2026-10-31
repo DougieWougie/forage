@@ -61,7 +61,7 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
         createNotificationChannel()
         // Follows the settings, so changing the interval or Wi-Fi-only takes effect immediately and applies at launch.
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        UnreadBadgeNotifier(this, repo).start(scope)
+        UnreadBadgeNotifier(this, repo, settings).start(scope)
         scope.launch {
             settings.settings.map { it.refreshInterval to it.refreshWifiOnly }.distinctUntilChanged()
                 .collect { (interval, wifiOnly) -> schedulers.schedulePeriodicRefresh(interval, wifiOnly) }

@@ -184,6 +184,8 @@
     <string name="channel_new_articles_body">A quiet summary of new articles in the categories you choose.</string>
     <string name="channel_unread">Unread count</string>
     <string name="channel_unread_body">Keeps the number of unread articles on the app icon.</string>
+    <string name="unread_badge">Unread count on app icon</string>
+    <string name="unread_badge_body">Shows how many articles are unread as a badge on the app icon, using a silent notification.</string>
     <string name="digest_more_feeds">%1$s and %2$d more</string>
     <string name="refresh_wifi_only">Wi-Fi only</string>
     <string name="refresh_wifi_only_body">Skip background refreshes on mobile data and other metered connections.</string>

@@ -180,6 +180,8 @@
     <string name="channel_new_articles_body">Eine ruhige Zusammenfassung neuer Artikel in den von dir gewählten Kategorien.</string>
     <string name="channel_unread">Ungelesen-Zähler</string>
     <string name="channel_unread_body">Zeigt die Zahl ungelesener Artikel am App-Symbol.</string>
+    <string name="unread_badge">Ungelesen-Zähler am App-Symbol</string>
+    <string name="unread_badge_body">Zeigt die Zahl ungelesener Artikel als Badge am App-Symbol, über eine stille Benachrichtigung.</string>
     <string name="digest_more_feeds">%1$s und %2$d weitere</string>
     <string name="refresh_wifi_only">Nur WLAN</string>
     <string name="refresh_wifi_only_body">Hintergrundaktualisierungen bei mobilen Daten und anderen getakteten Verbindungen überspringen.</string>

@@ -18,6 +18,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -25,17 +26,21 @@ import me.dougals.forage.ForageApp
 import me.dougals.forage.MainActivity
 import me.dougals.forage.R
 import me.dougals.forage.domain.repository.FeedRepository
+import me.dougals.forage.domain.repository.SettingsRepository
 
 /**
  * Keeps one silent notification alive while any article is unread. Launchers draw their icon badge from an app's active
  * notifications, so this is what puts the unread count on the icon; it disappears when everything has been read.
  */
-class UnreadBadgeNotifier(private val context: Context, private val repo: FeedRepository) {
+class UnreadBadgeNotifier(private val context: Context, private val repo: FeedRepository, private val settings: SettingsRepository) {
     private val manager = NotificationManagerCompat.from(context)
 
     fun start(scope: CoroutineScope) {
         scope.launch {
-            repo.observeFeeds().map { feeds -> feeds.sumOf { it.unreadCount } }.distinctUntilChanged().collect(::show)
+            // Zero while the toggle is off, so switching it off cancels the notification the same way reading everything does.
+            combine(repo.observeFeeds(), settings.settings.map { it.unreadBadge }.distinctUntilChanged()) { feeds, enabled ->
+                if (enabled) feeds.sumOf { it.unreadCount } else 0
+            }.distinctUntilChanged().collect(::show)
         }
     }
 

@@ -42,6 +42,8 @@ data class AppSettings(
     val refreshWifiOnly: Boolean = false,
     /** Local ids of the folders (or [UNCATEGORISED_FOLDER_ID]) whose new articles appear in a digest. Empty: no digests. */
     val notifyFolderIds: Set<Long> = emptySet(),
+    /** Keeps a silent notification up while articles are unread, which is what puts the count on the app icon. */
+    val unreadBadge: Boolean = true,
     /** Feed URLs of suggestions the user waved away. */
     val dismissedSuggestions: Set<String> = emptySet(),
     /** Local ids of the folders folded shut on the Categories screen. New folders start open. */
