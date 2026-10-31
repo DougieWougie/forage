@@ -30,7 +30,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.dougals.forage.data.content.ImageResourceFetcher
 import me.dougals.forage.data.content.ThumbnailFetcher
+import me.dougals.forage.data.notify.UnreadBadgeNotifier
 import me.dougals.forage.data.work.WorkManagerSchedulers
+import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
 import okio.Path.Companion.toOkioPath
 import javax.inject.Inject
@@ -41,6 +43,7 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
     @Inject lateinit var schedulers: WorkManagerSchedulers
     @Inject lateinit var images: ImageResourceFetcher
     @Inject lateinit var settings: SettingsRepository
+    @Inject lateinit var repo: FeedRepository
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -57,7 +60,9 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
         super.onCreate()
         createNotificationChannel()
         // Follows the settings, so changing the interval or Wi-Fi-only takes effect immediately and applies at launch.
-        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        UnreadBadgeNotifier(this, repo).start(scope)
+        scope.launch {
             settings.settings.map { it.refreshInterval to it.refreshWifiOnly }.distinctUntilChanged()
                 .collect { (interval, wifiOnly) -> schedulers.schedulePeriodicRefresh(interval, wifiOnly) }
         }
@@ -67,11 +72,15 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
     private fun createNotificationChannel() {
         val channel = NotificationChannel(NEW_ARTICLES_CHANNEL, getString(R.string.channel_new_articles), NotificationManager.IMPORTANCE_LOW)
             .apply { description = getString(R.string.channel_new_articles_body) }
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        // Minimum importance: no status-bar icon or sound, it only exists to carry the launcher badge.
+        val unread = NotificationChannel(UNREAD_CHANNEL, getString(R.string.channel_unread), NotificationManager.IMPORTANCE_MIN)
+            .apply { description = getString(R.string.channel_unread_body) }
+        getSystemService(NotificationManager::class.java).createNotificationChannels(listOf(channel, unread))
     }
 
     companion object {
         const val NEW_ARTICLES_CHANNEL = "new-articles"
+        const val UNREAD_CHANNEL = "unread-count"
 
         /** True while an activity is on screen; a digest would only linger there, so none is posted. */
         @Volatile var appVisible = false

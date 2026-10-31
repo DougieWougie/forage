@@ -178,6 +178,8 @@
     <string name="refresh_12h">12 Std.</string>
     <string name="channel_new_articles">Neue Artikel</string>
     <string name="channel_new_articles_body">Eine ruhige Zusammenfassung neuer Artikel in den von dir gewählten Kategorien.</string>
+    <string name="channel_unread">Ungelesen-Zähler</string>
+    <string name="channel_unread_body">Zeigt die Zahl ungelesener Artikel am App-Symbol.</string>
     <string name="digest_more_feeds">%1$s und %2$d weitere</string>
     <string name="refresh_wifi_only">Nur WLAN</string>
     <string name="refresh_wifi_only_body">Hintergrundaktualisierungen bei mobilen Daten und anderen getakteten Verbindungen überspringen.</string>
@@ -252,6 +254,10 @@
     <plurals name="new_articles">
         <item quantity="one">%1$d neuer Artikel</item>
         <item quantity="other">%1$d neue Artikel</item>
+    </plurals>
+    <plurals name="unread_articles">
+        <item quantity="one">%1$d ungelesener Artikel</item>
+        <item quantity="other">%1$d ungelesene Artikel</item>
     </plurals>
     <plurals name="changes_sent">
         <item quantity="one">%1$d Änderung gesendet</item>
