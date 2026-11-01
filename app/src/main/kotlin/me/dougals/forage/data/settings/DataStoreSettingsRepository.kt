@@ -24,6 +24,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.RefreshInterval
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
@@ -47,6 +48,8 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             dismissedSuggestions = p[DISMISSED].orEmpty(),
             collapsedFolderIds = p[COLLAPSED_FOLDERS].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
             readFilter = p[READ_FILTER]?.let { runCatching { ReadFilter.valueOf(it) }.getOrNull() } ?: ReadFilter.ALL,
+            swipeRight = p[SWIPE_RIGHT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() } ?: SwipeAction.ASK,
+            swipeLeft = p[SWIPE_LEFT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() } ?: SwipeAction.ASK,
         )
     }
 
@@ -72,6 +75,8 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         }
     }
     override suspend fun setReadFilter(filter: ReadFilter) { store.edit { it[READ_FILTER] = filter.name } }
+    override suspend fun setSwipeRight(action: SwipeAction) { store.edit { it[SWIPE_RIGHT] = action.name } }
+    override suspend fun setSwipeLeft(action: SwipeAction) { store.edit { it[SWIPE_LEFT] = action.name } }
     override suspend fun setThumbnails(mode: ThumbnailMode) { store.edit { it[THUMBS] = mode.name } }
     override suspend fun setThumbnailSide(side: ThumbnailSide) { store.edit { it[THUMB_SIDE] = side.name } }
     override suspend fun dismissSuggestion(feedUrl: String) { store.edit { it[DISMISSED] = it[DISMISSED].orEmpty() + feedUrl } }
@@ -96,6 +101,8 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         val UNREAD_BADGE = booleanPreferencesKey("unread_badge")
         val COLLAPSED_FOLDERS = stringSetPreferencesKey("collapsed_folder_ids")
         val READ_FILTER = stringPreferencesKey("read_filter")
+        val SWIPE_RIGHT = stringPreferencesKey("swipe_right")
+        val SWIPE_LEFT = stringPreferencesKey("swipe_left")
         val DISMISSED = stringSetPreferencesKey("dismissed_suggestions")
     }
 }

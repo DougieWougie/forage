@@ -22,6 +22,9 @@ enum class RefreshInterval(val hours: Long) { OFF(0), HOURLY(1), EVERY_3_HOURS(3
 /** Which side of the article card the thumbnail sits on. */
 enum class ThumbnailSide { START, END }
 
+/** What a swipe on an article card does. [ASK] asks on the next swipe and remembers the answer. */
+enum class SwipeAction { ASK, TOGGLE_READ, TOGGLE_SAVED }
+
 /** Which articles a feed's list shows, by read state. */
 enum class ReadFilter { ALL, UNREAD, READ }
 
@@ -50,6 +53,10 @@ data class AppSettings(
     val collapsedFolderIds: Set<Long> = emptySet(),
     /** The All / Unread / Read chip chosen on a feed's article list, kept across launches. */
     val readFilter: ReadFilter = ReadFilter.ALL,
+    /** Swiping an article card right. Unset until the first swipe, which asks. */
+    val swipeRight: SwipeAction = SwipeAction.ASK,
+    /** Swiping an article card left. Unset until the first swipe, which asks. */
+    val swipeLeft: SwipeAction = SwipeAction.ASK,
 ) {
     companion object {
         const val MIN_SCALE = 0.8f

@@ -96,6 +96,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.RefreshInterval
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
 import me.dougals.forage.domain.model.ThumbnailSide
@@ -206,6 +207,16 @@ fun SettingsScreen(onLogin: (String) -> Unit, vm: SettingsViewModel = hiltViewMo
                     FilterChip(state.settings.thumbnailSide == ThumbnailSide.START, { vm.setThumbnailSide(ThumbnailSide.START) }, label = { Text(stringResource(R.string.thumbnail_side_left)) })
                     FilterChip(state.settings.thumbnailSide == ThumbnailSide.END, { vm.setThumbnailSide(ThumbnailSide.END) }, label = { Text(stringResource(R.string.thumbnail_side_right)) })
                 }
+            }
+            item {
+                Text(stringResource(R.string.swipe_right), style = MaterialTheme.typography.titleSmall)
+                SwipeActionChips(state.settings.swipeRight, vm::setSwipeRight)
+                Text(stringResource(R.string.swipe_left), style = MaterialTheme.typography.titleSmall)
+                SwipeActionChips(state.settings.swipeLeft, vm::setSwipeLeft)
+                Text(
+                    stringResource(R.string.swipe_body),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             item { Section(stringResource(R.string.section_refresh)) }
             item {
@@ -474,6 +485,15 @@ private fun lastSyncedLabel(at: Long?): String {
         at, now, android.text.format.DateUtils.MINUTE_IN_MILLIS,
     ).toString().replaceFirstChar { it.lowercase() }
     return stringResource(R.string.last_synced_relative, ago)
+}
+
+@Composable
+private fun SwipeActionChips(current: SwipeAction, onChange: (SwipeAction) -> Unit) {
+    Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(current == SwipeAction.ASK, { onChange(SwipeAction.ASK) }, label = { Text(stringResource(R.string.swipe_ask)) })
+        FilterChip(current == SwipeAction.TOGGLE_READ, { onChange(SwipeAction.TOGGLE_READ) }, label = { Text(stringResource(R.string.swipe_read)) })
+        FilterChip(current == SwipeAction.TOGGLE_SAVED, { onChange(SwipeAction.TOGGLE_SAVED) }, label = { Text(stringResource(R.string.swipe_save)) })
+    }
 }
 
 private fun refreshIntervalLabel(interval: RefreshInterval) = when (interval) {

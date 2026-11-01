@@ -122,6 +122,10 @@ fun SearchScreen(
                                 onToggleRead = { vm.toggleRead(article) },
                                 onToggleSaved = { vm.toggleSaved(article) },
                                 thumbnailSide = state.thumbnailSide,
+                                swipeRight = state.swipeRight,
+                                swipeLeft = state.swipeLeft,
+                                onChooseSwipeRight = vm::setSwipeRight,
+                                onChooseSwipeLeft = vm::setSwipeLeft,
                                 showThumbnail = state.thumbnails != ThumbnailMode.OFF,
                                 thumbnailFromCacheOnly = state.thumbnails == ThumbnailMode.WIFI_ONLY && metered,
                             )

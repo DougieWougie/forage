@@ -144,6 +144,15 @@
     <string name="thumbnail_side">Position des Vorschaubilds</string>
     <string name="thumbnail_side_left">Links</string>
     <string name="thumbnail_side_right">Rechts</string>
+    <string name="swipe_right">Nach rechts wischen</string>
+    <string name="swipe_left">Nach links wischen</string>
+    <string name="swipe_ask">Beim nächsten Wischen fragen</string>
+    <string name="swipe_read">Gelesen / ungelesen</string>
+    <string name="swipe_save">Speichern</string>
+    <string name="swipe_choose_title_left">Nach links wischen, um…</string>
+    <string name="swipe_choose_title_right">Nach rechts wischen, um…</string>
+    <string name="swipe_choose_body">Lege fest, was dieses Wischen bewirkt. Du kannst es später in den Einstellungen ändern.</string>
+    <string name="swipe_body">Jede Wischrichtung kann einen Artikel als gelesen markieren oder speichern. „Fragen“ wartet auf das nächste Wischen.</string>
     <string name="section_signed_in">Angemeldete Websites</string>
     <string name="section_refresh">Aktualisierung</string>
     <string name="section_storage">Speicher</string>

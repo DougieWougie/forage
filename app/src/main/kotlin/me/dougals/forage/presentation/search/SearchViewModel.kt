@@ -25,8 +25,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
@@ -44,6 +46,8 @@ data class SearchState(
     val thumbnails: ThumbnailMode = ThumbnailMode.ALWAYS,
     val thumbnailSide: ThumbnailSide = ThumbnailSide.END,
     val toggled: ToggleUndo? = null,
+    val swipeRight: SwipeAction = SwipeAction.ASK,
+    val swipeLeft: SwipeAction = SwipeAction.ASK,
 ) {
     val hasQuery get() = query.isNotBlank()
     /** True once the results on screen are for the current query and there are none. */
@@ -54,7 +58,7 @@ data class SearchState(
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val repo: FeedRepository,
-    settingsRepo: SettingsRepository,
+    private val settingsRepo: SettingsRepository,
 ) : ViewModel() {
     private val query = MutableStateFlow("")
     private val toggles = ArticleToggles(repo, viewModelScope)
@@ -67,12 +71,14 @@ class SearchViewModel @Inject constructor(
     val state: StateFlow<SearchState> = combine(query, found, repo.observeFeeds(), settingsRepo.settings, toggles.pending) { typed, hits, feeds, settings, toggle ->
         SearchState(
             typed, hits.term, hits.articles, feeds.associate { it.id to it.title },
-            settings.thumbnails, settings.thumbnailSide, toggle,
+            settings.thumbnails, settings.thumbnailSide, toggle, settings.swipeRight, settings.swipeLeft,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SearchState())
 
     fun setQuery(value: String) { query.value = value }
 
+    fun setSwipeRight(action: SwipeAction) { viewModelScope.launch { settingsRepo.setSwipeRight(action) } }
+    fun setSwipeLeft(action: SwipeAction) { viewModelScope.launch { settingsRepo.setSwipeLeft(action) } }
     fun toggleRead(article: Article) = toggles.toggleRead(article)
     fun toggleSaved(article: Article) = toggles.toggleSaved(article)
     fun undoToggle() = toggles.undo()

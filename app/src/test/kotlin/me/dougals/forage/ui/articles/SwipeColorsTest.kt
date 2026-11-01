@@ -15,6 +15,9 @@ import androidx.compose.material3.SwipeToDismissBoxValue.EndToStart
 import androidx.compose.material3.SwipeToDismissBoxValue.Settled
 import androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd
 import androidx.compose.material3.lightColorScheme
+import me.dougals.forage.domain.model.SwipeAction.ASK
+import me.dougals.forage.domain.model.SwipeAction.TOGGLE_READ
+import me.dougals.forage.domain.model.SwipeAction.TOGGLE_SAVED
 import me.dougals.forage.testutil.article
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -25,21 +28,27 @@ class SwipeColorsTest {
 
     @Test fun eachSwipeActionHasItsOwnBackground() {
         val colours = listOf(
-            swipeColors(scheme, StartToEnd, article(1), armed = true),
-            swipeColors(scheme, StartToEnd, article(1, read = true), armed = true),
-            swipeColors(scheme, EndToStart, article(1), armed = true),
-            swipeColors(scheme, EndToStart, article(1, saved = true), armed = true),
+            swipeColors(scheme, StartToEnd, TOGGLE_READ, article(1), armed = true),
+            swipeColors(scheme, StartToEnd, TOGGLE_READ, article(1, read = true), armed = true),
+            swipeColors(scheme, EndToStart, TOGGLE_SAVED, article(1), armed = true),
+            swipeColors(scheme, EndToStart, TOGGLE_SAVED, article(1, saved = true), armed = true),
         ).map { it.container }
         assertEquals(4, colours.toSet().size)
     }
 
+    @Test fun anUnchosenSwipeHasANeutralBackgroundOfItsOwn() {
+        val ask = swipeColors(scheme, StartToEnd, ASK, article(1), armed = true).container
+        val others = listOf(TOGGLE_READ, TOGGLE_SAVED).map { swipeColors(scheme, StartToEnd, it, article(1), armed = true).container }
+        assertEquals(false, ask in others)
+    }
+
     @Test fun passingTheThresholdDeepensTheBackground() {
         listOf(StartToEnd, EndToStart).forEach {
-            assertNotEquals(swipeColors(scheme, it, article(1), armed = false), swipeColors(scheme, it, article(1), armed = true))
+            assertNotEquals(swipeColors(scheme, it, TOGGLE_READ, article(1), armed = false), swipeColors(scheme, it, TOGGLE_READ, article(1), armed = true))
         }
     }
 
     @Test fun anIdleCardShowsNoSwipeColour() {
-        assertEquals(scheme.surface, swipeColors(scheme, Settled, article(1), armed = false).container)
+        assertEquals(scheme.surface, swipeColors(scheme, Settled, TOGGLE_READ, article(1), armed = false).container)
     }
 }

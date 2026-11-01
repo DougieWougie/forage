@@ -34,6 +34,7 @@ import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
 import me.dougals.forage.domain.model.Folder
 import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.UiText
 import me.dougals.forage.presentation.toUiText
@@ -79,6 +80,8 @@ data class ArticleListState(
     /** Articles just bulk-marked read ("mark all read", "mark older as read"), kept so the snackbar can undo it. */
     val markedRead: List<Long> = emptyList(),
     val toggled: ToggleUndo? = null,
+    val swipeRight: SwipeAction = SwipeAction.ASK,
+    val swipeLeft: SwipeAction = SwipeAction.ASK,
 )
 
 @HiltViewModel
@@ -157,11 +160,13 @@ class ArticleListViewModel @Inject constructor(
     val state: StateFlow<ArticleListState> = combine(shownArticles, refreshing, message, settingsRepo.settings, undos) { list, isRefreshing, msg, settings, (marked, toggle) ->
         ArticleListState(
             list.shown, list.filter, list.all.isNotEmpty(), list.folders, list.hasUncategorised, list.folderIds, list.titles, list.folderName,
-            isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg, marked, toggle,
+            isRefreshing, settings.pullToRefresh && source == ListSource.Unread, settings.thumbnails, settings.thumbnailSide, msg, marked, toggle, settings.swipeRight, settings.swipeLeft,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleListState())
 
+    fun setSwipeRight(action: SwipeAction) { viewModelScope.launch { settingsRepo.setSwipeRight(action) } }
+    fun setSwipeLeft(action: SwipeAction) { viewModelScope.launch { settingsRepo.setSwipeLeft(action) } }
     fun setFilter(value: ReadFilter) { viewModelScope.launch { settingsRepo.setReadFilter(value) } }
     fun toggleFolder(id: Long) {
         val now = folderChoice.value.toSet()

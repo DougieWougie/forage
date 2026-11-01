@@ -41,10 +41,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.BookmarkRemove
 import androidx.compose.material.icons.filled.MarkEmailRead
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -82,12 +84,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.dougals.forage.domain.model.Article
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.presentation.articles.ArticleFreshness
 import me.dougals.forage.presentation.articles.ArticleSnippet
 
 /**
- * Swipe right: toggle read/unread. Swipe left: toggle saved (bookmark + offline copy).
+ * Each direction does the action chosen in settings: toggle read/unread, or toggle saved (bookmark + offline copy).
+ * A direction still set to [SwipeAction.ASK] asks on its first swipe and remembers the answer through
+ * [onChooseSwipeRight] / [onChooseSwipeLeft].
  * The card always snaps back after firing; whether it leaves the list is up to the list's own filter.
  * The list offers an undo snackbar for each toggle.
  * [savedOnly] is for the Saved tab: no read/unread swipe or action, and the card is never dimmed.
@@ -105,6 +110,10 @@ fun SwipeableArticleCard(
     thumbnailFromCacheOnly: Boolean = false,
     thumbnailSide: ThumbnailSide = ThumbnailSide.END,
     savedOnly: Boolean = false,
+    swipeRight: SwipeAction = SwipeAction.TOGGLE_READ,
+    swipeLeft: SwipeAction = SwipeAction.TOGGLE_SAVED,
+    onChooseSwipeRight: (SwipeAction) -> Unit = {},
+    onChooseSwipeLeft: (SwipeAction) -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     val currentArticle by rememberUpdatedState(article)
@@ -117,27 +126,59 @@ fun SwipeableArticleCard(
     // Side effects must not live in confirmValueChange: it is re-evaluated while the swipe settles and
     // would fire the action several times. currentValue changes exactly once per completed swipe.
     val state = rememberSwipeToDismissBoxState()
-    LaunchedEffect(state.currentValue) {
-        when (state.currentValue) {
-            SwipeToDismissBoxValue.StartToEnd -> {
+    // The Saved tab has no read state, so there the left swipe is always the saved toggle.
+    val rightAction = swipeRight
+    val leftAction = if (savedOnly) SwipeAction.TOGGLE_SAVED else swipeLeft
+    var asking by remember { mutableStateOf<SwipeToDismissBoxValue?>(null) }
+
+    fun perform(action: SwipeAction) {
+        when (action) {
+            SwipeAction.TOGGLE_READ -> {
                 haptics.performHapticFeedback(if (currentArticle.isRead) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
                 readAction()
-                state.snapTo(SwipeToDismissBoxValue.Settled)
             }
-            SwipeToDismissBoxValue.EndToStart -> {
+            SwipeAction.TOGGLE_SAVED -> {
                 haptics.performHapticFeedback(if (currentArticle.isSaved) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
                 saveAction()
-                state.snapTo(SwipeToDismissBoxValue.Settled)
             }
-            SwipeToDismissBoxValue.Settled -> Unit
+            SwipeAction.ASK -> Unit
         }
+    }
+
+    val currentRight by rememberUpdatedState(rightAction)
+    val currentLeft by rememberUpdatedState(leftAction)
+    LaunchedEffect(state.currentValue) {
+        val value = state.currentValue
+        val action = when (value) {
+            SwipeToDismissBoxValue.StartToEnd -> currentRight
+            SwipeToDismissBoxValue.EndToStart -> currentLeft
+            SwipeToDismissBoxValue.Settled -> return@LaunchedEffect
+        }
+        if (action == SwipeAction.ASK) asking = value else perform(action)
+        state.snapTo(SwipeToDismissBoxValue.Settled)
+    }
+
+    asking?.let { direction ->
+        SwipeChoiceDialog(
+            right = direction == SwipeToDismissBoxValue.StartToEnd,
+            readLabel = readLabel,
+            readIcon = if (article.isRead) Icons.Filled.MarkEmailUnread else Icons.Filled.MarkEmailRead,
+            saveLabel = saveLabel,
+            saveIcon = if (article.isSaved) Icons.Filled.BookmarkRemove else Icons.Filled.BookmarkAdd,
+            onChoose = { chosen ->
+                asking = null
+                if (direction == SwipeToDismissBoxValue.StartToEnd) onChooseSwipeRight(chosen) else onChooseSwipeLeft(chosen)
+                perform(chosen)
+            },
+            onDismiss = { asking = null },
+        )
     }
 
     SwipeToDismissBox(
         state = state,
         modifier = modifier,
         enableDismissFromStartToEnd = !savedOnly,
-        backgroundContent = { SwipeBackground(state.dismissDirection, state.targetValue, article) },
+        backgroundContent = { SwipeBackground(state.dismissDirection, state.targetValue, article, rightAction, leftAction) },
     ) {
         ArticleCardContent(
             article, feedTitle, onClick, showThumbnail, thumbnailFromCacheOnly, thumbnailSide, onMarkOlderRead, dimWhenRead = !savedOnly,
@@ -155,35 +196,45 @@ fun SwipeableArticleCard(
 /** Solid background and icon colours for a swipe: one pair per action, so each reads differently at a glance. */
 internal data class SwipeColors(val container: Color, val content: Color)
 
-internal fun swipeColors(scheme: ColorScheme, direction: SwipeToDismissBoxValue, article: Article, armed: Boolean): SwipeColors {
+internal fun swipeColors(scheme: ColorScheme, direction: SwipeToDismissBoxValue, action: SwipeAction, article: Article, armed: Boolean): SwipeColors {
     // Before the threshold the colour is the softer container; past it, the full role colour confirms the action.
-    return when (direction) {
-        SwipeToDismissBoxValue.StartToEnd ->
+    if (direction == SwipeToDismissBoxValue.Settled) return SwipeColors(scheme.surface, scheme.onSurface)
+    return when (action) {
+        SwipeAction.TOGGLE_READ ->
             if (article.isRead) {
                 if (armed) SwipeColors(scheme.secondary, scheme.onSecondary) else SwipeColors(scheme.secondaryContainer, scheme.onSecondaryContainer)
             } else {
                 if (armed) SwipeColors(scheme.tertiary, scheme.onTertiary) else SwipeColors(scheme.tertiaryContainer, scheme.onTertiaryContainer)
             }
-        SwipeToDismissBoxValue.EndToStart ->
+        SwipeAction.TOGGLE_SAVED ->
             if (article.isSaved) {
                 if (armed) SwipeColors(scheme.error, scheme.onError) else SwipeColors(scheme.errorContainer, scheme.onErrorContainer)
             } else {
                 if (armed) SwipeColors(scheme.primary, scheme.onPrimary) else SwipeColors(scheme.primaryContainer, scheme.onPrimaryContainer)
             }
-        SwipeToDismissBoxValue.Settled -> SwipeColors(scheme.surface, scheme.onSurface)
+        // Not chosen yet: neutral, so it matches neither action.
+        SwipeAction.ASK ->
+            if (armed) SwipeColors(scheme.inverseSurface, scheme.inverseOnSurface) else SwipeColors(scheme.surfaceVariant, scheme.onSurfaceVariant)
     }
 }
 
 @Composable
-private fun SwipeBackground(direction: SwipeToDismissBoxValue, target: SwipeToDismissBoxValue, article: Article) {
+private fun SwipeBackground(
+    direction: SwipeToDismissBoxValue,
+    target: SwipeToDismissBoxValue,
+    article: Article,
+    rightAction: SwipeAction,
+    leftAction: SwipeAction,
+) {
     val armed = target != SwipeToDismissBoxValue.Settled
-    val colors = swipeColors(MaterialTheme.colorScheme, direction, article, armed)
+    val action = if (direction == SwipeToDismissBoxValue.StartToEnd) rightAction else leftAction
+    val colors = swipeColors(MaterialTheme.colorScheme, direction, action, article, armed)
     val container by animateColorAsState(colors.container, label = "swipe-bg")
     val iconScale by animateFloatAsState(if (armed) 1.25f else 0.85f, spring(dampingRatio = 0.5f), label = "swipe-icon")
-    val icon: ImageVector? = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> if (article.isRead) Icons.Filled.MarkEmailUnread else Icons.Filled.MarkEmailRead
-        SwipeToDismissBoxValue.EndToStart -> if (article.isSaved) Icons.Filled.BookmarkRemove else Icons.Filled.BookmarkAdd
-        SwipeToDismissBoxValue.Settled -> null
+    val icon: ImageVector? = if (direction == SwipeToDismissBoxValue.Settled) null else when (action) {
+        SwipeAction.TOGGLE_READ -> if (article.isRead) Icons.Filled.MarkEmailUnread else Icons.Filled.MarkEmailRead
+        SwipeAction.TOGGLE_SAVED -> if (article.isSaved) Icons.Filled.BookmarkRemove else Icons.Filled.BookmarkAdd
+        SwipeAction.ASK -> Icons.Filled.QuestionMark
     }
     Box(
         Modifier.fillMaxSize().background(container).padding(horizontal = 28.dp),
@@ -199,6 +250,40 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue, target: SwipeToDi
             }
         }
     }
+}
+
+/** First swipe in a direction: pick what that direction does from now on. Changeable in Settings. */
+@Composable
+private fun SwipeChoiceDialog(
+    right: Boolean,
+    readLabel: String,
+    readIcon: ImageVector,
+    saveLabel: String,
+    saveIcon: ImageVector,
+    onChoose: (SwipeAction) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(if (right) R.string.swipe_choose_title_right else R.string.swipe_choose_title_left)) },
+        text = {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.swipe_choose_body))
+                Button({ onChoose(SwipeAction.TOGGLE_READ) }, Modifier.fillMaxWidth()) {
+                    Icon(readIcon, contentDescription = null, Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(readLabel)
+                }
+                Button({ onChoose(SwipeAction.TOGGLE_SAVED) }, Modifier.fillMaxWidth()) {
+                    Icon(saveIcon, contentDescription = null, Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(saveLabel)
+                }
+                TextButton(onDismiss, Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.action_cancel)) }
+            }
+        },
+        confirmButton = {},
+    )
 }
 
 /** Read articles recede, except where read state is not the point (the Saved tab). */

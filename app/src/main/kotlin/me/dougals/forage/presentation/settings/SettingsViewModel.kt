@@ -38,6 +38,7 @@ import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.RefreshInterval
 import me.dougals.forage.domain.model.ThumbnailMode
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.domain.model.ThumbnailSide
 import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
@@ -233,6 +234,8 @@ class SettingsViewModel @Inject constructor(
     fun setUnreadBadge(enabled: Boolean) = change { setUnreadBadge(enabled) }
     fun setFolderNotifications(folderId: Long, notify: Boolean) = change { setFolderNotifications(folderId, notify) }
     fun setRefreshWifiOnly(wifiOnly: Boolean) = change { setRefreshWifiOnly(wifiOnly) }
+    fun setSwipeRight(action: SwipeAction) = change { setSwipeRight(action) }
+    fun setSwipeLeft(action: SwipeAction) = change { setSwipeLeft(action) }
     fun setThumbnails(mode: ThumbnailMode) = change { setThumbnails(mode) }
     fun setThumbnailSide(side: ThumbnailSide) = change { setThumbnailSide(side) }
     fun setFont(font: ReaderFont) = change { setReaderFont(font) }

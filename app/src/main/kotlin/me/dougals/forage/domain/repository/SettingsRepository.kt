@@ -16,6 +16,7 @@ import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReadFilter
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.RefreshInterval
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.ThumbnailMode
 import me.dougals.forage.domain.model.ThumbnailSide
@@ -36,6 +37,8 @@ interface SettingsRepository {
     suspend fun setCollapsedFolders(folderIds: Set<Long>)
     suspend fun setFolderCollapsed(folderId: Long, collapsed: Boolean)
     suspend fun setReadFilter(filter: ReadFilter)
+    suspend fun setSwipeRight(action: SwipeAction)
+    suspend fun setSwipeLeft(action: SwipeAction)
     suspend fun setThumbnails(mode: ThumbnailMode)
     suspend fun setThumbnailSide(side: ThumbnailSide)
     suspend fun dismissSuggestion(feedUrl: String)
