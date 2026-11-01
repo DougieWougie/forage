@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.BookmarkRemove
 import androidx.compose.material.icons.filled.MarkEmailRead
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -161,7 +162,9 @@ fun SwipeableArticleCard(
         SwipeChoiceDialog(
             right = direction == SwipeToDismissBoxValue.StartToEnd,
             readLabel = readLabel,
+            readIcon = if (article.isRead) Icons.Filled.MarkEmailUnread else Icons.Filled.MarkEmailRead,
             saveLabel = saveLabel,
+            saveIcon = if (article.isSaved) Icons.Filled.BookmarkRemove else Icons.Filled.BookmarkAdd,
             onChoose = { chosen ->
                 asking = null
                 if (direction == SwipeToDismissBoxValue.StartToEnd) onChooseSwipeRight(chosen) else onChooseSwipeLeft(chosen)
@@ -251,18 +254,35 @@ private fun SwipeBackground(
 
 /** First swipe in a direction: pick what that direction does from now on. Changeable in Settings. */
 @Composable
-private fun SwipeChoiceDialog(right: Boolean, readLabel: String, saveLabel: String, onChoose: (SwipeAction) -> Unit, onDismiss: () -> Unit) {
+private fun SwipeChoiceDialog(
+    right: Boolean,
+    readLabel: String,
+    readIcon: ImageVector,
+    saveLabel: String,
+    saveIcon: ImageVector,
+    onChoose: (SwipeAction) -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (right) R.string.swipe_choose_title_right else R.string.swipe_choose_title_left)) },
-        text = { Text(stringResource(R.string.swipe_choose_body)) },
-        confirmButton = {
-            Column(horizontalAlignment = Alignment.End) {
-                TextButton({ onChoose(SwipeAction.TOGGLE_READ) }) { Text(readLabel) }
-                TextButton({ onChoose(SwipeAction.TOGGLE_SAVED) }) { Text(saveLabel) }
+        text = {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.swipe_choose_body))
+                Button({ onChoose(SwipeAction.TOGGLE_READ) }, Modifier.fillMaxWidth()) {
+                    Icon(readIcon, contentDescription = null, Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(readLabel)
+                }
+                Button({ onChoose(SwipeAction.TOGGLE_SAVED) }, Modifier.fillMaxWidth()) {
+                    Icon(saveIcon, contentDescription = null, Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(saveLabel)
+                }
+                TextButton(onDismiss, Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.action_cancel)) }
             }
         },
-        dismissButton = { TextButton(onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmButton = {},
     )
 }
 
