@@ -147,6 +147,15 @@
     <string name="thumbnail_side">Thumbnail position</string>
     <string name="thumbnail_side_left">Left</string>
     <string name="thumbnail_side_right">Right</string>
+    <string name="swipe_right">Swipe right</string>
+    <string name="swipe_left">Swipe left</string>
+    <string name="swipe_ask">Ask on next swipe</string>
+    <string name="swipe_read">Read / unread</string>
+    <string name="swipe_save">Save</string>
+    <string name="swipe_choose_title_left">Swipe left to…</string>
+    <string name="swipe_choose_title_right">Swipe right to…</string>
+    <string name="swipe_choose_body">Choose what this swipe does. You can change it later in Settings.</string>
+    <string name="swipe_body">Each swipe direction can mark an article read or save it. Ask waits for the next swipe.</string>
     <string name="section_signed_in">Signed-in sites</string>
     <string name="section_refresh">Refresh</string>
     <string name="section_storage">Storage</string>

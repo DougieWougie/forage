@@ -22,6 +22,7 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.semantics.SemanticsActions.CustomActions
 import me.dougals.forage.domain.model.Article
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.testutil.article
 import me.dougals.forage.ui.theme.ForageTheme
 import org.junit.Assert.assertEquals
@@ -43,10 +44,76 @@ class SwipeableArticleCardTest {
 
     private var older = 0
 
-    private fun show(a: Article = article(1), canMarkOlder: Boolean = true, savedOnly: Boolean = false) = rule.setContent {
+    private val chosen = mutableListOf<Pair<String, SwipeAction>>()
+
+    private fun show(
+        a: Article = article(1),
+        canMarkOlder: Boolean = true,
+        savedOnly: Boolean = false,
+        right: SwipeAction = SwipeAction.TOGGLE_READ,
+        left: SwipeAction = SwipeAction.TOGGLE_SAVED,
+    ) = rule.setContent {
         ForageTheme {
-            SwipeableArticleCard(a, "LWN", { clicked++ }, { read++ }, { saved++ }, onMarkOlderRead = if (canMarkOlder) ({ older++ }) else null, savedOnly = savedOnly)
+            SwipeableArticleCard(
+                a, "LWN", { clicked++ }, { read++ }, { saved++ }, onMarkOlderRead = if (canMarkOlder) ({ older++ }) else null, savedOnly = savedOnly,
+                swipeRight = right, swipeLeft = left,
+                onChooseSwipeRight = { chosen += "right" to it }, onChooseSwipeLeft = { chosen += "left" to it },
+            )
         }
+    }
+
+    @Test fun anUnchosenSwipeAsksFirstAndDoesNothingYet() {
+        show(right = SwipeAction.ASK)
+        rule.onNodeWithText("Title 1").performTouchInput { swipeRight() }
+        rule.waitForIdle()
+        rule.onNodeWithText("Swipe right to…").assertExists()
+        assertEquals(0, read + saved)
+    }
+
+    @Test fun choosingSaveRemembersTheChoiceAndSaves() {
+        show(left = SwipeAction.ASK)
+        rule.onNodeWithText("Title 1").performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        rule.onNodeWithText("Save").performClick()
+        assertEquals(listOf("left" to SwipeAction.TOGGLE_SAVED), chosen)
+        assertEquals(1, saved)
+        assertEquals(0, read)
+    }
+
+    @Test fun choosingMarkReadOnTheLeftSwipeMarksRead() {
+        show(left = SwipeAction.ASK)
+        rule.onNodeWithText("Title 1").performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        rule.onNodeWithText("Mark read").performClick()
+        assertEquals(listOf("left" to SwipeAction.TOGGLE_READ), chosen)
+        assertEquals(1, read)
+        assertEquals(0, saved)
+    }
+
+    @Test fun cancellingTheSwipeQuestionChangesNothing() {
+        show(right = SwipeAction.ASK)
+        rule.onNodeWithText("Title 1").performTouchInput { swipeRight() }
+        rule.waitForIdle()
+        rule.onNodeWithText("Cancel").performClick()
+        assertEquals(emptyList<Pair<String, SwipeAction>>(), chosen)
+        assertEquals(0, read + saved)
+    }
+
+    @Test fun aChosenSwipeActionIsUsedWithoutAsking() {
+        show(left = SwipeAction.TOGGLE_READ)
+        rule.onNodeWithText("Title 1").performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        assertEquals(1, read)
+        assertEquals(0, saved)
+        rule.onNodeWithText("Swipe left to…").assertDoesNotExist()
+    }
+
+    @Test fun theSavedTabNeverAsksAndAlwaysTogglesSaved() {
+        show(article(1, saved = true), canMarkOlder = false, savedOnly = true, left = SwipeAction.ASK)
+        rule.onNodeWithText("Title 1").performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        assertEquals(1, saved)
+        rule.onNodeWithText("Swipe left to…").assertDoesNotExist()
     }
 
     @Test fun longPressPopsUpAConfirmationToMarkOlderAsRead() {

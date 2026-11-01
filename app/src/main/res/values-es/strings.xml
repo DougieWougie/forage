@@ -147,6 +147,15 @@
     <string name="thumbnail_side">Posición de la miniatura</string>
     <string name="thumbnail_side_left">Izquierda</string>
     <string name="thumbnail_side_right">Derecha</string>
+    <string name="swipe_right">Deslizar a la derecha</string>
+    <string name="swipe_left">Deslizar a la izquierda</string>
+    <string name="swipe_ask">Preguntar al próximo deslizamiento</string>
+    <string name="swipe_read">Leído / no leído</string>
+    <string name="swipe_save">Guardar</string>
+    <string name="swipe_choose_title_left">Desliza a la izquierda para…</string>
+    <string name="swipe_choose_title_right">Desliza a la derecha para…</string>
+    <string name="swipe_choose_body">Elige qué hace este deslizamiento. Puedes cambiarlo después en Ajustes.</string>
+    <string name="swipe_body">Cada dirección puede marcar un artículo como leído o guardarlo. «Preguntar» espera al próximo deslizamiento.</string>
     <string name="section_signed_in">Sitios con sesión iniciada</string>
     <string name="section_refresh">Actualización</string>
     <string name="section_storage">Almacenamiento</string>

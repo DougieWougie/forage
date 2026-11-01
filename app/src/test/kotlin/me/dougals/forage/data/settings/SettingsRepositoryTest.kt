@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReadFilter
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.domain.model.ReaderFont
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.model.RefreshInterval
@@ -111,6 +112,16 @@ class SettingsRepositoryTest {
         assertEquals(ReadFilter.ALL, r.settings.first().readFilter)
         r.setReadFilter(ReadFilter.UNREAD)
         assertEquals(ReadFilter.UNREAD, r.settings.first().readFilter)
+    }
+
+    @Test fun swipeActionsStartUnchosenAndPersistPerDirection() = runTest {
+        val r = repo()
+        assertEquals(SwipeAction.ASK, r.settings.first().swipeRight)
+        assertEquals(SwipeAction.ASK, r.settings.first().swipeLeft)
+        r.setSwipeRight(SwipeAction.TOGGLE_SAVED)
+        r.setSwipeLeft(SwipeAction.TOGGLE_READ)
+        assertEquals(SwipeAction.TOGGLE_SAVED, r.settings.first().swipeRight)
+        assertEquals(SwipeAction.TOGGLE_READ, r.settings.first().swipeLeft)
     }
 
     @Test fun dismissedSuggestionsPersistAndCanBeReset() = runTest {

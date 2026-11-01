@@ -35,6 +35,7 @@ import me.dougals.forage.presentation.articles.ArticleListState
 import me.dougals.forage.presentation.articles.ArticleListViewModel
 import me.dougals.forage.presentation.articles.ListSource
 import me.dougals.forage.domain.model.ReadFilter
+import me.dougals.forage.domain.model.SwipeAction
 import me.dougals.forage.presentation.articles.ToggleUndo
 import me.dougals.forage.testutil.article
 import me.dougals.forage.ui.FolderRequest
@@ -53,7 +54,10 @@ class ArticleListScreenTest {
 
     private val one = article(1, feedId = 10)
     private val two = article(2, feedId = 10)
-    private val list = ArticleListState(articles = listOf(one, two), feedTitles = mapOf(10L to "LWN"))
+    private val list = ArticleListState(
+        articles = listOf(one, two), feedTitles = mapOf(10L to "LWN"),
+        swipeRight = SwipeAction.TOGGLE_READ, swipeLeft = SwipeAction.TOGGLE_SAVED,
+    )
 
     private val state = MutableStateFlow(ArticleListState())
     private val vm = mockk<ArticleListViewModel>(relaxed = true).also { every { it.state } returns state }
