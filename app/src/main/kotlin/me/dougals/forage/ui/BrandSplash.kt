@@ -96,11 +96,13 @@ private fun SplashOverlay(onFinished: () -> Unit, vm: SplashViewModel = hiltView
                             else if (found == 0) stringResource(R.string.splash_no_new)
                             else pluralStringResource(R.plurals.splash_new_articles, found, found),
                             style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
                         )
                         if (found != null && found > 0 && state.categories > 0) {
                             Text(
                                 pluralStringResource(R.plurals.splash_in_categories, state.categories, state.categories),
                                 style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
                             )
                         }
                         Text(
