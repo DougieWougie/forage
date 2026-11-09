@@ -24,6 +24,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReadFilter
@@ -39,6 +41,7 @@ import me.dougals.forage.testutil.awaitUntil
 import me.dougals.forage.testutil.feed
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import java.io.IOException
@@ -52,7 +55,7 @@ class ArticleListViewModelTest {
         every { it.settings } returns settings
         coEvery { it.setReadFilter(any()) } answers { settings.value = settings.value.copy(readFilter = firstArg()) }
     }
-    private fun vm(vararg args: Pair<String, Any>) = ArticleListViewModel(SavedStateHandle(mapOf(*args)), repo, settingsRepo)
+    private fun vm(vararg args: Pair<String, Any>) = ArticleListViewModel(SavedStateHandle(mapOf(*args)), repo, settingsRepo, UnconfinedTestDispatcher())
 
     init {
         every { repo.observeFeeds() } returns flowOf(listOf(Feed(1, "u", "LWN", null, null, 0)))
@@ -358,14 +361,14 @@ class ArticleListViewModelTest {
     @Test fun chosenCategoriesSurviveARecreatedViewModel() = runTest {
         categorised(MutableStateFlow(listOf(article(1, feedId = 1), article(2, feedId = 2), article(3, feedId = 3))))
         val handle = SavedStateHandle(mapOf("source" to "unread"))
-        val first = ArticleListViewModel(handle, repo, settingsRepo)
+        val first = ArticleListViewModel(handle, repo, settingsRepo, UnconfinedTestDispatcher())
         first.state.test {
             awaitUntil { it.articles.size == 3 }
             first.toggleFolder(1)
             first.toggleFolder(2)
             awaitUntil { it.folderIds == setOf(1L, 2L) }
         }
-        ArticleListViewModel(handle, repo, settingsRepo).state.test {
+        ArticleListViewModel(handle, repo, settingsRepo, UnconfinedTestDispatcher()).state.test {
             awaitUntil { it.folderIds == setOf(1L, 2L) }.let { assertEquals(listOf(1L, 2L), it.articles.map { a -> a.id }) }
         }
     }
@@ -407,5 +410,21 @@ class ArticleListViewModelTest {
         val v = vm("source" to "saved")
         v.toggleFolder(2)
         v.state.test { assertEquals(2, awaitUntil { it.articles.isNotEmpty() }.articles.size) }
+    }
+
+    @Test fun theListIsBuiltOnTheComputeDispatcherNotTheCollectorsThread() = runTest {
+        val worker = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "list-compute") }
+        try {
+            val threads = java.util.concurrent.CopyOnWriteArrayList<String>()
+            every { repo.observeUnread() } returns kotlinx.coroutines.flow.flow {
+                threads += Thread.currentThread().name
+                emit(listOf(article(1)))
+            }
+            val v = ArticleListViewModel(SavedStateHandle(mapOf("source" to "unread")), repo, settingsRepo, worker.asCoroutineDispatcher())
+            v.state.test { awaitUntil { it.articles.isNotEmpty() } }
+            assertTrue(threads.isNotEmpty() && threads.all { it.startsWith("list-compute") }, threads.toString())
+        } finally {
+            worker.shutdownNow()
+        }
     }
 }

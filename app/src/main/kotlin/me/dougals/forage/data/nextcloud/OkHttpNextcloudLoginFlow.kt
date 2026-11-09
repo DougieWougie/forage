@@ -11,21 +11,25 @@
  */
 package me.dougals.forage.data.nextcloud
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okhttp3.RequestBody.Companion.toRequestBody
 import me.dougals.forage.domain.nextcloud.LoginFlowSession
 import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import me.dougals.forage.domain.nextcloud.NextcloudLoginFlow
 import java.io.IOException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class OkHttpNextcloudLoginFlow(
     private val client: OkHttpClient,
@@ -65,15 +69,29 @@ class OkHttpNextcloudLoginFlow(
         )
     }
 
-    private suspend fun call(request: Request.Builder, notFoundIsNull: Boolean = false): String? = withContext(Dispatchers.IO) {
-        client.newCall(request.header("User-Agent", userAgent).build()).execute().use { r ->
-            when {
-                r.isSuccessful -> r.body.string()
-                notFoundIsNull && r.code == 404 -> null
-                else -> throw IOException("HTTP ${r.code}")
-            }
+    private suspend fun call(request: Request.Builder, notFoundIsNull: Boolean = false): String? =
+        suspendCancellableCoroutine { cont ->
+            val call = client.newCall(request.header("User-Agent", userAgent).build())
+            cont.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) { cont.resumeWithException(e) }
+                override fun onResponse(call: Call, response: Response) {
+                    val result = try {
+                        response.use { r ->
+                            when {
+                                r.isSuccessful -> r.body.string()
+                                notFoundIsNull && r.code == 404 -> null
+                                else -> throw IOException("HTTP ${r.code}")
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        cont.resumeWithException(e)
+                        return
+                    }
+                    cont.resume(result)
+                }
+            })
         }
-    }
 
     private fun secure(url: String, host: String?) = secureUrl(url, host, allowInsecure)
 

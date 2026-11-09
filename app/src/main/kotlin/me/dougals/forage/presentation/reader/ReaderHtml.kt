@@ -44,13 +44,25 @@ object ReaderFonts {
     fun assetFor(url: String): String? = assets[url]
 }
 
+/**
+ * Article HTML that has been through [ReaderHtml.sanitise]. The constructor is private, so [ReaderHtml.wrap] can
+ * only be given sanitised markup: the untrusted source cannot reach the page by skipping the cleaning.
+ */
+@JvmInline
+value class SafeHtml private constructor(val html: String) {
+    internal companion object { fun of(cleaned: String) = SafeHtml(cleaned) }
+}
+
 object ReaderHtml {
     /**
-     * [bodyHtml] comes from a feed or a server and is untrusted, so it is sanitised here whatever its source;
-     * [baseUrl] lets relative links and images survive (they are resolved against it, and dropped without one).
+     * [bodyHtml] comes from a feed or a server and is untrusted, so it is sanitised whatever its source; [baseUrl]
+     * lets relative links and images survive (they are resolved against it, and dropped without one). This parses
+     * the whole body, which can be megabytes, so call it off the main thread.
      */
-    fun wrap(title: String, byline: String?, bodyHtml: String, style: ReaderStyle, baseUrl: String = ""): String {
-        val body = Jsoup.clean(bodyHtml, baseUrl, Safelist.relaxed())
+    fun sanitise(bodyHtml: String, baseUrl: String = ""): SafeHtml = SafeHtml.of(Jsoup.clean(bodyHtml, baseUrl, Safelist.relaxed()))
+
+    fun wrap(title: String, byline: String?, safeBody: SafeHtml, style: ReaderStyle): String {
+        val body = safeBody.html
         val family = when (style.font) {
             ReaderFont.SERIF -> "Georgia, 'Noto Serif', serif"
             ReaderFont.SANS -> "system-ui, Roboto, sans-serif"

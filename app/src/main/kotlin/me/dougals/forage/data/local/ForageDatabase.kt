@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [FolderEntity::class, FeedEntity::class, ArticleEntity::class, PendingChangeEntity::class],
-    version = 2,
+    version = 3,
 )
 abstract class ForageDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
@@ -31,6 +31,25 @@ abstract class ForageDatabase : RoomDatabase() {
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE articles ADD COLUMN imageUrl TEXT")
+            }
+        }
+
+        /**
+         * Indices for the Nextcloud pull (`remoteId` lookups) and the article lists (filter plus newest-first sort).
+         * The single-column `isRead` index is dropped: `(isRead, publishedAt)` serves every query it did.
+         * Also adds `snippet`, the list-card preview. Existing rows start with NULL and are filled in the background by
+         * [me.dougals.forage.data.content.SnippetBackfill]: parsing every stored body here would hold up opening the database.
+         * Also adds `feeds.etag` and `feeds.lastModified`, the validators for conditional feed requests (NULL means send none).
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE articles ADD COLUMN snippet TEXT")
+                db.execSQL("ALTER TABLE feeds ADD COLUMN etag TEXT")
+                db.execSQL("ALTER TABLE feeds ADD COLUMN lastModified TEXT")
+                db.execSQL("DROP INDEX IF EXISTS `index_articles_isRead`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_articles_remoteId` ON `articles` (`remoteId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_articles_isRead_publishedAt` ON `articles` (`isRead`, `publishedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_articles_feedId_publishedAt` ON `articles` (`feedId`, `publishedAt`)")
             }
         }
     }

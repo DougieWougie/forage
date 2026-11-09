@@ -60,4 +60,12 @@ class ImageClientWiringTest {
         assertTrue(ApiClient::class in quals, "image fetcher must take @ApiClient, got $quals")
         assertTrue(WebClient::class !in quals)
     }
+
+    @Test fun bothClientsCapTheWholeCallSoADrippingServerCannotHoldOneOpen() {
+        val web = AppModule.webClient(MemSessionStore())
+        val api = AppModule.apiClient()
+        assertEquals(WEB_CALL_TIMEOUT_S * 1000, web.callTimeoutMillis.toLong())
+        assertEquals(API_CALL_TIMEOUT_S * 1000, api.callTimeoutMillis.toLong())
+        assertTrue(web.callTimeoutMillis > 0 && api.callTimeoutMillis > 0)
+    }
 }

@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.dougals.forage.data.content.ImageResourceFetcher
+import me.dougals.forage.data.content.SnippetBackfill
 import me.dougals.forage.data.content.ThumbnailFetcher
 import me.dougals.forage.data.notify.UnreadBadgeNotifier
 import me.dougals.forage.data.work.WorkManagerSchedulers
@@ -44,6 +45,7 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
     @Inject lateinit var images: ImageResourceFetcher
     @Inject lateinit var settings: SettingsRepository
     @Inject lateinit var repo: FeedRepository
+    @Inject lateinit var snippetBackfill: SnippetBackfill
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -62,6 +64,7 @@ class ForageApp : Application(), Configuration.Provider, SingletonImageLoader.Fa
         // Follows the settings, so changing the interval or Wi-Fi-only takes effect immediately and applies at launch.
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         UnreadBadgeNotifier(this, repo, settings).start(scope)
+        scope.launch { snippetBackfill.run() }
         scope.launch {
             settings.settings.map { it.refreshInterval to it.refreshWifiOnly }.distinctUntilChanged()
                 .collect { (interval, wifiOnly) -> schedulers.schedulePeriodicRefresh(interval, wifiOnly) }

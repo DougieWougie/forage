@@ -31,8 +31,8 @@ import retrofit2.http.Query
     val mediaThumbnail: String? = null,
 )
 
-@Serializable data class FoldersResponse(val folders: List<FolderDto> = emptyList())
-@Serializable data class FeedsResponse(val feeds: List<FeedDto> = emptyList())
+@Serializable data class FoldersResponse(val folders: List<FolderDto>)
+@Serializable data class FeedsResponse(val feeds: List<FeedDto>)
 @Serializable data class ItemsResponse(val items: List<ItemDto> = emptyList())
 @Serializable data class CreateFolderRequest(val name: String)
 @Serializable data class CreateFeedRequest(val url: String, val folderId: Long? = null)

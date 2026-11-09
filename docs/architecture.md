@@ -21,18 +21,34 @@ Diagrams are Mermaid sources in [`diagrams/`](diagrams); regenerate the SVGs wit
 Room is the source of truth for the UI: every `observe*` call reads from it. `ModeAwareFeedRepository` is the only
 `FeedRepository` the app injects. It reads through `LocalFeedRepository`, and sends writes and `refresh()` to the
 implementation chosen by the current `SyncMode` (`LOCAL` or `NEXTCLOUD`). Both extend `RoomFeedRepository`, which holds the shared
-read and state-change logic. See [sync](sync.md) for the Nextcloud path and [ADR 0001](adr/0001-room-as-source-of-truth.md).
+read and state-change logic. Refreshes (and Nextcloud `addFeed`, which refreshes) run one at a time behind a mutex in
+`ModeAwareFeedRepository`; a caller that arrives mid-refresh waits, then runs its own. See [sync](sync.md) for the Nextcloud path and [ADR 0001](adr/0001-room-as-source-of-truth.md).
 
-**Local refresh** (`LocalFeedRepository.refresh`): fetch each feed through `FeedFetcher`, parse it with `FeedParser`,
-and insert new articles with `insertIgnore` (unique on `feedId, guid`). One failing feed does not stop the others;
-the first error is returned at the end.
+**Local refresh** (`LocalFeedRepository.refresh`): fetch the feeds through `FeedSource`, at most six at a time, parse each with `FeedParser`,
+and insert new articles with `insertIgnore` (unique on `feedId, guid`). Requests are conditional: the `ETag` and `Last-Modified` of the
+last stored body (`feeds.etag`, `feeds.lastModified`) go back as `If-None-Match` / `If-Modified-Since`, and a 304 means nothing new.
+The validators are saved only after the new body is stored. One failing feed does not stop the others; the first error in feed order is
+returned at the end, with the report of what the others brought in. `RefreshProgress` counts feeds completed.
 
 ## Data model
 
 ![Room schema](diagrams/schema.svg)
 
-`ForageDatabase` is at version 2 (`MIGRATION_1_2` adds `articles.imageUrl`). Exported schemas are in
-`app/schemas/`. `remoteId` columns hold Nextcloud ids and stay null for items that exist only locally.
+`ForageDatabase` is at version 3 (`MIGRATION_1_2` adds `articles.imageUrl`; `MIGRATION_2_3` adds `feeds.etag` and `feeds.lastModified`, indices on `articles.remoteId`,
+`(isRead, publishedAt)` and `(feedId, publishedAt)`, drops the old `isRead` index, and adds `articles.snippet`). Exported schemas are in
+`app/schemas/`. State changes that queue a pending change (`setRead`, `setSaved`, `markFeedRead`, `setReadBatch`) write the article and the queue row in one
+Room transaction. `remoteId` columns hold Nextcloud ids and stay null for items that exist only locally.
+
+### Article lists and the reader
+
+A card shows `articles.snippet`, a plain-text preview computed when the article is stored (`ArticleSnippets`, by local refresh and
+the Nextcloud pull). List queries select the snippet and leave `summary` and `contentHtml` out; the reader loads the full row through
+`observeById`. Rows stored before the column existed start with a NULL snippet and are filled in the background at launch
+(`SnippetBackfill`). `ArticleListViewModel` builds its list on `Dispatchers.Default`.
+
+`ReaderViewModel` sanitises the article body (`ReaderHtml.sanitise`, Jsoup `Safelist.relaxed()`) on `Dispatchers.Default` and exposes it as a
+`SafeHtml`, the only type `ReaderHtml.wrap` accepts, so the screen cannot render unsanitised markup. It sanitises again only when the
+article's HTML changes, not on a font or size change.
 
 ## Background work
 

@@ -13,7 +13,10 @@ Feed content, OPML entries, article links and article HTML are untrusted. Ration
 - IP literals are checked before connecting; hostnames are checked after DNS resolution in `PublicOnlyDns`.
   Only globally routable unicast space passes (`isPublicAddress`).
 - Redirects are followed manually (max 10) so each hop is checked. Proxies are disabled so the checked address is the one dialled.
-- Response bodies are size-limited: 10 MB feeds, 5 MB pages, 15 MB images.
+- Response bodies are size-limited: 10 MB feeds, 5 MB pages, 15 MB images. A caller can ask for extra statuses (only 304, for a conditional feed request that sent validators) to be handed to it instead of failing; every other
+  non-2xx still throws, the address checks run first, and the validator headers go only to the original host, not to a redirect target.
+  Each client also has a whole-call timeout
+  (180 s for `@WebClient`, 240 s for `@ApiClient`), and a cancelled caller cancels the call, so a server that drips bytes cannot hold a request open.
 
 `ThumbnailFetcher` (list thumbnails) goes through `ImageResourceFetcher`, so it gets the same guard.
 
@@ -25,7 +28,8 @@ OPML import reads at most 10 MB, closes its stream, and walks nested folders ite
 
 ## Reader
 
-`ReaderScreen` renders article HTML in a WebView with JavaScript and file access off, and the page carries a
+Article HTML is sanitised with Jsoup's relaxed safelist in `ReaderViewModel` (off the main thread) and reaches the page only as a `SafeHtml`.
+`ReaderScreen` renders it in a WebView with JavaScript and file access off, and the page carries a
 Content-Security-Policy of `default-src 'none'` (images, inline styles and the bundled font only; `script-src 'none'`).
 `shouldInterceptRequest` answers every http(s) subresource itself: bundled fonts from assets, images through
 `ImageResourceFetcher`, everything else with 403. Link taps open in the external browser. The separate login WebView (`LoginScreen`) does enable JavaScript, since sites need it to sign in. Its top bar shows the host of the
