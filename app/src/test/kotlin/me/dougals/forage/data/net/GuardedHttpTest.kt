@@ -76,6 +76,7 @@ class GuardedHttpTest {
             val url = server.url("/").toString()
             assertEquals(304, http.get(url, allowPrivate = true, passStatuses = setOf(304)) { it.code })
             assertThrows<HttpStatusException> { http.get(url, allowPrivate = true, passStatuses = setOf(304)) { it.code } }
+            Unit // a JUnit 5 test method must return Unit or it is silently skipped
         }
     }
 
