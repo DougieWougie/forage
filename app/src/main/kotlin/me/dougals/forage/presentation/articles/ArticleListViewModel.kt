@@ -137,8 +137,9 @@ class ArticleListViewModel @Inject constructor(
         val offered = allFolders.filter { it.id in present }
         // Choices that have run out of articles are dropped, so the list falls back to all rather than stranding the user.
         val folderIds = if (source == ListSource.Unread) choice.filter { it in present }.toSet() else emptySet()
-        // The Saved tab has no filter control, so a read filter chosen elsewhere must not hide its articles.
-        val byRead = when (if (source == ListSource.Saved) ReadFilter.ALL else readFilter) {
+        // The Unread and Saved tabs have no filter control, so a read filter chosen elsewhere must not hide their articles
+        // (Unread holds only unread articles, so READ would blank it with no way to recover).
+        val byRead = when (if (source == ListSource.Saved || source == ListSource.Unread) ReadFilter.ALL else readFilter) {
             ReadFilter.ALL -> list
             ReadFilter.UNREAD -> list.filterNot { it.isRead }
             ReadFilter.READ -> list.filter { it.isRead }
