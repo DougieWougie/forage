@@ -76,6 +76,12 @@ import javax.inject.Singleton
 /** Client for the Nextcloud API: no cookie interceptor; Basic auth is added by the API provider. */
 @Qualifier annotation class ApiClient
 
+/** Whole-call ceilings (connect to last byte). 180 s moves a 10 MB feed at about 55 kB/s. */
+internal const val WEB_CALL_TIMEOUT_S = 180L
+
+/** 240 s moves a 15 MB image at about 65 kB/s; the Nextcloud API calls are far smaller. */
+internal const val API_CALL_TIMEOUT_S = 240L
+
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
@@ -96,12 +102,14 @@ object AppModule {
     @Provides @Singleton @WebClient
     fun webClient(sessions: SessionStore): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
+        .callTimeout(WEB_CALL_TIMEOUT_S, TimeUnit.SECONDS)
         .addNetworkInterceptor(SessionCookieInterceptor(sessions))
         .build()
 
     @Provides @Singleton @ApiClient
     fun apiClient(): OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
+        .connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS)
+        .callTimeout(API_CALL_TIMEOUT_S, TimeUnit.SECONDS).build()
 
     @Provides @Singleton
     fun nextcloudApi(creds: CredentialStore, @ApiClient client: OkHttpClient): NextcloudApiProvider =

@@ -13,7 +13,8 @@ Feed content, OPML entries, article links and article HTML are untrusted. Ration
 - IP literals are checked before connecting; hostnames are checked after DNS resolution in `PublicOnlyDns`.
   Only globally routable unicast space passes (`isPublicAddress`).
 - Redirects are followed manually (max 10) so each hop is checked. Proxies are disabled so the checked address is the one dialled.
-- Response bodies are size-limited: 10 MB feeds, 5 MB pages, 15 MB images.
+- Response bodies are size-limited: 10 MB feeds, 5 MB pages, 15 MB images. Each client also has a whole-call timeout
+  (180 s for `@WebClient`, 240 s for `@ApiClient`), and a cancelled caller cancels the call, so a server that drips bytes cannot hold a request open.
 
 `ThumbnailFetcher` (list thumbnails) goes through `ImageResourceFetcher`, so it gets the same guard.
 

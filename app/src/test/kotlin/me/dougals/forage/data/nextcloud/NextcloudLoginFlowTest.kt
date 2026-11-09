@@ -92,4 +92,12 @@ class NextcloudLoginFlowTest {
         assertThrows<IOException> { secureUrl("http://cloud.example.com/", null) }
         assertThrows<IOException> { secureUrl("not a url", "cloud.example.com") }
     }
+
+    @Test fun cancellingAbandonsARequestTheServerNeverAnswers() = kotlinx.coroutines.runBlocking {
+        server.enqueue(MockResponse.Builder().headersDelay(10, java.util.concurrent.TimeUnit.SECONDS).body("{}").build())
+        val started = System.nanoTime()
+        val result = kotlinx.coroutines.withTimeoutOrNull(300) { flow().start(base()) }
+        assertNull(result)
+        assertEquals(true, (System.nanoTime() - started) / 1_000_000 < 3_000)
+    }
 }
