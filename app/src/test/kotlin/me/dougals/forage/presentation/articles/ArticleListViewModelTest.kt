@@ -81,6 +81,14 @@ class ArticleListViewModelTest {
         }
     }
 
+    @Test fun unreadSourceIgnoresTheReadFilter() = runTest {
+        every { repo.observeUnread() } returns MutableStateFlow(listOf(article(1)))
+        settings.value = AppSettings(readFilter = ReadFilter.READ)
+        vm("source" to "unread").state.test {
+            assertEquals(listOf(1L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id })
+        }
+    }
+
     @Test fun feedSourceShowsThatFeedsArticles() = runTest {
         every { repo.observeFeedArticles(3) } returns flowOf(listOf(article(4)))
         vm("source" to "feed", "feedId" to 3L).state.test { assertEquals(listOf(4L), awaitUntil { it.articles.isNotEmpty() }.articles.map { it.id }) }
