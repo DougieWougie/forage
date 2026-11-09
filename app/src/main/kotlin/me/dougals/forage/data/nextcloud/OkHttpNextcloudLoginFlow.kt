@@ -87,7 +87,7 @@ class OkHttpNextcloudLoginFlow(
  * out http:// links to itself; those are upgraded when they point back at [host], the server already in use.
  */
 internal fun secureUrl(url: String, host: String?, allowInsecure: Boolean = false): HttpUrl {
-    val parsed = try { url.toHttpUrl() } catch (e: IllegalArgumentException) { throw IOException("Invalid address: $url", e) }
+    val parsed = try { url.toHttpUrl() } catch (e: IllegalArgumentException) { throw IOException("Invalid address", e) }
     return when {
         parsed.isHttps || allowInsecure -> parsed
         host != null && parsed.host == host -> parsed.newBuilder().scheme("https").port(443).build()

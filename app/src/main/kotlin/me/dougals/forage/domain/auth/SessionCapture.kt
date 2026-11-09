@@ -19,7 +19,10 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  */
 class SessionCapture(private val cookieSource: (String) -> String?, private val store: SessionStore) {
     fun capture(url: String): Boolean {
-        val host = url.toHttpUrlOrNull()?.host ?: return false
+        val parsed = url.toHttpUrlOrNull() ?: return false
+        // Session cookies are only ever sent over HTTPS, so a page that isn't HTTPS has nothing worth keeping.
+        if (!parsed.isHttps) return false
+        val host = parsed.host
         val cookies = cookieSource(url)?.takeIf { it.isNotBlank() } ?: return false
         store.save(host, cookies)
         return true

@@ -14,6 +14,7 @@ package me.dougals.forage.ui.login
 import me.dougals.forage.R
 import androidx.compose.ui.res.stringResource
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebStorage
@@ -77,6 +78,9 @@ fun LoginScreen(startUrl: String, onDone: () -> Unit, vm: LoginViewModel = hiltV
     var web by remember { mutableStateOf<WebView?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val noCookies = stringResource(R.string.login_no_cookies)
+    val notHttps = stringResource(R.string.login_not_https)
+    // The page the WebView is on now, as it navigates; the bar shows its host so the user sees where "Save session" applies.
+    var currentUrl by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(web) {
@@ -92,13 +96,16 @@ fun LoginScreen(startUrl: String, onDone: () -> Unit, vm: LoginViewModel = hiltV
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.login_title), maxLines = 1) },
+                title = { Text(loginHost(currentUrl) ?: stringResource(R.string.login_title), maxLines = 1) },
                 navigationIcon = { IconButton(onDone) { Icon(Icons.Filled.Close, stringResource(R.string.action_cancel)) } },
                 actions = {
                     TextButton({
                         val url = web?.url
-                        if (url != null && vm.capture(url)) onDone()
-                        else scope.launch { snackbar.showSnackbar(noCookies) }
+                        when {
+                            url != null && !isHttpsUrl(url) -> scope.launch { snackbar.showSnackbar(notHttps) }
+                            url != null && vm.capture(url) -> onDone()
+                            else -> scope.launch { snackbar.showSnackbar(noCookies) }
+                        }
                     }) { Text(stringResource(R.string.login_save_session)) }
                 },
             )
@@ -116,7 +123,9 @@ fun LoginScreen(startUrl: String, onDone: () -> Unit, vm: LoginViewModel = hiltV
                     settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                     CookieManager.getInstance().setAcceptCookie(true)
                     CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                    webViewClient = WebViewClient()
+                    webViewClient = object : WebViewClient() {
+                        override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) { currentUrl = url }
+                    }
                     web = this
                 }
             },
@@ -124,3 +133,8 @@ fun LoginScreen(startUrl: String, onDone: () -> Unit, vm: LoginViewModel = hiltV
         )
     }
 }
+
+/** The host of [url] for display, or null when there is no page (or no host) yet. */
+internal fun loginHost(url: String?): String? = url?.let { Uri.parse(it).host }?.takeIf { it.isNotEmpty() }
+
+internal fun isHttpsUrl(url: String): Boolean = Uri.parse(url).scheme.equals("https", ignoreCase = true)

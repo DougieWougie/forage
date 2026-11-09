@@ -98,6 +98,7 @@
     <string name="login_title">Sign in, then save</string>
     <string name="login_save_session">Save session</string>
     <string name="login_no_cookies">No session cookies found yet — finish signing in first.</string>
+    <string name="login_not_https">Can’t save a session from a page that isn’t using HTTPS.</string>
 
     <!-- Categories -->
     <string name="categories_title">Categories</string>

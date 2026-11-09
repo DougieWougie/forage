@@ -1,4 +1,4 @@
-# 0003. Credentials are encrypted and sent only to their own host
+# 0003. Credentials are kept in app-private storage and sent only to their own host
 
 Status: Accepted
 

@@ -42,14 +42,14 @@ class GuardedHttp(
 
     /** @throws HttpStatusException for non-2xx answers; other [IOException]s for blocked or failed requests. */
     suspend fun <T> get(url: String, allowPrivate: Boolean, handle: (Response) -> T): T = withContext(Dispatchers.IO) {
-        var current = url.toHttpUrlOrNull() ?: throw IOException("Invalid URL: $url")
+        var current = url.toHttpUrlOrNull() ?: throw IOException("Invalid URL")
         val http = if (allowPrivate) open else guarded
         repeat(MAX_REDIRECTS + 1) {
             if (!allowPrivate) requirePublicLiteral(current.host)
             http.newCall(Request.Builder().url(current).build()).execute().use { r ->
                 if (r.isRedirect) {
                     val location = r.header("Location") ?: throw IOException("Redirect without Location")
-                    current = r.request.url.resolve(location) ?: throw IOException("Unsupported redirect: $location")
+                    current = r.request.url.resolve(location) ?: throw IOException("Unsupported redirect")
                     return@repeat
                 }
                 if (!r.isSuccessful) throw HttpStatusException(r.code)

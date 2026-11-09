@@ -98,6 +98,7 @@
     <string name="login_title">Inicia sesión y guarda</string>
     <string name="login_save_session">Guardar sesión</string>
     <string name="login_no_cookies">Aún no se encontraron cookies de sesión — termina primero de iniciar sesión.</string>
+    <string name="login_not_https">No se puede guardar la sesión de una página que no usa HTTPS.</string>
 
     <!-- Categories -->
     <string name="categories_title">Categorías</string>
