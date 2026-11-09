@@ -120,4 +120,51 @@ class FeedFetcherTest {
             assertThrows(FeedFetchException::class.java) { kotlinx.coroutines.runBlocking { fetcher.fetch(u) } }
         }
     }
+
+    @Test fun sendsTheValidatorsAndTreats304AsNotModified() = withServer { server, fetcher ->
+        server.enqueue(MockResponse.Builder().code(304).build())
+        val r = fetcher.fetchConditional(server.url("/rss").toString(), CacheValidators("\"abc\"", "Mon, 01 Jan 2024 00:00:00 GMT"))
+        assertEquals(FeedResponse.NotModified, r)
+        val req = server.takeRequest()
+        assertEquals("\"abc\"", req.headers["If-None-Match"])
+        assertEquals("Mon, 01 Jan 2024 00:00:00 GMT", req.headers["If-Modified-Since"])
+    }
+
+    @Test fun aFullAnswerCarriesTheNewValidators() = withServer { server, fetcher ->
+        server.enqueue(MockResponse.Builder().addHeader("ETag", "\"n\"").addHeader("Last-Modified", "Tue, 02 Jan 2024 00:00:00 GMT").body(rss).build())
+        val r = fetcher.fetchConditional(server.url("/rss").toString(), CacheValidators("\"old\"", null)) as FeedResponse.Fresh
+        assertEquals("Locked", r.feed.title)
+        assertEquals(CacheValidators("\"n\"", "Tue, 02 Jan 2024 00:00:00 GMT"), r.validators)
+    }
+
+    @Test fun nothingConditionalIsSentWithoutValidatorsAndAStray304IsAnError() = withServer { server, fetcher ->
+        server.enqueue(MockResponse.Builder().code(304).build())
+        val e = assertThrows(FeedFetchException::class.java) {
+            kotlinx.coroutines.runBlocking { fetcher.fetch(server.url("/rss").toString()) }
+        }
+        assertEquals(304, e.httpCode)
+        val req = server.takeRequest()
+        assertEquals(null, req.headers["If-None-Match"])
+        assertEquals(null, req.headers["If-Modified-Since"])
+    }
+
+    @Test fun validatorsAreNotSentToAHostARedirectLeadsTo() = withServer { server, fetcher ->
+        val other = server.url("/rss").newBuilder().host("127.0.0.1").build()
+        server.enqueue(MockResponse.Builder().code(302).addHeader("Location", other.toString()).build())
+        server.enqueue(MockResponse.Builder().body(rss).build())
+        fetcher.fetchConditional(server.url("/rss").toString(), CacheValidators("\"abc\"", null))
+        assertEquals("\"abc\"", server.takeRequest().headers["If-None-Match"])
+        assertEquals(null, server.takeRequest().headers["If-None-Match"])
+    }
+
+    @Test fun the304PathStillRefusesPrivateAddresses() = runTest {
+        MockWebServer().use { server ->
+            server.start()
+            val guarded = FeedFetcher(OkHttpClient(), FeedParser())
+            assertThrows(FeedFetchException::class.java) {
+                kotlinx.coroutines.runBlocking { guarded.fetchConditional(server.url("/rss").toString(), CacheValidators("\"abc\"", null)) }
+            }
+            assertEquals(0, server.requestCount)
+        }
+    }
 }

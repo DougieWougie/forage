@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "8164e9b800efbee309cfc02dd71aeeb8",
+    "identityHash": "18cc4a1c465b6198f66a3202ed875082",
     "entities": [
       {
         "tableName": "folders",
@@ -35,7 +35,7 @@
       },
       {
         "tableName": "feeds",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `url` TEXT NOT NULL, `title` TEXT NOT NULL, `siteUrl` TEXT, `folderId` INTEGER, `remoteId` INTEGER, FOREIGN KEY(`folderId`) REFERENCES `folders`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `url` TEXT NOT NULL, `title` TEXT NOT NULL, `siteUrl` TEXT, `folderId` INTEGER, `remoteId` INTEGER, `etag` TEXT, `lastModified` TEXT, FOREIGN KEY(`folderId`) REFERENCES `folders`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -69,6 +69,16 @@
             "fieldPath": "remoteId",
             "columnName": "remoteId",
             "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "etag",
+            "columnName": "etag",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastModified",
+            "columnName": "lastModified",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -322,7 +332,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8164e9b800efbee309cfc02dd71aeeb8')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '18cc4a1c465b6198f66a3202ed875082')"
     ]
   }
 }

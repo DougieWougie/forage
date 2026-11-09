@@ -83,6 +83,9 @@ class MigrationTest {
             // Existing rows have no snippet until the background fill reaches them.
             assertNull(db.articleDao().getAll().single().snippet)
             assertEquals(1, db.articleDao().withoutSnippet(10).size)
+            val feed = db.feedDao().getAll().single()
+            assertNull(feed.etag)
+            assertNull(feed.lastModified)
         } finally {
             db.close()
         }

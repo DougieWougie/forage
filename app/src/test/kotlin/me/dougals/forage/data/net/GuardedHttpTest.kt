@@ -67,4 +67,24 @@ class GuardedHttpTest {
             assertEquals(503, e.code)
         }
     }
+
+    @Test fun aPassedStatusReachesTheHandlerAndOtherStatusesStillFail() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse.Builder().code(304).build())
+            server.enqueue(MockResponse.Builder().code(500).build())
+            val url = server.url("/").toString()
+            assertEquals(304, http.get(url, allowPrivate = true, passStatuses = setOf(304)) { it.code })
+            assertThrows<HttpStatusException> { http.get(url, allowPrivate = true, passStatuses = setOf(304)) { it.code } }
+        }
+    }
+
+    @Test fun extraHeadersAreSent() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse.Builder().body("x").build())
+            http.get(server.url("/").toString(), allowPrivate = true, headers = mapOf("If-None-Match" to "\"e\"")) { }
+            assertEquals("\"e\"", server.takeRequest().headers["If-None-Match"])
+        }
+    }
 }
