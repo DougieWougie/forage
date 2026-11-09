@@ -37,9 +37,12 @@ abstract class ForageDatabase : RoomDatabase() {
         /**
          * Indices for the Nextcloud pull (`remoteId` lookups) and the article lists (filter plus newest-first sort).
          * The single-column `isRead` index is dropped: `(isRead, publishedAt)` serves every query it did.
+         * Also adds `snippet`, the list-card preview. Existing rows start with NULL and are filled in the background by
+         * [me.dougals.forage.data.content.SnippetBackfill]: parsing every stored body here would hold up opening the database.
          */
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE articles ADD COLUMN snippet TEXT")
                 db.execSQL("DROP INDEX IF EXISTS `index_articles_isRead`")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_articles_remoteId` ON `articles` (`remoteId`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_articles_isRead_publishedAt` ON `articles` (`isRead`, `publishedAt`)")

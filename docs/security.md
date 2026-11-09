@@ -19,7 +19,8 @@ Feed content, OPML entries, article links and article HTML are untrusted. Ration
 
 ## Reader
 
-`ReaderScreen` renders article HTML in a WebView with JavaScript and file access off, and the page carries a
+Article HTML is sanitised with Jsoup's relaxed safelist in `ReaderViewModel` (off the main thread) and reaches the page only as a `SafeHtml`.
+`ReaderScreen` renders it in a WebView with JavaScript and file access off, and the page carries a
 Content-Security-Policy of `default-src 'none'` (images, inline styles and the bundled font only; `script-src 'none'`).
 `shouldInterceptRequest` answers every http(s) subresource itself: bundled fonts from assets, images through
 `ImageResourceFetcher`, everything else with 403. Link taps open in the external browser. The separate login WebView (`LoginScreen`) does enable JavaScript, since sites need it to sign in.

@@ -31,7 +31,9 @@ import me.dougals.forage.data.content.ImageResourceFetcher
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ReaderFont
+import me.dougals.forage.presentation.reader.ReaderBody
 import me.dougals.forage.presentation.reader.ReaderFonts
+import me.dougals.forage.presentation.reader.ReaderHtml
 import me.dougals.forage.presentation.reader.ReaderState
 import me.dougals.forage.presentation.reader.ReaderViewModel
 import me.dougals.forage.testutil.article
@@ -68,10 +70,12 @@ class ReaderScreenTest {
     private val png = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47)
 
     private fun show(article: Article? = story, settings: AppSettings = AppSettings()) {
-        state.value = ReaderState(article, settings)
+        state.value = ReaderState(article, article?.let { bodyOf(it) }, settings)
         rule.setContent { ForageTheme { ReaderScreen(onBack = { backs++ }, vm = vm) } }
         rule.waitForIdle()
     }
+
+    private fun bodyOf(a: Article) = ReaderBody(a.id, ReaderHtml.sanitise(a.readerHtml, a.url))
 
     private fun webView(): WebView? {
         fun find(v: View): WebView? = v as? WebView ?: (v as? ViewGroup)?.let { g -> (0 until g.childCount).firstNotNullOfOrNull { find(g.getChildAt(it)) } }
@@ -245,5 +249,20 @@ class ReaderScreenTest {
         val r = client().shouldInterceptRequest(webView()!!, request(server.url("/a.png").toString(), method = "POST"))!!
         assertEquals(403, r.statusCode)
         assertEquals(0, server.requestCount)
+    }
+
+    @Test fun nothingIsRenderedUntilTheViewModelHasSanitisedTheBody() {
+        state.value = ReaderState(story, body = null)
+        rule.setContent { ForageTheme { ReaderScreen(onBack = {}, vm = vm) } }
+        rule.waitForIdle()
+        assertNull(webView())
+        rule.onNodeWithContentDescription("Share").assertExists()
+    }
+
+    @Test fun aBodyFromAnotherArticleIsNotShown() {
+        state.value = ReaderState(story, bodyOf(article(2).copy(contentHtml = "<p>Other</p>")))
+        rule.setContent { ForageTheme { ReaderScreen(onBack = {}, vm = vm) } }
+        rule.waitForIdle()
+        assertNull(webView())
     }
 }

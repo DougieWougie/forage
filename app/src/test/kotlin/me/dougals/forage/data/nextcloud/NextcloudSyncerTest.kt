@@ -269,4 +269,11 @@ class NextcloudSyncerTest : DbTestBase() {
         assertEquals("", a.url)
         assertEquals(0L, a.publishedAt)
     }
+
+    @Test fun pulledArticlesAreStoredWithAPlainTextSnippet() = runTest {
+        serverWithOneFeed()
+        api.itemList += item(1, feedId = 10)
+        syncer.pull()
+        assertEquals("1", db.articleDao().getByRemoteId(1)!!.snippet)
+    }
 }

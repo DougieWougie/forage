@@ -62,6 +62,8 @@ data class ArticleEntity(
     val offlineHtml: String? = null,
     val remoteId: Long? = null,
     val imageUrl: String? = null,
+    /** Plain-text preview for list cards; null until computed, "" when the article has no text. */
+    val snippet: String? = null,
 )
 
 @Entity(

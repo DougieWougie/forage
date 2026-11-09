@@ -262,4 +262,12 @@ class LocalFeedRepositoryTest : DbTestBase() {
         repo.removeFeed(feed.id)
         assertEquals(0, db.articleDao().getAll().size)
     }
+
+    @Test fun newArticlesAreStoredWithAPlainTextSnippet() = runTest {
+        source.feeds["https://a/feed"] = ParsedFeed(
+            "A", null, listOf(ParsedItem("1", "T", "https://site/1", null, "<p>Hello <b>there</b></p>", "<p>full</p>", publishedAt = 5)),
+        )
+        repo.addFeed("https://a/feed")
+        assertEquals("Hello there", db.articleDao().getAll().single().snippet)
+    }
 }

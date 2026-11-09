@@ -23,11 +23,11 @@ fun FolderEntity.toDomain() = Folder(id, name)
 fun FeedEntity.toDomain(unreadCount: Int = 0) = Feed(id, url, title, siteUrl, folderId, unreadCount)
 
 fun ArticleEntity.toDomain() = Article(
-    id, feedId, guid, title, url, author, summary, contentHtml, publishedAt, isRead, isSaved, offlineHtml, imageUrl,
+    id, feedId, guid, title, url, author, summary, contentHtml, publishedAt, isRead, isSaved, offlineHtml, imageUrl, snippet,
 )
 
 fun Article.toEntity() = ArticleEntity(
     id = id, feedId = feedId, guid = guid, title = title, url = url, author = author, summary = summary,
     contentHtml = contentHtml, publishedAt = publishedAt, isRead = isRead, isSaved = isSaved,
-    offlineHtml = offlineHtml, imageUrl = imageUrl,
+    offlineHtml = offlineHtml, imageUrl = imageUrl, snippet = snippet,
 )

@@ -81,6 +81,7 @@ import me.dougals.forage.presentation.reader.ReaderFonts
 import me.dougals.forage.ui.isWebUrl
 import me.dougals.forage.ui.openInBrowser
 import me.dougals.forage.presentation.reader.ReaderHtml
+import me.dougals.forage.presentation.reader.SafeHtml
 import me.dougals.forage.presentation.reader.ReaderStyle
 import me.dougals.forage.presentation.reader.ReaderViewModel
 import me.dougals.forage.presentation.reader.ShareIntents
@@ -151,7 +152,9 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
         },
     ) { inner ->
         if (article != null) {
-            ArticleWebView(article, state.settings, vm.images, Modifier.padding(inner).fillMaxSize())
+            // The body is sanitised in the view model; until it arrives (or if it is for another article) nothing is shown.
+            val body = state.body?.takeIf { it.articleId == article.id }
+            if (body != null) ArticleWebView(article, body.html, state.settings, vm.images, Modifier.padding(inner).fillMaxSize())
         }
     }
 
@@ -161,7 +164,7 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun ArticleWebView(article: Article, prefs: AppSettings, images: ImageResourceFetcher, modifier: Modifier) {
+private fun ArticleWebView(article: Article, body: SafeHtml, prefs: AppSettings, images: ImageResourceFetcher, modifier: Modifier) {
     val scheme = MaterialTheme.colorScheme
     val style = ReaderStyle(prefs.readerFont, prefs.fontScale, scheme.background.css(), scheme.onBackground.css(), scheme.primary.css())
     val context = LocalContext.current
@@ -171,7 +174,7 @@ private fun ArticleWebView(article: Article, prefs: AppSettings, images: ImageRe
             article.publishedAt.takeIf { it > 0 }?.let { DateFormat.getMediumDateFormat(context).format(Date(it)) },
         ).joinToString(" · ").ifEmpty { null }
     }
-    val html = remember(article.id, article.readerHtml, style, byline) { ReaderHtml.wrap(article.title, byline, article.readerHtml, style, article.url) }
+    val html = remember(article.id, body, style, byline) { ReaderHtml.wrap(article.title, byline, body, style) }
 
     val allowLocal by rememberUpdatedState(prefs.allowLocalNetwork)
 

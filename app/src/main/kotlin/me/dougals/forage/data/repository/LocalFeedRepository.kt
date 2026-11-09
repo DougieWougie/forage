@@ -13,6 +13,9 @@ package me.dougals.forage.data.repository
 
 import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import me.dougals.forage.data.content.ArticleSnippets
 import me.dougals.forage.data.local.ArticleEntity
 import me.dougals.forage.data.local.FeedEntity
 import me.dougals.forage.data.local.FolderEntity
@@ -100,13 +103,14 @@ class LocalFeedRepository(
 
     /** @return the items that were new */
     private suspend fun store(feedId: Long, items: List<ParsedItem>): List<ArticleEntity> {
-        val articles = items.map {
+        val articles = withContext(Dispatchers.Default) { items.map {
             ArticleEntity(
                 feedId = feedId, guid = it.guid, title = it.title, url = it.url, author = it.author,
                 summary = it.summary, contentHtml = it.contentHtml, imageUrl = it.imageUrl,
+                snippet = ArticleSnippets.of(it.summary, it.contentHtml),
                 publishedAt = if (it.publishedAt == 0L) clock() else it.publishedAt,
             )
-        }
+        } }
         val inserted = db.withTransaction {
             items.forEach { item -> item.imageUrl?.let { db.articleDao().fillImageUrl(feedId, item.guid, it) } }
             db.articleDao().insertIgnore(articles)
