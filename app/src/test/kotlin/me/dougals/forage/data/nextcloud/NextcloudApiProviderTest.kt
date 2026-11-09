@@ -111,4 +111,24 @@ class NextcloudApiProviderTest {
         creds.value = NextcloudCredentials(server.url("/").toString(), "u", "new-pass")
         assertNotSame(first, p.api())
     }
+
+    @Test fun aBodyWithoutTheFoldersKeyFailsToParseInsteadOfMeaningNoFolders() = runTest {
+        server.enqueue(MockResponse.Builder().body("""{"message":"maintenance"}""").build())
+        val api = provider(NextcloudCredentials(server.url("/").toString(), "u", "p")).api()
+        assertThrows(Exception::class.java) { kotlinx.coroutines.runBlocking { api.folders() } }
+    }
+
+    @Test fun aBodyWithoutTheFeedsKeyFailsToParseInsteadOfMeaningNoFeeds() = runTest {
+        server.enqueue(MockResponse.Builder().body("{}").build())
+        val api = provider(NextcloudCredentials(server.url("/").toString(), "u", "p")).api()
+        assertThrows(Exception::class.java) { kotlinx.coroutines.runBlocking { api.feeds() } }
+    }
+
+    @Test fun aServerWithNoFeedsOrFoldersSendsEmptyListsAndThatStillWorks() = runTest {
+        server.enqueue(MockResponse.Builder().body("""{"feeds":[]}""").build())
+        server.enqueue(MockResponse.Builder().body("""{"folders":[]}""").build())
+        val api = provider(NextcloudCredentials(server.url("/").toString(), "u", "p")).api()
+        assertEquals(emptyList<FeedDto>(), api.feeds().feeds)
+        assertEquals(emptyList<FolderDto>(), api.folders().folders)
+    }
 }

@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [FolderEntity::class, FeedEntity::class, ArticleEntity::class, PendingChangeEntity::class],
-    version = 2,
+    version = 3,
 )
 abstract class ForageDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
@@ -31,6 +31,19 @@ abstract class ForageDatabase : RoomDatabase() {
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE articles ADD COLUMN imageUrl TEXT")
+            }
+        }
+
+        /**
+         * Indices for the Nextcloud pull (`remoteId` lookups) and the article lists (filter plus newest-first sort).
+         * The single-column `isRead` index is dropped: `(isRead, publishedAt)` serves every query it did.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP INDEX IF EXISTS `index_articles_isRead`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_articles_remoteId` ON `articles` (`remoteId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_articles_isRead_publishedAt` ON `articles` (`isRead`, `publishedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_articles_feedId_publishedAt` ON `articles` (`feedId`, `publishedAt`)")
             }
         }
     }

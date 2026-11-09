@@ -42,7 +42,10 @@ data class FeedEntity(
 @Entity(
     tableName = "articles",
     foreignKeys = [ForeignKey(FeedEntity::class, ["id"], ["feedId"], onDelete = ForeignKey.CASCADE)],
-    indices = [Index("feedId", "guid", unique = true), Index("isRead"), Index("isSaved")],
+    indices = [
+        Index("feedId", "guid", unique = true), Index("isSaved"), Index("remoteId"),
+        Index("isRead", "publishedAt"), Index("feedId", "publishedAt"),
+    ],
 )
 data class ArticleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

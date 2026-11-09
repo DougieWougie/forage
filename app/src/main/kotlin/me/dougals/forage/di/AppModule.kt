@@ -82,7 +82,7 @@ object AppModule {
     @Provides @Singleton
     fun database(@ApplicationContext c: Context): ForageDatabase =
         Room.databaseBuilder(c, ForageDatabase::class.java, "forage.db")
-            .addMigrations(ForageDatabase.MIGRATION_1_2).build()
+            .addMigrations(ForageDatabase.MIGRATION_1_2, ForageDatabase.MIGRATION_2_3).build()
 
     @Provides @Singleton fun sessionStore(@ApplicationContext c: Context): SessionStore = PrefsSessionStore(securePrefs(c, "sessions", legacyName = "forage_sessions"))
     @Provides @Singleton fun credentialStore(@ApplicationContext c: Context): CredentialStore = PrefsCredentialStore(securePrefs(c, "nextcloud", legacyName = "forage_nextcloud"))
