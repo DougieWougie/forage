@@ -17,6 +17,8 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.repository.FeedRepository
@@ -101,5 +103,42 @@ class ModeAwareFeedRepositoryTest {
     @Test fun resultsAreReturnedUnchanged() = runTest {
         coEvery { local.refresh() } returns Result.failure(RuntimeException("x"))
         assertEquals("x", repo.refresh().exceptionOrNull()!!.message)
+    }
+
+    @Test fun refreshesNeverOverlapAndEachCallerRunsItsOwn() = runTest {
+        var running = 0
+        var peak = 0
+        var runs = 0
+        coEvery { local.refresh() } coAnswers {
+            running++; runs++; peak = maxOf(peak, running)
+            kotlinx.coroutines.delay(100)
+            running--
+            Result.success(me.dougals.forage.domain.model.SyncReport())
+        }
+        List(3) { launch { repo.refresh() } }.joinAll()
+        assertEquals(1, peak)
+        assertEquals(3, runs)
+    }
+
+    @Test fun nextcloudAddFeedWaitsForARunningRefresh() = runTest {
+        mode.value = SyncMode.NEXTCLOUD
+        var running = 0
+        var peak = 0
+        coEvery { nextcloud.refresh() } coAnswers {
+            running++; peak = maxOf(peak, running); kotlinx.coroutines.delay(100); running--
+            Result.success(me.dougals.forage.domain.model.SyncReport())
+        }
+        coEvery { nextcloud.addFeed(any(), any()) } coAnswers {
+            running++; peak = maxOf(peak, running); kotlinx.coroutines.delay(100); running--
+            Result.failure(RuntimeException())
+        }
+        listOf(launch { repo.refresh() }, launch { repo.addFeed("u", null) }).joinAll()
+        assertEquals(1, peak)
+    }
+
+    @Test fun aFailedRefreshReleasesTheLock() = runTest {
+        coEvery { local.refresh() } throws IllegalStateException("boom") andThen Result.success(me.dougals.forage.domain.model.SyncReport())
+        runCatching { repo.refresh() }
+        assertEquals(true, repo.refresh().isSuccess)
     }
 }

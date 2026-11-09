@@ -21,7 +21,8 @@ Diagrams are Mermaid sources in [`diagrams/`](diagrams); regenerate the SVGs wit
 Room is the source of truth for the UI: every `observe*` call reads from it. `ModeAwareFeedRepository` is the only
 `FeedRepository` the app injects. It reads through `LocalFeedRepository`, and sends writes and `refresh()` to the
 implementation chosen by the current `SyncMode` (`LOCAL` or `NEXTCLOUD`). Both extend `RoomFeedRepository`, which holds the shared
-read and state-change logic. See [sync](sync.md) for the Nextcloud path and [ADR 0001](adr/0001-room-as-source-of-truth.md).
+read and state-change logic. Refreshes (and Nextcloud `addFeed`, which refreshes) run one at a time behind a mutex in
+`ModeAwareFeedRepository`; a caller that arrives mid-refresh waits, then runs its own. See [sync](sync.md) for the Nextcloud path and [ADR 0001](adr/0001-room-as-source-of-truth.md).
 
 **Local refresh** (`LocalFeedRepository.refresh`): fetch each feed through `FeedFetcher`, parse it with `FeedParser`,
 and insert new articles with `insertIgnore` (unique on `feedId, guid`). One failing feed does not stop the others;
