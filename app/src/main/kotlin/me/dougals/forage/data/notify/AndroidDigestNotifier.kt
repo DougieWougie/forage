@@ -14,36 +14,35 @@ package me.dougals.forage.data.notify
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import me.dougals.forage.ForageApp
-import me.dougals.forage.MainActivity
 import me.dougals.forage.R
+import me.dougals.forage.domain.app.AppVisibility
 import me.dougals.forage.domain.notify.DigestLine
 import me.dougals.forage.domain.notify.DigestNotifier
-import me.dougals.forage.ui.EXTRA_DIGEST_FOLDERS
 
-class AndroidDigestNotifier(private val context: Context) : DigestNotifier {
+class AndroidDigestNotifier(
+    private val context: Context,
+    private val targets: NotificationTargets,
+    private val visibility: AppVisibility,
+) : DigestNotifier {
     private val manager = NotificationManagerCompat.from(context)
 
     // areNotificationsEnabled() is false while POST_NOTIFICATIONS is ungranted, so the guard covers the lint rule.
     @SuppressLint("MissingPermission")
     override fun post(lines: List<DigestLine>) {
-        if (ForageApp.appVisible || !manager.areNotificationsEnabled()) return
+        if (visibility.isVisible || !manager.areNotificationsEnabled()) return
         val total = lines.sumOf { it.count }
         // UPDATE_CURRENT swaps in this digest's categories; the request code is shared because only one digest is shown.
         val open = PendingIntent.getActivity(
             context, 0,
-            Intent(context, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                .putExtra(EXTRA_DIGEST_FOLDERS, lines.map { it.folderId }.toLongArray()),
+            targets.openCategories(lines.map { it.folderId }.toLongArray()),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         // The newest title leads the collapsed notification; the category summary moves up to the header beside it.
         val newest = lines.flatMap { it.headlines }.maxByOrNull { it.publishedAt }
         val summary = if (lines.size == 1) detail(lines.single()) else lines.joinToString(" · ") { "${name(it)} ${it.count}" }
-        val notification = NotificationCompat.Builder(context, ForageApp.NEW_ARTICLES_CHANNEL)
+        val notification = NotificationCompat.Builder(context, NotificationChannels.NEW_ARTICLES)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle(context.resources.getQuantityString(R.plurals.new_articles, total, total))
             .setContentText(newest?.let { oneLine(it.title) } ?: summary)

@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.dougals.forage.presentation.articles.ArticleListViewModel
+import me.dougals.forage.presentation.nav.TabBadges
 import me.dougals.forage.presentation.nav.TabBadgesViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -55,9 +56,6 @@ import me.dougals.forage.ui.login.LoginScreen
 import me.dougals.forage.ui.reader.ReaderScreen
 import me.dougals.forage.ui.search.SearchScreen
 import me.dougals.forage.ui.settings.SettingsScreen
-
-/** Unread articles (Unread tab) and feeds with something new (Categories tab). */
-data class TabBadges(val unread: Int = 0, val updatedFeeds: Int = 0)
 
 private fun TabBadges.forTab(tab: Tab) = when (tab) {
     Tab.Unread -> unread

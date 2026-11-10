@@ -29,8 +29,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.dougals.forage.data.content.ImageResourceFetcher
-import me.dougals.forage.data.content.OfflineArchiver
+import me.dougals.forage.domain.content.ArticleDownloader
+import me.dougals.forage.domain.content.ImageFetcher
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.ReaderFont
@@ -55,15 +55,15 @@ class ReaderViewModel(
     handle: SavedStateHandle,
     private val repo: FeedRepository,
     private val settingsRepo: SettingsRepository,
-    private val archiver: OfflineArchiver,
+    private val archiver: ArticleDownloader,
     /** Fetches reader images; the WebView itself never touches the network. */
-    val images: ImageResourceFetcher,
+    val images: ImageFetcher,
     /** Where article HTML is sanitised; a parameter so tests can run it on their own dispatcher. */
     private val sanitiseDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
     @Inject constructor(
         handle: SavedStateHandle, repo: FeedRepository, settingsRepo: SettingsRepository,
-        archiver: OfflineArchiver, images: ImageResourceFetcher,
+        archiver: ArticleDownloader, images: ImageFetcher,
     ) : this(handle, repo, settingsRepo, archiver, images, Dispatchers.Default)
 
     private val articleId: Long = requireNotNull(handle.get<Long>("articleId")) { "articleId required" }

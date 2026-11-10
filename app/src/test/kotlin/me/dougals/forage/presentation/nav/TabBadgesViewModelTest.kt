@@ -20,7 +20,6 @@ import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.testutil.MainDispatcherExtension
 import me.dougals.forage.testutil.awaitUntil
 import me.dougals.forage.testutil.feed
-import me.dougals.forage.ui.TabBadges
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension

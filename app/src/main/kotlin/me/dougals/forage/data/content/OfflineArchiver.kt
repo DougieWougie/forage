@@ -13,6 +13,7 @@ package me.dougals.forage.data.content
 
 import kotlinx.coroutines.CancellationException
 import me.dougals.forage.data.local.ForageDatabase
+import me.dougals.forage.domain.content.ArticleDownloader
 import me.dougals.forage.data.net.GuardedHttp
 import me.dougals.forage.data.net.isPublicAddress
 import me.dougals.forage.data.net.readBytesBounded
@@ -43,11 +44,11 @@ class OfflineArchiver(
     private val db: ForageDatabase,
     private val fetcher: PageFetcher,
     private val extractor: ArticleExtractor = ArticleExtractor(),
-) {
+) : ArticleDownloader {
     suspend fun archive(articleId: Long): Result<Unit> = fetchAndStore(articleId, onlyIfSaved = true)
 
     /** Same as [archive] but for the reader's explicit download, which doesn't require the article to be saved. */
-    suspend fun download(articleId: Long): Result<Unit> = fetchAndStore(articleId, onlyIfSaved = false)
+    override suspend fun download(articleId: Long): Result<Unit> = fetchAndStore(articleId, onlyIfSaved = false)
 
     private suspend fun fetchAndStore(articleId: Long, onlyIfSaved: Boolean): Result<Unit> {
         val article = db.articleDao().getById(articleId)

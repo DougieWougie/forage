@@ -15,11 +15,11 @@ import kotlinx.coroutines.CancellationException
 import me.dougals.forage.data.net.GuardedHttp
 import me.dougals.forage.data.net.isPublicAddress
 import me.dougals.forage.data.net.readBytesBounded
+import me.dougals.forage.domain.content.FetchedImage
+import me.dougals.forage.domain.content.ImageFetcher
 import okhttp3.OkHttpClient
 import java.io.IOException
 import java.net.InetAddress
-
-class FetchedImage(val mimeType: String, val bytes: ByteArray)
 
 /**
  * Loads reader images on behalf of the reader WebView, so the WebView itself never opens a socket: article HTML is
@@ -30,10 +30,10 @@ class ImageResourceFetcher(
     client: OkHttpClient,
     private val maxBytes: Long = 15_000_000,
     addressPolicy: (InetAddress) -> Boolean = ::isPublicAddress,
-) {
+) : ImageFetcher {
     private val http = GuardedHttp(client, addressPolicy)
 
-    suspend fun fetch(url: String, allowPrivate: Boolean): Result<FetchedImage> = try {
+    override suspend fun fetch(url: String, allowPrivate: Boolean): Result<FetchedImage> = try {
         Result.success(
             http.get(url, allowPrivate) { r ->
                 val type = r.body.contentType()

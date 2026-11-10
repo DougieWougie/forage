@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dagger.hilt.android.AndroidEntryPoint
+import me.dougals.forage.domain.app.AppVisibilityTracker
 import me.dougals.forage.domain.notify.DigestNotifier
 import me.dougals.forage.ui.BrandSplash
 import me.dougals.forage.ui.FolderRequest
@@ -31,6 +32,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var digest: DigestNotifier
+    @Inject lateinit var visibility: AppVisibilityTracker
 
     private var folderRequest by mutableStateOf<FolderRequest?>(null)
 
@@ -50,14 +52,14 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        ForageApp.appVisible = false
+        visibility.isVisible = false
         super.onStop()
     }
 
     /** Opening the app is what the digest asked for, so it shouldn't linger. */
     override fun onStart() {
         super.onStart()
-        ForageApp.appVisible = true
+        visibility.isVisible = true
         digest.clear()
     }
 }

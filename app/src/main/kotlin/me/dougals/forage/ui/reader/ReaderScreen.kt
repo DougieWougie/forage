@@ -86,7 +86,7 @@ import me.dougals.forage.presentation.reader.ReaderStyle
 import me.dougals.forage.presentation.reader.ReaderViewModel
 import me.dougals.forage.presentation.reader.ShareIntents
 import kotlinx.coroutines.runBlocking
-import me.dougals.forage.data.content.ImageResourceFetcher
+import me.dougals.forage.domain.content.ImageFetcher
 import java.io.ByteArrayInputStream
 import java.util.Date
 
@@ -164,7 +164,7 @@ fun ReaderScreen(onBack: () -> Unit, vm: ReaderViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun ArticleWebView(article: Article, body: SafeHtml, prefs: AppSettings, images: ImageResourceFetcher, modifier: Modifier) {
+private fun ArticleWebView(article: Article, body: SafeHtml, prefs: AppSettings, images: ImageFetcher, modifier: Modifier) {
     val scheme = MaterialTheme.colorScheme
     val style = ReaderStyle(prefs.readerFont, prefs.fontScale, scheme.background.css(), scheme.onBackground.css(), scheme.primary.css())
     val context = LocalContext.current

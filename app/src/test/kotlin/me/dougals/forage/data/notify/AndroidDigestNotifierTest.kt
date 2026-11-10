@@ -16,8 +16,9 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import me.dougals.forage.ForageApp
+import me.dougals.forage.AppNotificationTargets
 import me.dougals.forage.MainActivity
+import me.dougals.forage.domain.app.AppVisibilityTracker
 import me.dougals.forage.domain.model.Headline
 import me.dougals.forage.domain.model.UNCATEGORISED_FOLDER_ID
 import me.dougals.forage.domain.notify.DigestLine
@@ -37,13 +38,14 @@ import org.robolectric.Shadows.shadowOf
 class AndroidDigestNotifierTest {
     private val context = ApplicationProvider.getApplicationContext<Application>()
     private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val notifier = AndroidDigestNotifier(context)
+    private val visibility = AppVisibilityTracker()
+    private val notifier = AndroidDigestNotifier(context, AppNotificationTargets(context), visibility)
 
     private val tech = DigestLine("Tech", 5, 10, listOf("Ars", "LWN"))
     private val blogs = DigestLine(null, 2, UNCATEGORISED_FOLDER_ID, listOf("Blog"))
 
-    @Before fun background() { ForageApp.appVisible = false }
-    @After fun reset() { ForageApp.appVisible = false }
+    @Before fun background() { visibility.isVisible = false }
+    @After fun reset() { visibility.isVisible = false }
 
     private fun posted(): Notification = shadowOf(manager).allNotifications.single()
     private fun Notification.text(key: String) = extras.getCharSequence(key)?.toString()
@@ -116,7 +118,7 @@ class AndroidDigestNotifierTest {
     }
 
     @Test fun staysQuietWhileTheAppIsOnScreen() {
-        ForageApp.appVisible = true
+        visibility.isVisible = true
         notifier.post(listOf(tech))
         assertTrue(shadowOf(manager).allNotifications.isEmpty())
     }

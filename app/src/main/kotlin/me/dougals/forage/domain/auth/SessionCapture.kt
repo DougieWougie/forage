@@ -11,7 +11,8 @@
  */
 package me.dougals.forage.domain.auth
 
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import java.net.URI
+import java.net.URISyntaxException
 
 /**
  * Persists the cookies a WebView holds for a login URL.
@@ -19,12 +20,16 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  */
 class SessionCapture(private val cookieSource: (String) -> String?, private val store: SessionStore) {
     fun capture(url: String): Boolean {
-        val parsed = url.toHttpUrlOrNull() ?: return false
-        // Session cookies are only ever sent over HTTPS, so a page that isn't HTTPS has nothing worth keeping.
-        if (!parsed.isHttps) return false
-        val host = parsed.host
+        val host = httpsHostOf(url) ?: return false // session cookies only ever travel over HTTPS, so nothing else is worth keeping
         val cookies = cookieSource(url)?.takeIf { it.isNotBlank() } ?: return false
         store.save(host, cookies)
         return true
+    }
+
+    /** Lower-cased host (no brackets on an IPv6 literal, matching how the HTTP client names it) of an `https` URL, else null. */
+    private fun httpsHostOf(url: String): String? {
+        val uri = try { URI(url) } catch (e: URISyntaxException) { return null }
+        if (!"https".equals(uri.scheme, ignoreCase = true)) return null
+        return uri.host?.removeSurrounding("[", "]")?.lowercase()?.takeIf { it.isNotEmpty() }
     }
 }

@@ -60,7 +60,13 @@ import me.dougals.forage.data.settings.settingsDataStore
 import me.dougals.forage.data.work.ArchiveScheduler
 import me.dougals.forage.data.work.SyncScheduler
 import me.dougals.forage.data.work.WorkManagerSchedulers
+import me.dougals.forage.AppNotificationTargets
 import me.dougals.forage.data.notify.AndroidDigestNotifier
+import me.dougals.forage.data.notify.NotificationTargets
+import me.dougals.forage.domain.app.AppVisibility
+import me.dougals.forage.domain.app.AppVisibilityTracker
+import me.dougals.forage.domain.content.ArticleDownloader
+import me.dougals.forage.domain.content.ImageFetcher
 import me.dougals.forage.domain.model.RefreshProgress
 import me.dougals.forage.domain.notify.DigestNotifier
 import me.dougals.forage.domain.notify.NewArticleDigest
@@ -139,6 +145,8 @@ object AppModule {
     fun syncer(db: ForageDatabase, api: NextcloudApiProvider, state: SyncStateStore, archive: ArchiveScheduler) =
         NextcloudSyncer(db, api, state, archive)
     @Provides @Singleton fun archiver(db: ForageDatabase, fetcher: PageFetcher) = OfflineArchiver(db, fetcher)
+    @Provides fun articleDownloader(archiver: OfflineArchiver): ArticleDownloader = archiver
+    @Provides fun imageFetcherInterface(fetcher: ImageResourceFetcher): ImageFetcher = fetcher
 
     @Provides @Singleton fun snippetBackfill(db: ForageDatabase) = SnippetBackfill(db)
 
@@ -157,7 +165,12 @@ object AppModule {
         nextcloud = NextcloudFeedRepository(db, api, flusher, syncer, sync, archive),
     )
 
-    @Provides @Singleton fun digestNotifier(@ApplicationContext c: Context): DigestNotifier = AndroidDigestNotifier(c)
+    @Provides @Singleton fun appVisibilityTracker() = AppVisibilityTracker()
+    @Provides fun appVisibility(tracker: AppVisibilityTracker): AppVisibility = tracker
+    @Provides @Singleton fun notificationTargets(@ApplicationContext c: Context): NotificationTargets = AppNotificationTargets(c)
+    @Provides @Singleton
+    fun digestNotifier(@ApplicationContext c: Context, targets: NotificationTargets, visibility: AppVisibility): DigestNotifier =
+        AndroidDigestNotifier(c, targets, visibility)
     @Provides
     fun newArticleDigest(repo: FeedRepository, settings: SettingsRepository, state: SyncStateStore, notifier: DigestNotifier) =
         NewArticleDigest(repo, settings, state, notifier)

@@ -43,4 +43,22 @@ class SessionCaptureTest {
         assertFalse(SessionCapture({ "sid=abc" }, store).capture("http://lwn.net/login"))
         assertNull(store.get("lwn.net"))
     }
+
+    @Test fun hostIsLowerCasedLikeTheHttpClientNamesIt() {
+        val store = MemSessionStore()
+        assertTrue(SessionCapture({ "a=b" }, store).capture("https://LWN.Net/Login"))
+        assertEquals("a=b", store.get("lwn.net"))
+    }
+
+    @Test fun anIpv6LiteralIsStoredWithoutBrackets() {
+        val store = MemSessionStore()
+        assertTrue(SessionCapture({ "a=b" }, store).capture("https://[2001:db8::1]:8443/x"))
+        assertEquals("a=b", store.get("2001:db8::1"))
+    }
+
+    @Test fun portAndUserInfoAreNotPartOfTheHost() {
+        val store = MemSessionStore()
+        assertTrue(SessionCapture({ "a=b" }, store).capture("https://user@lwn.net:8443/x"))
+        assertEquals("a=b", store.get("lwn.net"))
+    }
 }
