@@ -23,13 +23,13 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.File
 
-/** Builds the version 1 database from its exported schema, then lets Room open it with the migration and validate. */
+/** Builds an old database from its exported schema, then lets Room open it with the migration and validate. */
 @RunWith(RobolectricTestRunner::class)
 class MigrationTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
-    private fun createVersion1(name: String) {
-        val schema = JSONObject(File("schemas/${ForageDatabase::class.java.name}/1.json").readText()).getJSONObject("database")
+    private fun createVersion(version: Int, name: String) {
+        val schema = JSONObject(File("schemas/${ForageDatabase::class.java.name}/$version.json").readText()).getJSONObject("database")
         val sql = context.openOrCreateDatabase(name, Context.MODE_PRIVATE, null)
         val entities = schema.getJSONArray("entities")
         for (i in 0 until entities.length()) {
@@ -46,19 +46,52 @@ class MigrationTest {
         sql.execSQL(
             "INSERT INTO articles (feedId, guid, title, url, publishedAt, isRead, isSaved) VALUES (1, 'g', 'T', 'https://e/a', 5, 0, 1)",
         )
-        sql.version = 1
+        sql.version = version
         sql.close()
     }
 
     @Test fun addingTheThumbnailKeepsExistingArticles() = runBlocking {
-        createVersion1("migrating.db")
+        createVersion(1, "migrating.db")
         val db = Room.databaseBuilder(context, ForageDatabase::class.java, "migrating.db")
-            .addMigrations(ForageDatabase.MIGRATION_1_2).allowMainThreadQueries().build()
+            .addMigrations(ForageDatabase.MIGRATION_1_2, ForageDatabase.MIGRATION_2_3).allowMainThreadQueries().build()
         try {
             val article = db.articleDao().getAll().single()
             assertEquals("T", article.title)
             assertEquals(true, article.isSaved)
             assertNull(article.imageUrl)
+        } finally {
+            db.close()
+        }
+    }
+
+    private fun indexNames(db: ForageDatabase): Set<String> =
+        db.openHelper.readableDatabase.query("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'articles'").use { c ->
+            generateSequence { if (c.moveToNext()) c.getString(0) else null }.toSet()
+        }
+
+    @Test fun threeAddsTheArticleIndicesAndDropsTheRedundantOne() = runBlocking {
+        createVersion(2, "indexing.db")
+        val db = Room.databaseBuilder(context, ForageDatabase::class.java, "indexing.db")
+            .addMigrations(ForageDatabase.MIGRATION_2_3).allowMainThreadQueries().build()
+        try {
+            assertEquals("T", db.articleDao().getAll().single().title)
+            val names = indexNames(db)
+            assertEquals(true, "index_articles_remoteId" in names)
+            assertEquals(true, "index_articles_isRead_publishedAt" in names)
+            assertEquals(true, "index_articles_feedId_publishedAt" in names)
+            assertEquals(false, "index_articles_isRead" in names)
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test fun aVersionOneDatabaseReachesVersionThreeThroughBothMigrations() = runBlocking {
+        createVersion(1, "chain.db")
+        val db = Room.databaseBuilder(context, ForageDatabase::class.java, "chain.db")
+            .addMigrations(ForageDatabase.MIGRATION_1_2, ForageDatabase.MIGRATION_2_3).allowMainThreadQueries().build()
+        try {
+            assertEquals(1, db.articleDao().getAll().size)
+            assertEquals(true, "index_articles_remoteId" in indexNames(db))
         } finally {
             db.close()
         }

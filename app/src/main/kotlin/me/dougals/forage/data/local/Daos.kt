@@ -12,6 +12,7 @@
 package me.dougals.forage.data.local
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -21,6 +22,9 @@ import kotlinx.coroutines.flow.Flow
 data class UnreadCount(val feedId: Long, val count: Int)
 
 data class OfflineStats(val count: Int, val bytes: Long)
+
+/** A queued change with the server id of its article ([remoteId] is null for an article that never reached the server). */
+data class PendingChangeWithRemote(@Embedded val change: PendingChangeEntity, val remoteId: Long?)
 
 /**
  * Columns for article lists. Bodies are truncated and the offline copy is reduced to a presence marker, so
@@ -109,6 +113,11 @@ interface ArticleDao {
 interface PendingChangeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun enqueue(change: PendingChangeEntity)
     @Query("SELECT * FROM pending_changes ORDER BY createdAt") suspend fun getAll(): List<PendingChangeEntity>
+    @Query(
+        "SELECT pending_changes.*, articles.remoteId AS remoteId FROM pending_changes " +
+            "LEFT JOIN articles ON articles.id = pending_changes.articleId ORDER BY pending_changes.createdAt",
+    )
+    suspend fun getAllWithRemoteId(): List<PendingChangeWithRemote>
     /** Only removes the row if it is still the exact change that was flushed, not a newer replacement. */
     @Query("DELETE FROM pending_changes WHERE articleId = :articleId AND field = :field AND createdAt = :createdAt AND value = :value")
     suspend fun deleteIfUnchanged(articleId: Long, field: SyncField, createdAt: Long, value: Boolean)

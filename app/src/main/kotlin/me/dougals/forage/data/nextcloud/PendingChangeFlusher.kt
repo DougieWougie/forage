@@ -32,7 +32,7 @@ class PendingChangeFlusher(
     /** @return how many changes were delivered to the server */
     suspend fun flushCounting(): Result<Int> {
         val dao = db.pendingChangeDao()
-        val pending = dao.getAll()
+        val pending = dao.getAllWithRemoteId()
         if (pending.isEmpty()) return Result.success(0)
 
         val batches = listOf(
@@ -41,8 +41,7 @@ class PendingChangeFlusher(
             Batch(SyncField.STARRED, true) { api, b -> api.star(b) },
             Batch(SyncField.STARRED, false) { api, b -> api.unstar(b) },
         )
-        for (change in pending) {
-            val remoteId = db.articleDao().getById(change.articleId)?.remoteId
+        for ((change, remoteId) in pending) {
             if (remoteId == null) {
                 discard(change) // never reached the server, nothing to tell it
             } else {

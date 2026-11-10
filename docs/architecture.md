@@ -32,8 +32,10 @@ the first error is returned at the end.
 
 ![Room schema](diagrams/schema.svg)
 
-`ForageDatabase` is at version 2 (`MIGRATION_1_2` adds `articles.imageUrl`). Exported schemas are in
-`app/schemas/`. `remoteId` columns hold Nextcloud ids and stay null for items that exist only locally.
+`ForageDatabase` is at version 3 (`MIGRATION_1_2` adds `articles.imageUrl`; `MIGRATION_2_3` adds indices on `articles.remoteId`,
+`(isRead, publishedAt)` and `(feedId, publishedAt)` and drops the old `isRead` index). Exported schemas are in
+`app/schemas/`. State changes that queue a pending change (`setRead`, `setSaved`, `markFeedRead`, `setReadBatch`) write the article and the queue row in one
+Room transaction. `remoteId` columns hold Nextcloud ids and stay null for items that exist only locally.
 
 ## Background work
 
