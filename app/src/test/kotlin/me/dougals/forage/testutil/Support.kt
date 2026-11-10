@@ -15,7 +15,6 @@ import app.cash.turbine.ReceiveTurbine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import me.dougals.forage.domain.auth.SessionStore
 import me.dougals.forage.domain.nextcloud.CredentialStore
@@ -29,7 +28,10 @@ import org.junit.jupiter.api.extension.ExtensionContext
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherExtension : BeforeEachCallback, AfterEachCallback {
     override fun beforeEach(context: ExtensionContext) = Dispatchers.setMain(UnconfinedTestDispatcher())
-    override fun afterEach(context: ExtensionContext) = Dispatchers.resetMain()
+    // Not resetMain(): a view model's coroutine can still be finishing (a Job completion handler resuming on Main) when the
+    // test ends, and with the real Main restored it throws "Module with the Main dispatcher had failed to initialize" in
+    // whichever test is running. Parking a throwaway test dispatcher makes those stragglers harmless; the next test replaces it.
+    override fun afterEach(context: ExtensionContext) = Dispatchers.setMain(UnconfinedTestDispatcher())
 }
 
 suspend fun <T> ReceiveTurbine<T>.awaitUntil(predicate: (T) -> Boolean): T {
