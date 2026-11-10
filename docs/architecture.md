@@ -8,10 +8,16 @@ Diagrams are Mermaid sources in [`diagrams/`](diagrams); regenerate the SVGs wit
 ![Layers](diagrams/layers.svg)
 
 - Dependencies point inward: `ui` and `presentation` use `domain` interfaces only, and `data` implements them. Neither `ui`
-  nor `presentation` imports `data`, and `domain` imports nothing from the other layers or from Android.
-  Only `di` (Hilt) knows the concrete classes.
+  nor `presentation` imports `data`, `presentation` does not import `ui`, and `data` does not import `ui`, `presentation`, `di` or the
+  app classes (`ForageApp`, `MainActivity`). `domain` is plain Kotlin: no other layer, no Android, no HTTP/HTML/DI library.
+  Only `di` (Hilt) and the root package (`ForageApp`, `MainActivity`, `AppNotificationTargets`) know the concrete classes.
+  `LayerRulesTest` fails when a file breaks these rules.
 - Examples of interfaces implemented in `data`: `SessionStore` (`PrefsSessionStore`), `CredentialStore`,
-  `NextcloudLoginFlow` (`OkHttpNextcloudLoginFlow`) and `OpmlExchange` (`OpmlTransfer`).
+  `NextcloudLoginFlow` (`OkHttpNextcloudLoginFlow`), `OpmlExchange` (`OpmlTransfer`), `ArticleDownloader` (`OfflineArchiver`)
+  and `ImageFetcher` (`ImageResourceFetcher`), which is what the reader uses to load images and the full article.
+- Notifications: `data/notify` defines `NotificationTargets` (which intent a notification opens) and the notifiers read
+  `AppVisibility` (`domain/app`, updated by `MainActivity`) to know whether the app is on screen. `AppNotificationTargets`, next to
+  the activity, builds the intents, so `data` never names `MainActivity`.
 - `ui/WebUrl.kt` and `ui/Links.kt` are small UI helpers (`isWebUrl`, the Nextcloud News link).
 
 ## Repositories
@@ -80,8 +86,8 @@ is not applied again. Uncategorized feeds use `UNCATEGORISED_FOLDER_ID` (-1), th
 
 `di/AppModule.kt` provides singletons. Two `OkHttpClient`s are qualified so credentials cannot leak across uses:
 `@WebClient` (feeds and pages; adds the per-host session cookie) and `@ApiClient` (Nextcloud API and image fetching;
-no cookie interceptor, and Nextcloud Basic auth is added only by the API provider). `ReaderEntryPoint` gives the reader
-`WebViewClient`, which is not Hilt-managed, access to `ImageResourceFetcher`. See [security](security.md).
+no cookie interceptor, and Nextcloud Basic auth is added only by the API provider). `ReaderViewModel` exposes the `ImageFetcher` the reader's
+`WebViewClient` (not Hilt-managed) uses for images. See [security](security.md).
 
 ## Decisions
 

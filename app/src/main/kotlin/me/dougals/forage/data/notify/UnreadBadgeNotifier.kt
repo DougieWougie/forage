@@ -14,7 +14,6 @@ package me.dougals.forage.data.notify
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CoroutineScope
@@ -22,8 +21,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.dougals.forage.ForageApp
-import me.dougals.forage.MainActivity
 import me.dougals.forage.R
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
@@ -34,7 +31,12 @@ import me.dougals.forage.domain.repository.SettingsRepository
  * Keeps one silent notification alive while any article is unread. Launchers draw their icon badge from an app's active
  * notifications, so this is what puts the unread count on the icon; it disappears when everything has been read.
  */
-class UnreadBadgeNotifier(private val context: Context, private val repo: FeedRepository, private val settings: SettingsRepository) {
+class UnreadBadgeNotifier(
+    private val context: Context,
+    private val repo: FeedRepository,
+    private val settings: SettingsRepository,
+    private val targets: NotificationTargets,
+) {
     private val manager = NotificationManagerCompat.from(context)
 
     fun start(scope: CoroutineScope) {
@@ -55,10 +57,10 @@ class UnreadBadgeNotifier(private val context: Context, private val repo: FeedRe
             // Not the digest's request code: PendingIntents match on component and request code, ignoring extras, so sharing one
             // would hand this tile the digest's category extras (or leave the tap acting on them).
             context, OPEN_REQUEST,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            targets.openApp(),
             PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(context, ForageApp.UNREAD_CHANNEL)
+        val notification = NotificationCompat.Builder(context, NotificationChannels.UNREAD)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle(context.resources.getQuantityString(R.plurals.unread_articles, unread, unread))
             .setContentText(categories.take(MAX_SUMMARY).joinToString(" · ") { line(it) })

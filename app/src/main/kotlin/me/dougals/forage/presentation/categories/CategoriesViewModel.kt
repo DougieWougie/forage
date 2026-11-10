@@ -80,12 +80,16 @@ class CategoriesViewModel @Inject constructor(
     private val refreshing = MutableStateFlow(false)
     private val bulkRead = BulkReadUndo(repo, viewModelScope)
 
-    val state: StateFlow<CategoriesState> = combine(
-        repo.observeFolders(), repo.observeFeeds(), message, busy, refreshing, settingsRepo.settings.map { it.pullToRefresh },
-        suggestions(catalogue), settingsRepo.settings.map { it.collapsedFolderIds }.distinctUntilChanged(), bulkRead.pending,
-    ) { v ->
-        @Suppress("UNCHECKED_CAST")
-        CategoriesState(buildCategories(v[0] as List<Folder>, v[1] as List<Feed>), v[2] as UiText?, v[3] as Boolean, v[4] as Boolean, v[5] as Boolean, v[6] as List<FeedSuggestion>, v[7] as Set<Long>, v[8] as List<Long>)
+    // Nested typed combines rather than one over an array of nine, so each value keeps its type and nothing is cast.
+    private val tree = combine(repo.observeFolders(), repo.observeFeeds(), ::buildCategories)
+    private val status = combine(message, busy, refreshing) { m, b, r -> Triple(m, b, r) }
+    private val prefs = combine(
+        settingsRepo.settings.map { it.pullToRefresh }, settingsRepo.settings.map { it.collapsedFolderIds }.distinctUntilChanged(),
+    ) { pull, collapsed -> pull to collapsed }
+    private val extras = combine(suggestions(catalogue), bulkRead.pending) { suggestions, marked -> suggestions to marked }
+
+    val state: StateFlow<CategoriesState> = combine(tree, status, prefs, extras) { categories, (msg, isBusy, isRefreshing), (pull, collapsed), (suggestions, marked) ->
+        CategoriesState(categories, msg, isBusy, isRefreshing, pull, suggestions, collapsed, marked)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoriesState())
 
     init {

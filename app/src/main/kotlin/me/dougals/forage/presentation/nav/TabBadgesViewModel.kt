@@ -19,8 +19,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import me.dougals.forage.domain.repository.FeedRepository
-import me.dougals.forage.ui.TabBadges
 import javax.inject.Inject
+
+/** Unread articles (Unread tab) and feeds with something new (Categories tab). */
+data class TabBadges(val unread: Int = 0, val updatedFeeds: Int = 0)
 
 @HiltViewModel
 class TabBadgesViewModel @Inject constructor(repo: FeedRepository) : ViewModel() {

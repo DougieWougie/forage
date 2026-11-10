@@ -21,6 +21,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import me.dougals.forage.presentation.nav.TabBadges
 import me.dougals.forage.ui.theme.ForageTheme
 import org.junit.Rule
 import org.junit.Test
