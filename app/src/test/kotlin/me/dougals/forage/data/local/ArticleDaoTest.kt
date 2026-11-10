@@ -50,7 +50,7 @@ class ArticleDaoTest : DbTestBase() {
         val feed = newFeed()
         dao.insertIgnore(listOf(articleEntity(feed, "long").copy(contentHtml = "x".repeat(5_000) + " needle")))
         val hit = dao.search("%needle%").first().single()
-        assertEquals(4_000, hit.contentHtml!!.length)
+        assertNull(hit.contentHtml)
     }
 
     @Test fun searchTreatsBackslashAsTheEscapeCharacter() = runTest {
@@ -161,16 +161,23 @@ class ArticleDaoTest : DbTestBase() {
         assertNull(dao.observeById(999).first())
     }
 
-    @Test fun listQueriesTruncateBodiesAndKeepOfflinePresence() = runTest {
+    @Test fun listQueriesCarryTheSnippetNotTheBodiesAndKeepOfflinePresence() = runTest {
         val feed = newFeed()
-        val id = dao.insertIgnore(listOf(articleEntity(feed, "big").copy(summary = "s".repeat(10_000), contentHtml = "c".repeat(10_000)))).single()
+        val id = dao.insertIgnore(
+            listOf(articleEntity(feed, "big").copy(summary = "s".repeat(10_000), contentHtml = "c".repeat(10_000), snippet = "short preview")),
+        ).single()
         dao.saveOfflineHtml(id, "o".repeat(10_000))
 
+        val rows = listOf(dao.observeUnread().first().single(), dao.observeByFeed(feed).first().single(), dao.search("%sss%").first().single())
+        for (row in rows) {
+            assertEquals("short preview", row.snippet)
+            assertNull(row.summary)
+            assertNull(row.contentHtml)
+        }
         val row = dao.observeUnread().first().single()
-
-        assertEquals(4000, row.summary!!.length)
-        assertEquals(4000, row.contentHtml!!.length)
         assertEquals("", row.offlineHtml)
+        // The reader reads the full row.
+        assertEquals(10_000, dao.observeById(id).first()!!.summary!!.length)
         assertEquals(10_000, dao.getById(id)!!.offlineHtml!!.length)
     }
 

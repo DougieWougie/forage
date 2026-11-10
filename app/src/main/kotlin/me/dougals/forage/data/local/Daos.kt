@@ -12,6 +12,7 @@
 package me.dougals.forage.data.local
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -20,15 +21,21 @@ import kotlinx.coroutines.flow.Flow
 
 data class UnreadCount(val feedId: Long, val count: Int)
 
+/** The text an article's snippet is made from. */
+data class SnippetSource(val id: Long, val summary: String?, val contentHtml: String?)
+
 data class OfflineStats(val count: Int, val bytes: Long)
 
+/** A queued change with the server id of its article ([remoteId] is null for an article that never reached the server). */
+data class PendingChangeWithRemote(@Embedded val change: PendingChangeEntity, val remoteId: Long?)
+
 /**
- * Columns for article lists. Bodies are truncated and the offline copy is reduced to a presence marker, so
- * a few large articles can't overflow the 2MB CursorWindow; the reader loads the full row via observeById.
+ * Columns for article lists. A card needs only the stored plain-text [ArticleEntity.snippet], so the bodies are
+ * left out (NULL) and the offline copy is reduced to a presence marker; with large articles in the table the
+ * list could otherwise overflow the 2MB CursorWindow. The reader loads the full row via observeById.
  */
 private const val LIST_COLUMNS =
-    "id, feedId, guid, title, url, author, substr(summary, 1, 4000) AS summary, " +
-        "substr(contentHtml, 1, 4000) AS contentHtml, publishedAt, isRead, isSaved, " +
+    "id, feedId, guid, title, url, author, NULL AS summary, NULL AS contentHtml, snippet, publishedAt, isRead, isSaved, " +
         "CASE WHEN offlineHtml IS NULL THEN NULL ELSE '' END AS offlineHtml, remoteId, imageUrl"
 
 const val SEARCH_LIMIT = 200
@@ -49,6 +56,8 @@ interface FeedDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertIgnore(feed: FeedEntity): Long
     @Query("DELETE FROM feeds WHERE id = :id") suspend fun delete(id: Long)
     @Update suspend fun update(feed: FeedEntity)
+    @Query("UPDATE feeds SET etag = :etag, lastModified = :lastModified WHERE id = :id")
+    suspend fun setValidators(id: Long, etag: String?, lastModified: String?)
     @Query("SELECT * FROM feeds WHERE id = :id") suspend fun getById(id: Long): FeedEntity?
     @Query("SELECT * FROM feeds WHERE url = :url") suspend fun getByUrl(url: String): FeedEntity?
     @Query("SELECT * FROM feeds") suspend fun getAll(): List<FeedEntity>
@@ -71,6 +80,9 @@ interface ArticleDao {
     /** Backfills articles stored before thumbnails existed; never replaces one already set. */
     @Query("UPDATE articles SET imageUrl = :url WHERE feedId = :feedId AND guid = :guid AND imageUrl IS NULL")
     suspend fun fillImageUrl(feedId: Long, guid: String, url: String)
+    @Query("SELECT id, summary, contentHtml FROM articles WHERE snippet IS NULL LIMIT :limit")
+    suspend fun withoutSnippet(limit: Int): List<SnippetSource>
+    @Query("UPDATE articles SET snippet = :snippet WHERE id = :id") suspend fun setSnippet(id: Long, snippet: String)
     @Query("UPDATE articles SET offlineHtml = NULL WHERE id = :id") suspend fun clearOfflineHtml(id: Long)
     @Query("UPDATE articles SET offlineHtml = NULL WHERE isSaved = 0 AND offlineHtml IS NOT NULL") suspend fun clearUnsavedOfflineHtml()
     @Query("UPDATE articles SET offlineHtml = NULL WHERE offlineHtml IS NOT NULL") suspend fun clearAllOfflineHtml()
@@ -109,6 +121,11 @@ interface ArticleDao {
 interface PendingChangeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun enqueue(change: PendingChangeEntity)
     @Query("SELECT * FROM pending_changes ORDER BY createdAt") suspend fun getAll(): List<PendingChangeEntity>
+    @Query(
+        "SELECT pending_changes.*, articles.remoteId AS remoteId FROM pending_changes " +
+            "LEFT JOIN articles ON articles.id = pending_changes.articleId ORDER BY pending_changes.createdAt",
+    )
+    suspend fun getAllWithRemoteId(): List<PendingChangeWithRemote>
     /** Only removes the row if it is still the exact change that was flushed, not a newer replacement. */
     @Query("DELETE FROM pending_changes WHERE articleId = :articleId AND field = :field AND createdAt = :createdAt AND value = :value")
     suspend fun deleteIfUnchanged(articleId: Long, field: SyncField, createdAt: Long, value: Boolean)

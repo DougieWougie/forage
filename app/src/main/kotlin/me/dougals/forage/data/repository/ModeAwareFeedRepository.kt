@@ -13,6 +13,8 @@ package me.dougals.forage.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
@@ -29,6 +31,13 @@ class ModeAwareFeedRepository(
     private val local: FeedRepository,
     private val nextcloud: FeedRepository,
 ) : FeedRepository {
+    /**
+     * Refreshes run one at a time: the splash, pull-to-refresh, Sync now, the worker and a Nextcloud add-feed can
+     * all start one. A caller that arrives mid-refresh waits and then runs its own rather than joining the one in
+     * flight, because that one may have read its feed list or server state before this caller's change landed.
+     */
+    private val refreshLock = Mutex()
+
     private suspend fun current() = if (mode.first() == SyncMode.NEXTCLOUD) nextcloud else local
 
     override fun observeUnread(): Flow<List<Article>> = local.observeUnread()
@@ -39,7 +48,11 @@ class ModeAwareFeedRepository(
     override fun observeFolders(): Flow<List<Folder>> = local.observeFolders()
     override fun observeFeeds(): Flow<List<Feed>> = local.observeFeeds()
 
-    override suspend fun addFeed(url: String, folderId: Long?) = current().addFeed(url, folderId)
+    override suspend fun addFeed(url: String, folderId: Long?): Result<Feed> {
+        val target = current()
+        // Nextcloud's addFeed refreshes internally, so it has to take the same lock.
+        return if (target === nextcloud) refreshLock.withLock { target.addFeed(url, folderId) } else target.addFeed(url, folderId)
+    }
     override suspend fun removeFeed(feedId: Long) = current().removeFeed(feedId)
     override suspend fun moveFeed(feedId: Long, folderId: Long?) = current().moveFeed(feedId, folderId)
     override suspend fun createFolder(name: String) = current().createFolder(name)
@@ -51,5 +64,5 @@ class ModeAwareFeedRepository(
     override suspend fun markFeedRead(feedId: Long) = current().markFeedRead(feedId)
     override suspend fun markOlderRead(articleId: Long) = current().markOlderRead(articleId)
     override suspend fun setReadBatch(articleIds: List<Long>, read: Boolean) = current().setReadBatch(articleIds, read)
-    override suspend fun refresh() = current().refresh()
+    override suspend fun refresh() = refreshLock.withLock { current().refresh() }
 }

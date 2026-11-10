@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.data.local.DbTestBase
+import me.dougals.forage.data.remote.CacheValidators
 import me.dougals.forage.data.remote.ParsedFeed
 import me.dougals.forage.data.remote.ParsedItem
 import me.dougals.forage.testutil.FakeFeedSource
@@ -261,5 +262,87 @@ class LocalFeedRepositoryTest : DbTestBase() {
         val feed = repo.addFeed("https://a/feed").getOrThrow()
         repo.removeFeed(feed.id)
         assertEquals(0, db.articleDao().getAll().size)
+    }
+
+    @Test fun newArticlesAreStoredWithAPlainTextSnippet() = runTest {
+        source.feeds["https://a/feed"] = ParsedFeed(
+            "A", null, listOf(ParsedItem("1", "T", "https://site/1", null, "<p>Hello <b>there</b></p>", "<p>full</p>", publishedAt = 5)),
+        )
+        repo.addFeed("https://a/feed")
+        assertEquals("Hello there", db.articleDao().getAll().single().snippet)
+    }
+
+    private suspend fun subscribe(count: Int): List<String> {
+        val urls = (1..count).map { "https://f$it/feed" }
+        urls.forEachIndexed { i, u ->
+            source.feeds[u] = parsed("F$i", "1")
+            db.feedDao().insert(me.dougals.forage.data.local.FeedEntity(url = u, title = "F$i"))
+        }
+        return urls
+    }
+
+    @Test fun feedsAreFetchedInParallelButNeverMoreThanSixAtOnce() = runTest {
+        subscribe(15)
+        source.delayMs = 50
+        repo.refresh().getOrThrow()
+        assertTrue("peak was ${source.peak}", source.peak in 2..6)
+        assertEquals(6, source.peak)
+        assertEquals(15, db.articleDao().getAll().size)
+    }
+
+    @Test fun aFailingFeedStillLeavesTheOthersRefreshedAndTheFirstFailureInFeedOrderIsReported() = runTest {
+        val urls = subscribe(8)
+        source.delayMs = 20
+        source.failing += urls[5]
+        source.failing += urls[2]
+        val outcome = repo.refresh()
+        assertEquals(6, db.articleDao().getAll().size)
+        assertEquals("down: ${urls[2]}", outcome.exceptionOrNull()!!.message)
+    }
+
+    @Test fun validatorsAreStoredAndSentOnTheNextRefreshAndA304MeansNothingNew() = runTest {
+        val (url) = subscribe(1)
+        source.etags[url] = "\"v1\""
+        source.lastModifieds[url] = "Mon, 01 Jan 2024 00:00:00 GMT"
+
+        assertEquals(1, repo.refresh().getOrThrow().newArticles)
+        assertEquals(CacheValidators(), source.sent.last().second)
+        val stored = db.feedDao().getByUrl(url)!!
+        assertEquals("\"v1\"", stored.etag)
+        assertEquals("Mon, 01 Jan 2024 00:00:00 GMT", stored.lastModified)
+
+        val second = repo.refresh().getOrThrow()
+        assertEquals(CacheValidators("\"v1\"", "Mon, 01 Jan 2024 00:00:00 GMT"), source.sent.last().second)
+        assertEquals(me.dougals.forage.domain.model.SyncReport(), second)
+        assertEquals(1, db.articleDao().getAll().size)
+    }
+
+    @Test fun aChangedFeedReplacesTheStoredValidatorsAndBringsInNewArticles() = runTest {
+        val (url) = subscribe(1)
+        source.etags[url] = "\"v1\""
+        repo.refresh().getOrThrow()
+        source.etags[url] = "\"v2\""
+        source.feeds[url] = parsed("F0", "1", "2")
+        assertEquals(1, repo.refresh().getOrThrow().newArticles)
+        assertEquals("\"v2\"", db.feedDao().getByUrl(url)!!.etag)
+    }
+
+    @Test fun aFeedWithoutValidatorsClearsOldOnesAndIsFetchedInFull() = runTest {
+        val (url) = subscribe(1)
+        source.etags[url] = "\"v1\""
+        repo.refresh().getOrThrow()
+        source.etags.remove(url)
+        repo.refresh().getOrThrow()
+        assertEquals(null, db.feedDao().getByUrl(url)!!.etag)
+    }
+
+    @Test fun validatorsAreNotRememberedForAFetchThatFailed() = runTest {
+        val (url) = subscribe(1)
+        source.etags[url] = "\"v1\""
+        repo.refresh().getOrThrow()
+        source.etags[url] = "\"v2\""
+        source.failing += url
+        repo.refresh()
+        assertEquals("\"v1\"", db.feedDao().getByUrl(url)!!.etag)
     }
 }

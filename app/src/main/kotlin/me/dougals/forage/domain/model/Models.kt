@@ -40,6 +40,8 @@ data class Article(
     val offlineHtml: String?,
     /** Thumbnail for the article list; null when the article has no usable image. */
     val imageUrl: String? = null,
+    /** Plain-text preview for list cards. List queries fill it instead of the (omitted) summary and content. */
+    val snippet: String? = null,
 ) {
     val hasOfflineCopy: Boolean get() = offlineHtml != null
 

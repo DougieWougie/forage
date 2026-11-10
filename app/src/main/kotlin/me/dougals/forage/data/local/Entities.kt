@@ -37,12 +37,19 @@ data class FeedEntity(
     val siteUrl: String? = null,
     val folderId: Long? = null,
     val remoteId: Long? = null,
+    /** `ETag` of the last feed body stored, sent back as `If-None-Match`. Local mode only. */
+    val etag: String? = null,
+    /** `Last-Modified` of the last feed body stored, sent back as `If-Modified-Since`. Local mode only. */
+    val lastModified: String? = null,
 )
 
 @Entity(
     tableName = "articles",
     foreignKeys = [ForeignKey(FeedEntity::class, ["id"], ["feedId"], onDelete = ForeignKey.CASCADE)],
-    indices = [Index("feedId", "guid", unique = true), Index("isRead"), Index("isSaved")],
+    indices = [
+        Index("feedId", "guid", unique = true), Index("isSaved"), Index("remoteId"),
+        Index("isRead", "publishedAt"), Index("feedId", "publishedAt"),
+    ],
 )
 data class ArticleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -59,6 +66,8 @@ data class ArticleEntity(
     val offlineHtml: String? = null,
     val remoteId: Long? = null,
     val imageUrl: String? = null,
+    /** Plain-text preview for list cards; null until computed, "" when the article has no text. */
+    val snippet: String? = null,
 )
 
 @Entity(

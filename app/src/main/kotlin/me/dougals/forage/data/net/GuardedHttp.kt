@@ -11,9 +11,11 @@
  */
 package me.dougals.forage.data.net
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Dns
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,6 +24,8 @@ import java.io.IOException
 import java.net.InetAddress
 import java.net.Proxy
 import java.net.UnknownHostException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class HttpStatusException(val code: Int) : IOException("HTTP $code")
 
@@ -40,24 +44,71 @@ class GuardedHttp(
     private val open = client.newBuilder().followRedirects(false).followSslRedirects(false).build()
     private val guarded = open.newBuilder().proxy(Proxy.NO_PROXY).dns(PublicOnlyDns(client.dns, addressPolicy)).build()
 
-    /** @throws HttpStatusException for non-2xx answers; other [IOException]s for blocked or failed requests. */
-    suspend fun <T> get(url: String, allowPrivate: Boolean, handle: (Response) -> T): T = withContext(Dispatchers.IO) {
+    /**
+     * @param headers extra request headers, sent only to the original host.
+     * @param passStatuses non-2xx codes (such as 304 for a conditional request) that are given to [handle] instead of
+     *   failing. Redirects are still followed and checked first, and the address checks are unchanged.
+     * @throws HttpStatusException for other non-2xx answers; other [IOException]s for blocked or failed requests.
+     *
+     * Cancelling the caller cancels the in-flight call, including a body read inside [handle] (which runs on
+     * OkHttp's thread, so cancelling the call is what interrupts it). A timeout around this therefore holds.
+     */
+    suspend fun <T> get(
+        url: String,
+        allowPrivate: Boolean,
+        headers: Map<String, String> = emptyMap(),
+        passStatuses: Set<Int> = emptySet(),
+        handle: (Response) -> T,
+    ): T {
         var current = url.toHttpUrlOrNull() ?: throw IOException("Invalid URL")
+        val firstHost = current.host
         val http = if (allowPrivate) open else guarded
         repeat(MAX_REDIRECTS + 1) {
             if (!allowPrivate) requirePublicLiteral(current.host)
-            http.newCall(Request.Builder().url(current).build()).execute().use { r ->
-                if (r.isRedirect) {
-                    val location = r.header("Location") ?: throw IOException("Redirect without Location")
-                    current = r.request.url.resolve(location) ?: throw IOException("Unsupported redirect")
-                    return@repeat
-                }
-                if (!r.isSuccessful) throw HttpStatusException(r.code)
-                return@withContext handle(r)
+            // Caller headers (conditional-request validators) are for the host asked about, never for one a redirect leads to.
+            val sent = if (current.host == firstHost) headers else emptyMap()
+            when (val hop = hop(http, current, sent, passStatuses, handle)) {
+                is Hop.Done -> return hop.value
+                is Hop.Redirect -> current = hop.to
             }
         }
         throw IOException("Too many redirects")
     }
+
+    private sealed interface Hop<out T> {
+        class Done<T>(val value: T) : Hop<T>
+        class Redirect(val to: HttpUrl) : Hop<Nothing>
+    }
+
+    private suspend fun <T> hop(
+        http: OkHttpClient, url: HttpUrl, headers: Map<String, String>, passStatuses: Set<Int>, handle: (Response) -> T,
+    ): Hop<T> =
+        suspendCancellableCoroutine { cont ->
+            val request = Request.Builder().url(url).apply { headers.forEach { (k, v) -> header(k, v) } }.build()
+            val call = http.newCall(request)
+            cont.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) { cont.resumeWithException(e) }
+                override fun onResponse(call: Call, response: Response) {
+                    val outcome = try {
+                        response.use { r ->
+                            when {
+                                r.isRedirect -> {
+                                    val location = r.header("Location") ?: throw IOException("Redirect without Location")
+                                    Hop.Redirect(r.request.url.resolve(location) ?: throw IOException("Unsupported redirect"))
+                                }
+                                !r.isSuccessful && r.code !in passStatuses -> throw HttpStatusException(r.code)
+                                else -> Hop.Done(handle(r))
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        cont.resumeWithException(e)
+                        return
+                    }
+                    cont.resume(outcome)
+                }
+            })
+        }
 
     private fun requirePublicLiteral(host: String) {
         val isLiteral = host.contains(':') || host.all { it.isDigit() || it == '.' }

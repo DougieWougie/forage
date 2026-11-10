@@ -11,6 +11,7 @@
  */
 package me.dougals.forage.data.repository
 
+import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -50,15 +51,20 @@ abstract class RoomFeedRepository(
         }
 
     override suspend fun setRead(articleId: Long, read: Boolean) {
-        db.articleDao().setRead(articleId, read)
-        onStateChanged(articleId, SyncField.READ, read)
+        db.withTransaction {
+            db.articleDao().setRead(articleId, read)
+            onStateChanged(articleId, SyncField.READ, read)
+        }
         onWritesDone()
     }
 
     override suspend fun setSaved(articleId: Long, saved: Boolean) {
-        db.articleDao().setSaved(articleId, saved)
-        if (saved) archive.schedule(articleId) else db.articleDao().clearOfflineHtml(articleId)
-        onStateChanged(articleId, SyncField.STARRED, saved)
+        db.withTransaction {
+            db.articleDao().setSaved(articleId, saved)
+            if (!saved) db.articleDao().clearOfflineHtml(articleId)
+            onStateChanged(articleId, SyncField.STARRED, saved)
+        }
+        if (saved) archive.schedule(articleId)
         onWritesDone()
     }
 
@@ -70,9 +76,12 @@ abstract class RoomFeedRepository(
     }
 
     override suspend fun markFeedRead(feedId: Long): List<Long> {
-        val ids = db.articleDao().unreadIds(feedId)
-        db.articleDao().markFeedRead(feedId)
-        ids.forEach { onStateChanged(it, SyncField.READ, true) }
+        val ids = db.withTransaction {
+            val unread = db.articleDao().unreadIds(feedId)
+            db.articleDao().markFeedRead(feedId)
+            unread.forEach { onStateChanged(it, SyncField.READ, true) }
+            unread
+        }
         if (ids.isNotEmpty()) onWritesDone()
         return ids
     }
@@ -85,9 +94,11 @@ abstract class RoomFeedRepository(
 
     override suspend fun setReadBatch(articleIds: List<Long>, read: Boolean) {
         if (articleIds.isEmpty()) return
-        // Chunked to stay under SQLite's bound-variable limit.
-        articleIds.chunked(500).forEach { db.articleDao().setReadIn(it, read) }
-        articleIds.forEach { onStateChanged(it, SyncField.READ, read) }
+        db.withTransaction {
+            // Chunked to stay under SQLite's bound-variable limit.
+            articleIds.chunked(500).forEach { db.articleDao().setReadIn(it, read) }
+            articleIds.forEach { onStateChanged(it, SyncField.READ, read) }
+        }
         onWritesDone()
     }
 

@@ -29,3 +29,6 @@ Rows are deleted only after the server accepts the batch, and only if unchanged 
 items; later pulls use `updatedItems` from the stored `lastModified`. Folders and feeds are matched by `remoteId`, then
 by name (folders) or URL (feeds), which is how items added in local mode are adopted on connecting. For each article,
 a field with a pending local change keeps its local value. Newly saved articles are scheduled for offline archiving.
+
+The feeds and folders responses must contain their `feeds` / `folders` key. A 200 body without it fails to parse and the sync fails,
+rather than being read as "the server has none" and deleting every synced feed. A server with no feeds sends `"feeds": []`.
