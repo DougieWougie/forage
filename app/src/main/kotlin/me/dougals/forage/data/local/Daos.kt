@@ -56,6 +56,8 @@ interface FeedDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertIgnore(feed: FeedEntity): Long
     @Query("DELETE FROM feeds WHERE id = :id") suspend fun delete(id: Long)
     @Update suspend fun update(feed: FeedEntity)
+    @Query("UPDATE feeds SET etag = :etag, lastModified = :lastModified WHERE id = :id")
+    suspend fun setValidators(id: Long, etag: String?, lastModified: String?)
     @Query("SELECT * FROM feeds WHERE id = :id") suspend fun getById(id: Long): FeedEntity?
     @Query("SELECT * FROM feeds WHERE url = :url") suspend fun getByUrl(url: String): FeedEntity?
     @Query("SELECT * FROM feeds") suspend fun getAll(): List<FeedEntity>

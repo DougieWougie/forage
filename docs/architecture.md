@@ -24,15 +24,17 @@ implementation chosen by the current `SyncMode` (`LOCAL` or `NEXTCLOUD`). Both e
 read and state-change logic. Refreshes (and Nextcloud `addFeed`, which refreshes) run one at a time behind a mutex in
 `ModeAwareFeedRepository`; a caller that arrives mid-refresh waits, then runs its own. See [sync](sync.md) for the Nextcloud path and [ADR 0001](adr/0001-room-as-source-of-truth.md).
 
-**Local refresh** (`LocalFeedRepository.refresh`): fetch each feed through `FeedFetcher`, parse it with `FeedParser`,
-and insert new articles with `insertIgnore` (unique on `feedId, guid`). One failing feed does not stop the others;
-the first error is returned at the end.
+**Local refresh** (`LocalFeedRepository.refresh`): fetch the feeds through `FeedSource`, at most six at a time, parse each with `FeedParser`,
+and insert new articles with `insertIgnore` (unique on `feedId, guid`). Requests are conditional: the `ETag` and `Last-Modified` of the
+last stored body (`feeds.etag`, `feeds.lastModified`) go back as `If-None-Match` / `If-Modified-Since`, and a 304 means nothing new.
+The validators are saved only after the new body is stored. One failing feed does not stop the others; the first error in feed order is
+returned at the end, with the report of what the others brought in. `RefreshProgress` counts feeds completed.
 
 ## Data model
 
 ![Room schema](diagrams/schema.svg)
 
-`ForageDatabase` is at version 3 (`MIGRATION_1_2` adds `articles.imageUrl`; `MIGRATION_2_3` adds indices on `articles.remoteId`,
+`ForageDatabase` is at version 3 (`MIGRATION_1_2` adds `articles.imageUrl`; `MIGRATION_2_3` adds `feeds.etag` and `feeds.lastModified`, indices on `articles.remoteId`,
 `(isRead, publishedAt)` and `(feedId, publishedAt)`, drops the old `isRead` index, and adds `articles.snippet`). Exported schemas are in
 `app/schemas/`. State changes that queue a pending change (`setRead`, `setSaved`, `markFeedRead`, `setReadBatch`) write the article and the queue row in one
 Room transaction. `remoteId` columns hold Nextcloud ids and stay null for items that exist only locally.

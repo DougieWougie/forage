@@ -37,6 +37,10 @@ data class FeedEntity(
     val siteUrl: String? = null,
     val folderId: Long? = null,
     val remoteId: Long? = null,
+    /** `ETag` of the last feed body stored, sent back as `If-None-Match`. Local mode only. */
+    val etag: String? = null,
+    /** `Last-Modified` of the last feed body stored, sent back as `If-Modified-Since`. Local mode only. */
+    val lastModified: String? = null,
 )
 
 @Entity(

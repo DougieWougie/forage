@@ -23,6 +23,8 @@ import me.dougals.forage.data.nextcloud.MoveFeedRequest
 import me.dougals.forage.data.nextcloud.ItemsResponse
 import me.dougals.forage.data.nextcloud.NextcloudApi
 import me.dougals.forage.domain.nextcloud.SyncStateStore
+import me.dougals.forage.data.remote.CacheValidators
+import me.dougals.forage.data.remote.FeedResponse
 import me.dougals.forage.data.remote.FeedSource
 import me.dougals.forage.data.remote.ParsedFeed
 import me.dougals.forage.data.work.ArchiveScheduler
@@ -98,8 +100,35 @@ class RecordingSchedulers : SyncScheduler, ArchiveScheduler {
 class FakeFeedSource : FeedSource {
     val feeds = mutableMapOf<String, ParsedFeed>()
     val failing = mutableSetOf<String>()
+    /** ETag the fake "server" currently has for a feed; a request carrying the same one is answered 304. */
+    val etags = mutableMapOf<String, String>()
+    val lastModifieds = mutableMapOf<String, String>()
+    /** Validators each conditional request carried, in order. */
+    val sent = mutableListOf<Pair<String, CacheValidators>>()
+    /** Holds each fetch this long, so tests can see how many run at once. */
+    var delayMs = 0L
+    private val running = java.util.concurrent.atomic.AtomicInteger()
+    private val peakRunning = java.util.concurrent.atomic.AtomicInteger()
+    val peak: Int get() = peakRunning.get()
+
     override suspend fun fetch(url: String): ParsedFeed {
-        if (url in failing) throw IOException("down: $url")
-        return feeds[url] ?: throw IOException("unknown $url")
+        val now = running.incrementAndGet()
+        peakRunning.updateAndGet { maxOf(it, now) }
+        try {
+            if (delayMs > 0) kotlinx.coroutines.delay(delayMs)
+            if (url in failing) throw IOException("down: $url")
+            return feeds[url] ?: throw IOException("unknown $url")
+        } finally {
+            running.decrementAndGet()
+        }
+    }
+
+    override suspend fun fetchConditional(url: String, validators: CacheValidators): FeedResponse {
+        sent += url to validators
+        val etag = etags[url]
+        val modified = lastModifieds[url]
+        val matches = (etag != null && validators.etag == etag) || (etag == null && modified != null && validators.lastModified == modified)
+        if (matches && url !in failing) return FeedResponse.NotModified
+        return FeedResponse.Fresh(fetch(url), CacheValidators(etag, modified))
     }
 }

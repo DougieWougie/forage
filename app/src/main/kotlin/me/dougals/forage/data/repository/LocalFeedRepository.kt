@@ -14,6 +14,10 @@ package me.dougals.forage.data.repository
 import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import me.dougals.forage.data.content.ArticleSnippets
 import me.dougals.forage.data.local.ArticleEntity
@@ -21,6 +25,8 @@ import me.dougals.forage.data.local.FeedEntity
 import me.dougals.forage.data.local.FolderEntity
 import me.dougals.forage.data.local.ForageDatabase
 import me.dougals.forage.data.mapper.toDomain
+import me.dougals.forage.data.remote.CacheValidators
+import me.dougals.forage.data.remote.FeedResponse
 import me.dougals.forage.data.remote.FeedSource
 import me.dougals.forage.data.remote.ParsedItem
 import me.dougals.forage.data.work.ArchiveScheduler
@@ -31,6 +37,7 @@ import me.dougals.forage.domain.model.RefreshProgress
 import me.dougals.forage.domain.model.Headline
 import me.dougals.forage.domain.model.SyncReport
 import me.dougals.forage.domain.model.newestHeadlines
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Local Mode: feeds are fetched straight from their publishers; nothing is synced anywhere. */
 class LocalFeedRepository(
@@ -55,31 +62,65 @@ class LocalFeedRepository(
     }
 
     override suspend fun refresh(): Result<SyncReport> {
-        var failure: Throwable? = null
-        val freshByFeed = mutableMapOf<Long, Int>()
-        val headlines = mutableMapOf<Long, List<Headline>>()
         val feeds = db.feedDao().getAll()
+        val outcomes = arrayOfNulls<FeedOutcome>(feeds.size)
         try {
-            feeds.forEachIndexed { i, feed ->
-                progress.report(i, feeds.size)
-                try {
-                    val added = store(feed.id, source.fetch(feed.url).items)
-                    if (added.isNotEmpty()) {
-                        freshByFeed[feed.id] = added.size
-                        headlines[feed.id] = newestHeadlines(added.map { Headline(it.title, it.publishedAt) })
+            progress.report(0, feeds.size)
+            val gate = Semaphore(MAX_PARALLEL_FETCHES)
+            val completed = AtomicInteger()
+            coroutineScope {
+                feeds.forEachIndexed { i, feed ->
+                    launch {
+                        outcomes[i] = gate.withPermit { refreshOne(feed) }
+                        val done = completed.incrementAndGet()
+                        // The last report would be cleared at once, so the bar stops at "n-1 of n" as it always has.
+                        if (done < feeds.size) progress.report(done, feeds.size)
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    failure = failure ?: e
                 }
             }
         } finally {
             progress.clear()
         }
+        // Folded in feed order, so "the first error" does not depend on which request happened to finish first.
+        var failure: Throwable? = null
+        val freshByFeed = mutableMapOf<Long, Int>()
+        val headlines = mutableMapOf<Long, List<Headline>>()
+        feeds.forEachIndexed { i, feed ->
+            when (val o = outcomes[i]) {
+                is FeedOutcome.Added -> {
+                    freshByFeed[feed.id] = o.articles.size
+                    headlines[feed.id] = newestHeadlines(o.articles.map { Headline(it.title, it.publishedAt) })
+                }
+                is FeedOutcome.Failed -> failure = failure ?: o.error
+                else -> {}
+            }
+        }
         val report = SyncReport(newArticles = freshByFeed.values.sum(), newByFeed = freshByFeed, newHeadlines = headlines)
         return failure?.let { Result.failure(if (freshByFeed.isEmpty()) it else PartialRefreshException(report, it)) }
             ?: Result.success(report)
+    }
+
+    private sealed interface FeedOutcome {
+        data object Unchanged : FeedOutcome
+        class Added(val articles: List<ArticleEntity>) : FeedOutcome
+        class Failed(val error: Throwable) : FeedOutcome
+    }
+
+    /** One failing feed must not stop the others, so everything but cancellation becomes a [FeedOutcome.Failed]. */
+    private suspend fun refreshOne(feed: FeedEntity): FeedOutcome = try {
+        when (val response = source.fetchConditional(feed.url, CacheValidators(feed.etag, feed.lastModified))) {
+            FeedResponse.NotModified -> FeedOutcome.Unchanged
+            is FeedResponse.Fresh -> {
+                val added = store(feed.id, response.feed.items)
+                // Remembered only once the body is safely stored, so a failure here means the full feed is asked for again.
+                db.feedDao().setValidators(feed.id, response.validators.etag, response.validators.lastModified)
+                if (added.isEmpty()) FeedOutcome.Unchanged else FeedOutcome.Added(added)
+            }
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        FeedOutcome.Failed(e)
     }
 
     override suspend fun removeFeed(feedId: Long): Result<Unit> {
@@ -118,3 +159,6 @@ class LocalFeedRepository(
         return articles.filterIndexed { i, _ -> inserted[i] != -1L }
     }
 }
+
+/** Feeds fetched at once. Each is held in memory while it parses, so this stays modest. */
+internal const val MAX_PARALLEL_FETCHES = 6
