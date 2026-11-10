@@ -49,4 +49,30 @@ class OpmlTest {
         val xml = Opml.export(feeds)
         assertEquals(feeds, Opml.parse(xml.byteInputStream()))
     }
+
+    @Test fun aFileNestedTensOfThousandsDeepDoesNotOverflowTheStack() {
+        val depth = 50_000
+        val xml = buildString {
+            append("<opml version=\"2.0\"><body>")
+            repeat(depth) { append("<outline text=\"f$it\">") }
+            append("<outline text=\"Deep\" xmlUrl=\"https://deep/feed\"/>")
+            repeat(depth) { append("</outline>") }
+            append("</body></opml>")
+        }
+        var out: List<OpmlFeed>? = null
+        var error: Throwable? = null
+        // A small stack makes the point quickly: a recursive walk would need ~50,000 frames.
+        Thread(null, { try { out = Opml.parse(xml.byteInputStream()) } catch (t: Throwable) { error = t } }, "deep", 512 * 1024)
+            .apply { start(); join() }
+        assertEquals(null, error)
+        assertEquals(listOf(OpmlFeed("Deep", "https://deep/feed", folder = "f${depth - 1}")), out)
+    }
+
+    @Test fun feedsInsideAndAfterFoldersKeepDocumentOrder() {
+        val xml = """<opml><body>
+            <outline text="A"><outline text="1" xmlUrl="u1"/><outline text="B"><outline text="2" xmlUrl="u2"/></outline><outline text="3" xmlUrl="u3"/></outline>
+            <outline text="4" xmlUrl="u4"/></body></opml>"""
+        assertEquals(listOf("u1", "u2", "u3", "u4"), Opml.parse(xml.byteInputStream()).map { it.xmlUrl })
+        assertEquals(listOf("A", "B", "A", null), Opml.parse(xml.byteInputStream()).map { it.folder })
+    }
 }

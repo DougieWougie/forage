@@ -37,4 +37,10 @@ class SessionCaptureTest {
     @Test fun invalidUrlIsRejected() {
         assertFalse(SessionCapture({ "a=b" }, MemSessionStore()).capture("not a url"))
     }
+
+    @Test fun aPageThatIsNotHttpsIsNeverCaptured() {
+        val store = MemSessionStore()
+        assertFalse(SessionCapture({ "sid=abc" }, store).capture("http://lwn.net/login"))
+        assertNull(store.get("lwn.net"))
+    }
 }

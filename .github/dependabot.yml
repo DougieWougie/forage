@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Gradle dependencies and plugins, including the version catalog in gradle/libs.versions.toml.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Room, Compose and Kotlin move together and are reviewed together; the rest is one PR a week.
+      minor-and-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: gradle
+    directory: /buildSrc
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+
+  # Actions in .github/workflows are pinned by commit SHA with a version comment (`@<sha> # v5`).
+  # Dependabot keeps that form: it bumps the SHA and rewrites the comment.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3

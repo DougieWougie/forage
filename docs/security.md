@@ -20,13 +20,20 @@ Feed content, OPML entries, article links and article HTML are untrusted. Ration
 
 `ThumbnailFetcher` (list thumbnails) goes through `ImageResourceFetcher`, so it gets the same guard.
 
+Cleartext HTTP is refused app-wide by an explicit `network_security_config.xml` (`cleartextTrafficPermitted="false"`) referenced from the manifest,
+rather than by the platform default. Error text shown to the user has web addresses replaced with `<link>` (`Throwable.toUiText`), and
+`GuardedHttp` leaves URLs out of its own messages, since a feed URL can carry a token.
+
+OPML import reads at most 10 MB, closes its stream, and walks nested folders iteratively, so a hostile file cannot exhaust memory or the call stack.
+
 ## Reader
 
 Article HTML is sanitised with Jsoup's relaxed safelist in `ReaderViewModel` (off the main thread) and reaches the page only as a `SafeHtml`.
 `ReaderScreen` renders it in a WebView with JavaScript and file access off, and the page carries a
 Content-Security-Policy of `default-src 'none'` (images, inline styles and the bundled font only; `script-src 'none'`).
 `shouldInterceptRequest` answers every http(s) subresource itself: bundled fonts from assets, images through
-`ImageResourceFetcher`, everything else with 403. Link taps open in the external browser. The separate login WebView (`LoginScreen`) does enable JavaScript, since sites need it to sign in.
+`ImageResourceFetcher`, everything else with 403. Link taps open in the external browser. The separate login WebView (`LoginScreen`) does enable JavaScript, since sites need it to sign in. Its top bar shows the host of the
+current page as it navigates, and "Save session" refuses a page that is not HTTPS (`SessionCapture` enforces this too).
 
 ## Credentials
 

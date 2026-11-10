@@ -60,7 +60,7 @@ class GuardedHttp(
         passStatuses: Set<Int> = emptySet(),
         handle: (Response) -> T,
     ): T {
-        var current = url.toHttpUrlOrNull() ?: throw IOException("Invalid URL: $url")
+        var current = url.toHttpUrlOrNull() ?: throw IOException("Invalid URL")
         val firstHost = current.host
         val http = if (allowPrivate) open else guarded
         repeat(MAX_REDIRECTS + 1) {
@@ -95,7 +95,7 @@ class GuardedHttp(
                             when {
                                 r.isRedirect -> {
                                     val location = r.header("Location") ?: throw IOException("Redirect without Location")
-                                    Hop.Redirect(r.request.url.resolve(location) ?: throw IOException("Unsupported redirect: $location"))
+                                    Hop.Redirect(r.request.url.resolve(location) ?: throw IOException("Unsupported redirect"))
                                 }
                                 !r.isSuccessful && r.code !in passStatuses -> throw HttpStatusException(r.code)
                                 else -> Hop.Done(handle(r))

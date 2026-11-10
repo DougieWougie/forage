@@ -119,4 +119,39 @@ class LoginScreenTest {
         assertNull(webView())
         assertNull(cookies.getCookie("https://lwn.net"))
     }
+
+    private fun navigateTo(url: String) {
+        val w = webView()!!
+        rule.runOnUiThread { w.loadUrl(url); w.webViewClient.doUpdateVisitedHistory(w, url, false) }
+        rule.waitForIdle()
+    }
+
+    @Test fun theBarShowsTheHostOfThePageAndFollowsNavigation() {
+        show()
+        rule.onNodeWithText("Sign in, then save").assertExists()
+        navigateTo("https://lwn.net/login")
+        rule.onNodeWithText("lwn.net").assertExists()
+        navigateTo("https://sso.example.org/oauth?next=lwn")
+        rule.onNodeWithText("sso.example.org").assertExists()
+        rule.onNodeWithText("lwn.net").assertDoesNotExist()
+    }
+
+    @Test fun aPageThatIsNotHttpsCannotBeCaptured() {
+        every { vm.capture(any()) } returns true
+        show()
+        navigateTo("http://lwn.net/login")
+        rule.onNodeWithText("Save session").performClick()
+        verify(exactly = 0) { vm.capture(any()) }
+        rule.onNodeWithText("Can’t save a session from a page that isn’t using HTTPS.").assertExists()
+        assertEquals(0, done)
+    }
+
+    @Test fun hostAndSchemeHelpers() {
+        assertEquals("lwn.net", loginHost("https://lwn.net/a?b=c"))
+        assertNull(loginHost(null))
+        assertNull(loginHost("about:blank"))
+        assertTrue(isHttpsUrl("HTTPS://lwn.net"))
+        assertFalse(isHttpsUrl("http://lwn.net"))
+        assertFalse(isHttpsUrl("javascript:alert(1)"))
+    }
 }

@@ -19,15 +19,22 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import me.dougals.forage.domain.opml.ImportResult
 import me.dougals.forage.domain.opml.OpmlExchange
 import me.dougals.forage.domain.repository.FeedRepository
+import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.io.InputStream
 
 /** OPML import/export on top of [FeedRepository], so it works in both sync modes. */
 class OpmlTransfer(private val repo: FeedRepository) : OpmlExchange {
     override suspend fun import(input: InputStream): Result<ImportResult> {
         val feeds = try {
-            withContext(Dispatchers.IO) { Opml.parse(input) }
+            withContext(Dispatchers.IO) {
+                // The stream is ours to close whatever happens, and a file is only read up to the same 10 MB a feed may be.
+                input.use { Opml.parse(ByteArrayInputStream(it.readBounded(MAX_OPML_BYTES))) }
+            }
         } catch (e: XmlParseException) {
             return Result.failure(IllegalArgumentException("Not a valid OPML file", e))
+        } catch (e: OpmlTooLargeException) {
+            return Result.failure(e)
         }
 
         val folderIds = repo.observeFolders().first().associate { it.name.lowercase() to it.id }.toMutableMap()
@@ -54,4 +61,21 @@ class OpmlTransfer(private val repo: FeedRepository) : OpmlExchange {
         val folders = repo.observeFolders().first().associate { it.id to it.name }
         return Opml.export(repo.observeFeeds().first().map { OpmlFeed(it.title, it.url, it.folderId?.let(folders::get)) })
     }
+}
+
+/** Same ceiling as a feed body (see FeedFetcher). */
+internal const val MAX_OPML_BYTES = 10_000_000
+
+class OpmlTooLargeException(limit: Int) : IOException("OPML file is larger than ${limit / 1_000_000} MB")
+
+private fun InputStream.readBounded(limit: Int): ByteArray {
+    val out = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(8 * 1024)
+    while (true) {
+        val n = read(buffer)
+        if (n < 0) break
+        if (out.size() + n > limit) throw OpmlTooLargeException(limit)
+        out.write(buffer, 0, n)
+    }
+    return out.toByteArray()
 }

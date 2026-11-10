@@ -36,7 +36,7 @@ Local-first, no accounts, no tracking.
 2. In Nextcloud, go to Settings → Security → Devices & sessions and create an **app password**.
 3. In Forage, open Settings → Connect Nextcloud, enter your server (HTTPS only), username and the app password.
 
-The app password is stored only in encrypted preferences. Your account password is never needed.
+The app password is stored only in the app's private storage (see [ADR 0003](docs/adr/0003-scoped-credentials.md)), not encrypted by the app itself. Your account password is never needed.
 
 ## Security
 

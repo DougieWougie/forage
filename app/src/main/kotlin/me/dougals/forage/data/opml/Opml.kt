@@ -23,14 +23,18 @@ object Opml {
         if (root.name != "opml") throw XmlParseException("Not an OPML file")
         val body = root.child("body") ?: return emptyList()
         val out = mutableListOf<OpmlFeed>()
-        fun walk(node: XmlNode, folder: String?) {
-            for (o in node.children("outline")) {
-                val url = o.attrs["xmlUrl"]
-                val name = o.attrs["text"] ?: o.attrs["title"]
-                if (url != null) out += OpmlFeed(name ?: url, url, folder) else walk(o, name ?: folder)
-            }
+        // Iterators on an explicit stack instead of recursion: a file nested tens of thousands deep must not overflow
+        // the call stack. Document order and the "nearest named folder wins" rule are the same as a recursive walk.
+        val open = ArrayDeque<Pair<Iterator<XmlNode>, String?>>()
+        open.addLast(body.children("outline").iterator() to null)
+        while (open.isNotEmpty()) {
+            val (siblings, folder) = open.last()
+            if (!siblings.hasNext()) { open.removeLast(); continue }
+            val o = siblings.next()
+            val url = o.attrs["xmlUrl"]
+            val name = o.attrs["text"] ?: o.attrs["title"]
+            if (url != null) out += OpmlFeed(name ?: url, url, folder) else open.addLast(o.children("outline").iterator() to (name ?: folder))
         }
-        walk(body, null)
         return out
     }
 

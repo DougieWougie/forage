@@ -113,7 +113,10 @@ fun CategoriesScreen(onOpenFeed: (Long) -> Unit, onOpenFolder: (Long) -> Unit = 
     MarkedReadSnackbar(state.markedRead, snackbar, onUndo = vm::undoMarkedRead, onDismiss = vm::dismissMarkedRead)
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri != null) context.contentResolver.openInputStream(uri)?.let { vm.importOpml(it) }
+        // Opened off the main thread; OpmlTransfer closes the stream when it has read it.
+        if (uri != null) scope.launch {
+            withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri) }?.let { vm.importOpml(it) }
+        }
     }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/x-opml")) { uri: Uri? ->
         if (uri != null) scope.launch {

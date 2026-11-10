@@ -36,5 +36,14 @@ sealed interface UiText {
 
 private fun List<Any>.resolved(context: Context): Array<Any> = map { if (it is UiText) it.resolve(context) else it }.toTypedArray()
 
-/** The failure's own message when it has one (it comes from a server or the network), otherwise [fallback]. */
-fun Throwable.toUiText(@StringRes fallback: Int): UiText = message?.let(UiText::Raw) ?: UiText.Res(fallback)
+/**
+ * The failure's own message when it has one (it comes from a server or the network), otherwise [fallback].
+ * Web addresses are removed first: a feed URL can carry a secret token, and an error line is easy to screenshot.
+ */
+fun Throwable.toUiText(@StringRes fallback: Int): UiText =
+    message?.withoutUrls()?.takeIf { it.isNotBlank() }?.let(UiText::Raw) ?: UiText.Res(fallback)
+
+private val urlPattern = Regex("""[A-Za-z][A-Za-z0-9+.\-]*://\S+""")
+
+/** Replaces anything shaped like `scheme://…` with a short placeholder, keeping the rest of the message. */
+internal fun String.withoutUrls(): String = replace(urlPattern, "<link>")

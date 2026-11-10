@@ -95,6 +95,7 @@
     <string name="login_title">Anmelden, dann speichern</string>
     <string name="login_save_session">Sitzung speichern</string>
     <string name="login_no_cookies">Noch keine Sitzungs-Cookies gefunden — schließe zuerst die Anmeldung ab.</string>
+    <string name="login_not_https">Eine Sitzung von einer Seite ohne HTTPS kann nicht gespeichert werden.</string>
 
     <!-- Categories -->
     <string name="categories_title">Kategorien</string>

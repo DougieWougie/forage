@@ -7,4 +7,4 @@ Short records of decisions that shape the code. Format: Context, Decision, Conse
 | --- | --- | --- |
 | [0001](0001-room-as-source-of-truth.md) | Room is the UI's source of truth; one mode-aware repository | Accepted |
 | [0002](0002-guarded-http-and-reader-sandbox.md) | All untrusted URLs go through `GuardedHttp`; the reader WebView has no network | Accepted |
-| [0003](0003-scoped-credentials.md) | Credentials are stored encrypted and sent only to their own host | Accepted |
+| [0003](0003-scoped-credentials.md) | Credentials are kept in app-private storage and sent only to their own host | Accepted |

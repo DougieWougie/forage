@@ -98,6 +98,7 @@
     <string name="login_title">Connectez-vous, puis enregistrez</string>
     <string name="login_save_session">Enregistrer la session</string>
     <string name="login_no_cookies">Aucun cookie de session trouvé — terminez d’abord la connexion.</string>
+    <string name="login_not_https">Impossible d’enregistrer la session d’une page qui n’utilise pas HTTPS.</string>
 
     <!-- Categories -->
     <string name="categories_title">Catégories</string>

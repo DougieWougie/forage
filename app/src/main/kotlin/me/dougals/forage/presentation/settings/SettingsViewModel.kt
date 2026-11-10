@@ -51,7 +51,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Deliberately holds no password: the app password lives only in the encrypted credential store.
+ * Deliberately holds no password: the app password lives only in the credential store (app-private preferences, not encrypted by the app).
  * [loginUrl] is set while waiting for the user to log in to Nextcloud in the browser.
  */
 data class SettingsUiState(

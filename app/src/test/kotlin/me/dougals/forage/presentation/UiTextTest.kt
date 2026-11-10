@@ -38,4 +38,18 @@ class UiTextTest {
 
     @Test fun argumentsMayThemselvesBeText() =
         assertEquals("Could not sync: unknown error", UiText.Res(R.string.sync_failed, listOf(UiText.Res(R.string.unknown_error))).resolve(context))
+
+    @Test fun anErrorMessageNeverShowsAWebAddress() {
+        val e = java.io.IOException("Failed to load https://feeds.example.com/rss?token=SECRET123 (timeout)")
+        val text = e.toUiText(R.string.unknown_error) as UiText.Raw
+        assertEquals("Failed to load <link> (timeout)", text.value)
+    }
+
+    @Test fun statusAndShortReasonSurvive() =
+        assertEquals(UiText.Raw("HTTP 403"), java.io.IOException("HTTP 403").toUiText(R.string.unknown_error))
+
+    @Test fun aMessageThatWasOnlyAnAddressStillSaysSomething() =
+        assertEquals(UiText.Raw("<link>"), java.io.IOException("http://a.example/x").toUiText(R.string.unknown_error))
+
+    @Test fun noMessageFallsBack() = assertEquals(UiText.Res(R.string.unknown_error), RuntimeException().toUiText(R.string.unknown_error))
 }

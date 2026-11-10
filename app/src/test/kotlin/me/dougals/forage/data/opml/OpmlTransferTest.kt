@@ -98,4 +98,38 @@ class OpmlTransferTest {
         assertEquals(ImportResult(added = 1, skipped = 0, failed = 4), result)
         coVerify(exactly = 1) { repo.addFeed(any(), any()) }
     }
+
+    private class TrackedStream(bytes: ByteArray) : java.io.ByteArrayInputStream(bytes) {
+        var closed = false
+        override fun close() { closed = true; super.close() }
+    }
+
+    @Test fun theStreamIsClosedAfterAnImport() = runTest {
+        setup()
+        val stream = TrackedStream(opml.toByteArray())
+        OpmlTransfer(repo).import(stream).getOrThrow()
+        assertTrue(stream.closed)
+    }
+
+    @Test fun theStreamIsClosedWhenTheFileIsNotOpml() = runTest {
+        setup()
+        val stream = TrackedStream("not xml".toByteArray())
+        assertTrue(OpmlTransfer(repo).import(stream).isFailure)
+        assertTrue(stream.closed)
+    }
+
+    @Test fun aFileOverTheSizeCapIsRejectedAndNothingIsAdded() = runTest {
+        setup()
+        val big = TrackedStream(ByteArray(MAX_OPML_BYTES + 1) { ' '.code.toByte() })
+        val result = OpmlTransfer(repo).import(big)
+        assertTrue(result.exceptionOrNull() is OpmlTooLargeException)
+        assertTrue(big.closed)
+        coVerify(exactly = 0) { repo.addFeed(any(), any()) }
+    }
+
+    @Test fun aFileExactlyAtTheCapIsStillRead() = runTest {
+        setup()
+        val padding = " ".repeat(MAX_OPML_BYTES - opml.toByteArray().size)
+        assertTrue(OpmlTransfer(repo).import(TrackedStream((opml + padding).toByteArray())).isSuccess)
+    }
 }
