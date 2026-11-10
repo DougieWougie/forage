@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "efd05e6d25991468c6150b7b7c84b587",
+    "identityHash": "8164e9b800efbee309cfc02dd71aeeb8",
     "entities": [
       {
         "tableName": "folders",
@@ -113,7 +113,7 @@
       },
       {
         "tableName": "articles",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `feedId` INTEGER NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `author` TEXT, `summary` TEXT, `contentHtml` TEXT, `publishedAt` INTEGER NOT NULL, `isRead` INTEGER NOT NULL, `isSaved` INTEGER NOT NULL, `offlineHtml` TEXT, `remoteId` INTEGER, `imageUrl` TEXT, FOREIGN KEY(`feedId`) REFERENCES `feeds`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `feedId` INTEGER NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `author` TEXT, `summary` TEXT, `contentHtml` TEXT, `publishedAt` INTEGER NOT NULL, `isRead` INTEGER NOT NULL, `isSaved` INTEGER NOT NULL, `offlineHtml` TEXT, `remoteId` INTEGER, `imageUrl` TEXT, `snippet` TEXT, FOREIGN KEY(`feedId`) REFERENCES `feeds`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -191,6 +191,11 @@
           {
             "fieldPath": "imageUrl",
             "columnName": "imageUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "snippet",
+            "columnName": "snippet",
             "affinity": "TEXT"
           }
         ],
@@ -317,7 +322,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'efd05e6d25991468c6150b7b7c84b587')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8164e9b800efbee309cfc02dd71aeeb8')"
     ]
   }
 }

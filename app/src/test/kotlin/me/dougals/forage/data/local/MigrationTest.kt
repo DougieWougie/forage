@@ -80,6 +80,9 @@ class MigrationTest {
             assertEquals(true, "index_articles_isRead_publishedAt" in names)
             assertEquals(true, "index_articles_feedId_publishedAt" in names)
             assertEquals(false, "index_articles_isRead" in names)
+            // Existing rows have no snippet until the background fill reaches them.
+            assertNull(db.articleDao().getAll().single().snippet)
+            assertEquals(1, db.articleDao().withoutSnippet(10).size)
         } finally {
             db.close()
         }

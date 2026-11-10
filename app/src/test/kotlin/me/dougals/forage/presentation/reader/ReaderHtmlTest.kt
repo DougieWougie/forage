@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test
 class ReaderHtmlTest {
     private val style = ReaderStyle(ReaderFont.SERIF, 1.0f, background = "#101010", text = "#eeeeee", link = "#88aaff")
     private fun page(title: String = "T", byline: String? = null, body: String = "<p>b</p>", s: ReaderStyle = style) =
-        ReaderHtml.wrap(title, byline, body, s)
+        ReaderHtml.wrap(title, byline, ReaderHtml.sanitise(body), s)
 
     @Test fun includesBodyTitleAndByline() {
         val h = page(title = "Hello", byline = "Ann · 2025-06-10", body = "<p>content</p>")
@@ -49,7 +49,7 @@ class ReaderHtmlTest {
     }
 
     @Test fun relativeLinksAndImagesResolveAgainstTheArticleUrl() {
-        val h = ReaderHtml.wrap("T", null, "<a href=\"/a\">l</a><img src=\"pic.png\">", style, "https://site.example/post/1")
+        val h = ReaderHtml.wrap("T", null, ReaderHtml.sanitise("<a href=\"/a\">l</a><img src=\"pic.png\">", "https://site.example/post/1"), style)
         assertTrue(h.contains("href=\"https://site.example/a\""))
         assertTrue(h.contains("src=\"https://site.example/post/pic.png\""))
     }

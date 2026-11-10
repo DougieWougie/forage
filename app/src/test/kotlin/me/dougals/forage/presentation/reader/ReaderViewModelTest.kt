@@ -24,6 +24,8 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.AppSettings
 import me.dougals.forage.domain.model.ReaderFont
@@ -47,7 +49,7 @@ class ReaderViewModelTest {
     private fun vm(a: me.dougals.forage.domain.model.Article, markReadOnOpen: Boolean = true) = run {
         every { settings.settings } returns flowOf(AppSettings(readerFont = ReaderFont.SANS, fontScale = 1.2f, markReadOnOpen = markReadOnOpen))
         every { repo.observeArticle(a.id) } returns MutableStateFlow(a)
-        ReaderViewModel(SavedStateHandle(mapOf("articleId" to a.id)), repo, settings, archiver, ImageResourceFetcher(OkHttpClient()))
+        ReaderViewModel(SavedStateHandle(mapOf("articleId" to a.id)), repo, settings, archiver, ImageResourceFetcher(OkHttpClient()), UnconfinedTestDispatcher())
     }
 
     @Test fun exposesArticleAndReaderSettings() = runTest {
@@ -124,5 +126,45 @@ class ReaderViewModelTest {
             awaitUntil { !it.downloading }
         }
         coVerify(exactly = 1) { archiver.download(5) }
+    }
+
+    @Test fun theBodyIsSanitisedAndExposedWithTheArticle() = runTest {
+        val a = article(5).copy(contentHtml = "<p>safe</p><script>x()</script>", url = "https://site.example/p")
+        vm(a).state.test {
+            val s = awaitUntil { it.body != null }
+            assertEquals(5L, s.body!!.articleId)
+            assertTrue(s.body!!.html.html.contains("<p>safe</p>"))
+            assertFalse(s.body!!.html.html.contains("script"))
+        }
+    }
+
+    @Test fun sanitisingRunsOnTheGivenDispatcherNotTheCollectorsThread() = runTest {
+        val worker = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "reader-clean") }
+        try {
+            val seen = java.util.concurrent.CopyOnWriteArrayList<String>()
+            // Reading the article's HTML happens in the same stage as the cleaning, so the flow's thread tells us where that is.
+            val a = article(5).copy(contentHtml = "<p>safe</p>")
+            every { repo.observeArticle(5) } returns kotlinx.coroutines.flow.flow { seen += Thread.currentThread().name; emit(a) }
+            every { settings.settings } returns flowOf(AppSettings())
+            val v = ReaderViewModel(SavedStateHandle(mapOf("articleId" to 5L)), repo, settings, archiver, ImageResourceFetcher(OkHttpClient()), worker.asCoroutineDispatcher())
+            v.state.test { awaitUntil { it.body != null } }
+            assertTrue(seen.any { it.startsWith("reader-clean") }, seen.toString())
+        } finally {
+            worker.shutdownNow()
+        }
+    }
+
+    @Test fun changingTheFontDoesNotSanitiseAgain() = runTest {
+        val a = article(5).copy(contentHtml = "<p>safe</p>")
+        val settingsFlow = MutableStateFlow(AppSettings())
+        every { settings.settings } returns settingsFlow
+        every { repo.observeArticle(5) } returns MutableStateFlow(a)
+        val v = ReaderViewModel(SavedStateHandle(mapOf("articleId" to 5L)), repo, settings, archiver, ImageResourceFetcher(OkHttpClient()), UnconfinedTestDispatcher())
+        v.state.test {
+            val first = awaitUntil { it.body != null }.body
+            settingsFlow.value = AppSettings(readerFont = ReaderFont.DYSLEXIC)
+            val second = awaitUntil { it.settings.readerFont == ReaderFont.DYSLEXIC }.body
+            assertTrue(first === second, "the same sanitised body must be reused")
+        }
     }
 }

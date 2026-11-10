@@ -33,9 +33,20 @@ the first error is returned at the end.
 ![Room schema](diagrams/schema.svg)
 
 `ForageDatabase` is at version 3 (`MIGRATION_1_2` adds `articles.imageUrl`; `MIGRATION_2_3` adds indices on `articles.remoteId`,
-`(isRead, publishedAt)` and `(feedId, publishedAt)` and drops the old `isRead` index). Exported schemas are in
+`(isRead, publishedAt)` and `(feedId, publishedAt)`, drops the old `isRead` index, and adds `articles.snippet`). Exported schemas are in
 `app/schemas/`. State changes that queue a pending change (`setRead`, `setSaved`, `markFeedRead`, `setReadBatch`) write the article and the queue row in one
 Room transaction. `remoteId` columns hold Nextcloud ids and stay null for items that exist only locally.
+
+### Article lists and the reader
+
+A card shows `articles.snippet`, a plain-text preview computed when the article is stored (`ArticleSnippets`, by local refresh and
+the Nextcloud pull). List queries select the snippet and leave `summary` and `contentHtml` out; the reader loads the full row through
+`observeById`. Rows stored before the column existed start with a NULL snippet and are filled in the background at launch
+(`SnippetBackfill`). `ArticleListViewModel` builds its list on `Dispatchers.Default`.
+
+`ReaderViewModel` sanitises the article body (`ReaderHtml.sanitise`, Jsoup `Safelist.relaxed()`) on `Dispatchers.Default` and exposes it as a
+`SafeHtml`, the only type `ReaderHtml.wrap` accepts, so the screen cannot render unsanitised markup. It sanitises again only when the
+article's HTML changes, not on a font or size change.
 
 ## Background work
 

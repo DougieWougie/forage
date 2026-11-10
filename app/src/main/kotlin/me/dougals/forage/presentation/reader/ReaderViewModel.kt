@@ -15,11 +15,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.getAndUpdate
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -32,29 +38,48 @@ import me.dougals.forage.domain.repository.FeedRepository
 import me.dougals.forage.domain.repository.SettingsRepository
 import javax.inject.Inject
 
+/** The sanitised body of article [articleId], so a screen never pairs one article's page with another's. */
+data class ReaderBody(val articleId: Long, val html: SafeHtml)
+
 data class ReaderState(
     val article: Article? = null,
+    /** Null until the article's HTML has been sanitised, which happens off the main thread. */
+    val body: ReaderBody? = null,
     val settings: AppSettings = AppSettings(),
     val downloading: Boolean = false,
     val downloadFailed: Boolean = false,
 )
 
 @HiltViewModel
-class ReaderViewModel @Inject constructor(
+class ReaderViewModel(
     handle: SavedStateHandle,
     private val repo: FeedRepository,
     private val settingsRepo: SettingsRepository,
     private val archiver: OfflineArchiver,
     /** Fetches reader images; the WebView itself never touches the network. */
     val images: ImageResourceFetcher,
+    /** Where article HTML is sanitised; a parameter so tests can run it on their own dispatcher. */
+    private val sanitiseDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
+    @Inject constructor(
+        handle: SavedStateHandle, repo: FeedRepository, settingsRepo: SettingsRepository,
+        archiver: OfflineArchiver, images: ImageResourceFetcher,
+    ) : this(handle, repo, settingsRepo, archiver, images, Dispatchers.Default)
+
     private val articleId: Long = requireNotNull(handle.get<Long>("articleId")) { "articleId required" }
     private val article = repo.observeArticle(articleId)
 
     private val download = MutableStateFlow(Download.IDLE)
 
-    val state: StateFlow<ReaderState> = combine(article, settingsRepo.settings, download) { a, s, d ->
-        ReaderState(a, s, downloading = d == Download.RUNNING, downloadFailed = d == Download.FAILED)
+    /** Re-sanitised only when the article's markup changes, not on a read toggle, a font change or a size change. */
+    private val body: Flow<ReaderBody?> = article
+        .map { a -> a?.let { Triple(it.id, it.readerHtml, it.url) } }
+        .distinctUntilChanged()
+        .map { source -> source?.let { (id, html, url) -> ReaderBody(id, ReaderHtml.sanitise(html, url)) } }
+        .flowOn(sanitiseDispatcher)
+
+    val state: StateFlow<ReaderState> = combine(article, body, settingsRepo.settings, download) { a, b, s, d ->
+        ReaderState(a, b, s, downloading = d == Download.RUNNING, downloadFailed = d == Download.FAILED)
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReaderState())
 

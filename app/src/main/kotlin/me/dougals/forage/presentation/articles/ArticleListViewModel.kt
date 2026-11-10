@@ -15,6 +15,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -85,11 +88,16 @@ data class ArticleListState(
 )
 
 @HiltViewModel
-class ArticleListViewModel @Inject constructor(
+class ArticleListViewModel(
     private val handle: SavedStateHandle,
     private val repo: FeedRepository,
     private val settingsRepo: SettingsRepository,
+    /** Where the list is built; a parameter so tests can run it on their own dispatcher. */
+    private val computeDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
+    @Inject constructor(handle: SavedStateHandle, repo: FeedRepository, settingsRepo: SettingsRepository) :
+        this(handle, repo, settingsRepo, Dispatchers.Default)
+
     val source = ListSource.from(handle)
     private val refreshing = MutableStateFlow(false)
     private val message = MutableStateFlow<UiText?>(null)
@@ -155,6 +163,8 @@ class ArticleListViewModel @Inject constructor(
             (source as? ListSource.Folder)?.let { s -> allFolders.firstOrNull { it.id == s.folderId }?.name },
         )
     }
+        // Mapping rows, merging folders and filtering a long list is not main-thread work.
+        .flowOn(computeDispatcher)
 
     private val undos = combine(bulkRead.pending, toggles.pending) { marked, toggle -> marked to toggle }
 

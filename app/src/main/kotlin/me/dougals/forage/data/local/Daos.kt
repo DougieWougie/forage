@@ -21,18 +21,21 @@ import kotlinx.coroutines.flow.Flow
 
 data class UnreadCount(val feedId: Long, val count: Int)
 
+/** The text an article's snippet is made from. */
+data class SnippetSource(val id: Long, val summary: String?, val contentHtml: String?)
+
 data class OfflineStats(val count: Int, val bytes: Long)
 
 /** A queued change with the server id of its article ([remoteId] is null for an article that never reached the server). */
 data class PendingChangeWithRemote(@Embedded val change: PendingChangeEntity, val remoteId: Long?)
 
 /**
- * Columns for article lists. Bodies are truncated and the offline copy is reduced to a presence marker, so
- * a few large articles can't overflow the 2MB CursorWindow; the reader loads the full row via observeById.
+ * Columns for article lists. A card needs only the stored plain-text [ArticleEntity.snippet], so the bodies are
+ * left out (NULL) and the offline copy is reduced to a presence marker; with large articles in the table the
+ * list could otherwise overflow the 2MB CursorWindow. The reader loads the full row via observeById.
  */
 private const val LIST_COLUMNS =
-    "id, feedId, guid, title, url, author, substr(summary, 1, 4000) AS summary, " +
-        "substr(contentHtml, 1, 4000) AS contentHtml, publishedAt, isRead, isSaved, " +
+    "id, feedId, guid, title, url, author, NULL AS summary, NULL AS contentHtml, snippet, publishedAt, isRead, isSaved, " +
         "CASE WHEN offlineHtml IS NULL THEN NULL ELSE '' END AS offlineHtml, remoteId, imageUrl"
 
 const val SEARCH_LIMIT = 200
@@ -75,6 +78,9 @@ interface ArticleDao {
     /** Backfills articles stored before thumbnails existed; never replaces one already set. */
     @Query("UPDATE articles SET imageUrl = :url WHERE feedId = :feedId AND guid = :guid AND imageUrl IS NULL")
     suspend fun fillImageUrl(feedId: Long, guid: String, url: String)
+    @Query("SELECT id, summary, contentHtml FROM articles WHERE snippet IS NULL LIMIT :limit")
+    suspend fun withoutSnippet(limit: Int): List<SnippetSource>
+    @Query("UPDATE articles SET snippet = :snippet WHERE id = :id") suspend fun setSnippet(id: Long, snippet: String)
     @Query("UPDATE articles SET offlineHtml = NULL WHERE id = :id") suspend fun clearOfflineHtml(id: Long)
     @Query("UPDATE articles SET offlineHtml = NULL WHERE isSaved = 0 AND offlineHtml IS NOT NULL") suspend fun clearUnsavedOfflineHtml()
     @Query("UPDATE articles SET offlineHtml = NULL WHERE offlineHtml IS NOT NULL") suspend fun clearAllOfflineHtml()
