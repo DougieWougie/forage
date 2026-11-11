@@ -26,7 +26,7 @@ class SessionStoreTest {
         val prefs = ApplicationProvider.getApplicationContext<Context>()
             .getSharedPreferences("test-sessions", Context.MODE_PRIVATE)
         prefs.edit().clear().commit()
-        return PrefsSessionStore(prefs)
+        return PrefsSessionStore(prefs, me.dougals.forage.testutil.FakeSecretCipher())
     }
 
     @Test fun savesAndReadsPerDomain() {

@@ -12,7 +12,8 @@ reach other hosts, including through redirects, and the app also fetches attacke
 - Both are stored in app-private `SharedPreferences` (`securePrefs`). Auto-backup is disabled (`allowBackup="false"`).
   They were previously in `EncryptedSharedPreferences`, which Jetpack has deprecated; the recommended replacement is plain
   prefs under Android's file-based encryption. That is a weaker posture (a rooted device can read them), accepted to avoid
-  a deprecated dependency or hand-rolled crypto. Old encrypted files are copied across once at first launch (`migrateLegacyPrefs`),
+  a deprecated dependency or hand-rolled crypto. Superseded in part: the password and cookie values are now additionally sealed with an
+  AES-GCM Keystore key (`SecretCipher`), using the platform API directly rather than the deprecated library. Old encrypted files are copied across once at first launch (`migrateLegacyPrefs`),
   and the security-crypto dependency can be removed once that has shipped for a release or two.
 - Two `OkHttpClient`s: `@WebClient` (feeds and pages) carries `SessionCookieInterceptor`; `@ApiClient` (Nextcloud, images)
   does not. Nextcloud Basic auth is added only by its own API client.

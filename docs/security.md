@@ -45,5 +45,8 @@ current page as it navigates, and "Save session" refuses a page that is not HTTP
 Cookies are captured from the in-app login WebView (`SessionCapture`). `@ApiClient` has no cookie interceptor, so
 image fetches and Nextcloud calls never carry site cookies. `allowBackup` is `false`.
 
-Secrets are not encrypted by the app: Jetpack's `EncryptedSharedPreferences` is deprecated, so they rely on Android's file-based
-encryption and app sandbox (see [ADR 0003](adr/0003-scoped-credentials.md)). A rooted device or a debuggable build can read them.
+The Nextcloud app password and session cookie values are sealed with AES-256-GCM under a non-exportable Android Keystore key
+(`KeystoreSecretCipher`, no user-authentication requirement so background sync works while locked) before they reach
+`SharedPreferences`. Values saved by older versions are read as plaintext once and sealed in place. If the key is lost, the
+value is dropped and the user signs in again. The server address and username are stored unencrypted. See
+[ADR 0003](adr/0003-scoped-credentials.md). A rooted device or a debuggable build can still use the key to read them.
