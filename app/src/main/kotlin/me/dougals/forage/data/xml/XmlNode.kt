@@ -33,8 +33,12 @@ class XmlNode(val name: String, val attrs: Map<String, String>) {
     internal fun appendText(s: String) { textBuf.append(s) }
 
     companion object {
+        /** Upper bound on elements held in memory; a 10 MB file of empty nested nodes would otherwise build millions. */
+        const val MAX_NODES = 200_000
+
         fun parse(input: InputStream): XmlNode {
             try {
+                var count = 0
                 val p = Xml.newPullParser()
                 p.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
                 p.setInput(input, null)
@@ -43,6 +47,7 @@ class XmlNode(val name: String, val attrs: Map<String, String>) {
                 while (true) {
                     when (p.next()) {
                         XmlPullParser.START_TAG -> {
+                            if (++count > MAX_NODES) throw XmlParseException("Document has too many elements")
                             val attrs = (0 until p.attributeCount).associate { p.getAttributeName(it) to p.getAttributeValue(it) }
                             val node = XmlNode(p.name, attrs)
                             stack.lastOrNull()?.children?.add(node)

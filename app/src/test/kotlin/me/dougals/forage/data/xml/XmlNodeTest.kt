@@ -37,6 +37,11 @@ class XmlNodeTest {
         assertEquals("Ann", root.child("item")!!.childText("creator"))
     }
 
+    @Test fun rejectsADocumentWithTooManyElements() {
+        val xml = "<r>" + "<a/>".repeat(XmlNode.MAX_NODES) + "</r>"
+        assertThrows(XmlParseException::class.java) { parse(xml) }
+    }
+
     @Test fun textIsJoinedAcrossCdataAndTrimmed() {
         val root = parse("<a>  one <![CDATA[<b>two</b>]]> three  </a>")
         assertEquals("one <b>two</b> three", root.text)
