@@ -16,12 +16,12 @@ import androidx.core.content.edit
 import me.dougals.forage.domain.auth.SessionStore
 
 /** Backed by app-private prefs (see [securePrefs]). */
-class PrefsSessionStore(private val prefs: SharedPreferences) : SessionStore {
+class PrefsSessionStore(private val prefs: SharedPreferences, private val cipher: SecretCipher) : SessionStore {
     override fun save(domain: String, cookieHeader: String) {
-        prefs.edit { putString(domain.lowercase(), cookieHeader) }
+        prefs.edit { putSecret(domain.lowercase(), cookieHeader, cipher) }
     }
 
-    override fun get(domain: String): String? = prefs.getString(domain.lowercase(), null)
+    override fun get(domain: String): String? = prefs.getSecret(domain.lowercase(), cipher)
 
     override fun remove(domain: String) {
         prefs.edit { remove(domain.lowercase()) }

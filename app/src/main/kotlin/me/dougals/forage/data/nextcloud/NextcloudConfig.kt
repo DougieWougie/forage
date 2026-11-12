@@ -13,6 +13,9 @@ package me.dougals.forage.data.nextcloud
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import me.dougals.forage.data.auth.SecretCipher
+import me.dougals.forage.data.auth.getSecret
+import me.dougals.forage.data.auth.putSecret
 import me.dougals.forage.domain.nextcloud.CredentialStore
 import me.dougals.forage.domain.nextcloud.NextcloudCredentials
 import me.dougals.forage.domain.nextcloud.SyncStateStore
@@ -28,18 +31,18 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 class NextcloudNotConfiguredException(cause: Throwable? = null) : Exception("Nextcloud is not configured", cause)
 
-class PrefsCredentialStore(private val prefs: SharedPreferences) : CredentialStore {
+class PrefsCredentialStore(private val prefs: SharedPreferences, private val cipher: SecretCipher) : CredentialStore {
     override fun get(): NextcloudCredentials? {
         val url = prefs.getString(URL, null) ?: return null
         val user = prefs.getString(USER, null) ?: return null
-        val pass = prefs.getString(PASS, null) ?: return null
+        val pass = prefs.getSecret(PASS, cipher) ?: return null
         return NextcloudCredentials(url, user, pass, prefs.getBoolean(FLOW, false))
     }
 
     override fun save(credentials: NextcloudCredentials) = prefs.edit {
         putString(URL, credentials.serverUrl)
         putString(USER, credentials.username)
-        putString(PASS, credentials.appPassword)
+        putSecret(PASS, credentials.appPassword, cipher)
         putBoolean(FLOW, credentials.fromLoginFlow)
     }
 

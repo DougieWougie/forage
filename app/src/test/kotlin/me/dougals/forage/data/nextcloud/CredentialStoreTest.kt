@@ -27,7 +27,7 @@ class CredentialStoreTest {
         val prefs = ApplicationProvider.getApplicationContext<Context>()
             .getSharedPreferences("test-nc", Context.MODE_PRIVATE)
         prefs.edit().clear().commit()
-        return PrefsCredentialStore(prefs)
+        return PrefsCredentialStore(prefs, me.dougals.forage.testutil.FakeSecretCipher())
     }
 
     @Test fun emptyByDefault() = assertNull(store().get())

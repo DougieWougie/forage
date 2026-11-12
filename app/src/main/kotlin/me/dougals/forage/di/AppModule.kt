@@ -26,6 +26,8 @@ import me.dougals.forage.domain.auth.SessionCapture
 import me.dougals.forage.data.auth.SessionCookieInterceptor
 import me.dougals.forage.domain.auth.SessionStore
 import me.dougals.forage.data.auth.PrefsSessionStore
+import me.dougals.forage.data.auth.KeystoreSecretCipher
+import me.dougals.forage.data.auth.SecretCipher
 import me.dougals.forage.data.auth.securePrefs
 import me.dougals.forage.data.content.ImageResourceFetcher
 import me.dougals.forage.data.content.CoilThumbnailCache
@@ -97,8 +99,9 @@ object AppModule {
         Room.databaseBuilder(c, ForageDatabase::class.java, "forage.db")
             .addMigrations(ForageDatabase.MIGRATION_1_2, ForageDatabase.MIGRATION_2_3).build()
 
-    @Provides @Singleton fun sessionStore(@ApplicationContext c: Context): SessionStore = PrefsSessionStore(securePrefs(c, "sessions", legacyName = "forage_sessions"))
-    @Provides @Singleton fun credentialStore(@ApplicationContext c: Context): CredentialStore = PrefsCredentialStore(securePrefs(c, "nextcloud", legacyName = "forage_nextcloud"))
+    @Provides @Singleton fun secretCipher(): SecretCipher = KeystoreSecretCipher()
+    @Provides @Singleton fun sessionStore(@ApplicationContext c: Context, cipher: SecretCipher): SessionStore = PrefsSessionStore(securePrefs(c, "sessions", legacyName = "forage_sessions"), cipher)
+    @Provides @Singleton fun credentialStore(@ApplicationContext c: Context, cipher: SecretCipher): CredentialStore = PrefsCredentialStore(securePrefs(c, "nextcloud", legacyName = "forage_nextcloud"), cipher)
     @Provides @Singleton
     fun syncState(@ApplicationContext c: Context): SyncStateStore =
         PrefsSyncStateStore(c.getSharedPreferences("sync_state", Context.MODE_PRIVATE))
