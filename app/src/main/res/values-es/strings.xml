@@ -223,6 +223,7 @@
     <string name="unknown_error">error desconocido</string>
     <string name="refresh_failed">Error al actualizar</string>
     <string name="error_offline">Parece que no tienes conexión</string>
+    <string name="error_host_not_found">No se encontró esa dirección. Comprueba que no tenga errores.</string>
     <string name="sync_failed">No se pudo sincronizar: %1$s</string>
     <string name="connect_fill_in_all">Rellena el servidor, el nombre de usuario y la contraseña de aplicación</string>
     <string name="connect_requires_https">El servidor de Nextcloud debe usar https://</string>

@@ -12,6 +12,8 @@
 package me.dougals.forage.di
 
 import android.content.Context
+import android.net.ConnectivityManager
+import me.dougals.forage.data.net.ConnectivityNetworkStatus
 import android.webkit.CookieManager
 import androidx.room.Room
 import dagger.Module
@@ -158,11 +160,12 @@ object AppModule {
     fun feedRepository(
         db: ForageDatabase, source: FeedSource, api: NextcloudApiProvider, flusher: PendingChangeFlusher,
         syncer: NextcloudSyncer, sync: SyncScheduler, archive: ArchiveScheduler, settings: SettingsRepository,
-        progress: RefreshProgress,
+        progress: RefreshProgress, @ApplicationContext context: Context,
     ): FeedRepository = ModeAwareFeedRepository(
         mode = settings.settings.map { it.syncMode }.distinctUntilChanged(),
         local = LocalFeedRepository(db, source, archive, progress = progress),
         nextcloud = NextcloudFeedRepository(db, api, flusher, syncer, sync, archive),
+        network = ConnectivityNetworkStatus(context.getSystemService(ConnectivityManager::class.java)),
     )
 
     @Provides @Singleton fun appVisibilityTracker() = AppVisibilityTracker()

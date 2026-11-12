@@ -18,7 +18,15 @@ import kotlinx.coroutines.sync.withLock
 import me.dougals.forage.domain.model.Article
 import me.dougals.forage.domain.model.Feed
 import me.dougals.forage.domain.model.Folder
+import me.dougals.forage.data.net.NonPublicAddressException
+import me.dougals.forage.domain.model.HostNotFoundException
+import me.dougals.forage.domain.model.NetworkStatus
+import me.dougals.forage.domain.model.OfflineException
 import me.dougals.forage.domain.model.OfflineUsage
+import me.dougals.forage.domain.model.PartialRefreshException
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.UnknownHostException
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.repository.FeedRepository
 
@@ -30,6 +38,7 @@ class ModeAwareFeedRepository(
     private val mode: Flow<SyncMode>,
     private val local: FeedRepository,
     private val nextcloud: FeedRepository,
+    private val network: NetworkStatus = NetworkStatus { true },
 ) : FeedRepository {
     /**
      * Refreshes run one at a time: the splash, pull-to-refresh, Sync now, the worker and a Nextcloud add-feed can
@@ -51,7 +60,7 @@ class ModeAwareFeedRepository(
     override suspend fun addFeed(url: String, folderId: Long?): Result<Feed> {
         val target = current()
         // Nextcloud's addFeed refreshes internally, so it has to take the same lock.
-        return if (target === nextcloud) refreshLock.withLock { target.addFeed(url, folderId) } else target.addFeed(url, folderId)
+        return withNetworkErrors { if (target === nextcloud) refreshLock.withLock { target.addFeed(url, folderId) } else target.addFeed(url, folderId) }
     }
     override suspend fun removeFeed(feedId: Long) = current().removeFeed(feedId)
     override suspend fun moveFeed(feedId: Long, folderId: Long?) = current().moveFeed(feedId, folderId)
@@ -64,5 +73,28 @@ class ModeAwareFeedRepository(
     override suspend fun markFeedRead(feedId: Long) = current().markFeedRead(feedId)
     override suspend fun markOlderRead(articleId: Long) = current().markOlderRead(articleId)
     override suspend fun setReadBatch(articleIds: List<Long>, read: Boolean) = current().setReadBatch(articleIds, read)
-    override suspend fun refresh() = refreshLock.withLock { current().refresh() }
+    override suspend fun refresh() = withNetworkErrors { refreshLock.withLock { current().refresh() } }
+
+    private inline fun <T> withNetworkErrors(block: () -> Result<T>): Result<T> {
+        val result = block()
+        val error = result.exceptionOrNull() ?: return result
+        return Result.failure(classify(error))
+    }
+
+    /**
+     * Tells "no connection" from "that address does not exist", which look alike (both are a failed DNS lookup).
+     * The first is decided by asking the device, so a mistyped feed address while online is still reported as such.
+     */
+    private fun classify(error: Throwable): Throwable {
+        if (error is PartialRefreshException) return PartialRefreshException(error.report, classify(error.cause ?: error))
+        val chain = generateSequence(error) { it.cause }.take(8).toList()
+        val dns = chain.any { it is UnknownHostException && it !is NonPublicAddressException }
+        val unreachable = chain.any { it is ConnectException || it is NoRouteToHostException }
+        return when {
+            !(dns || unreachable) -> error
+            !network.isOnline() -> OfflineException(error)
+            dns -> HostNotFoundException(error)
+            else -> error
+        }
+    }
 }

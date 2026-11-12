@@ -22,14 +22,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import me.dougals.forage.domain.model.SyncMode
 import me.dougals.forage.domain.repository.FeedRepository
+import io.mockk.coEvery
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ModeAwareFeedRepositoryTest {
     private val local = mockk<FeedRepository>(relaxed = true)
     private val nextcloud = mockk<FeedRepository>(relaxed = true)
     private val mode = MutableStateFlow(SyncMode.LOCAL)
-    private val repo = ModeAwareFeedRepository(mode, local, nextcloud)
+    private var online = true
+    private val repo = ModeAwareFeedRepository(mode, local, nextcloud, network = { online })
 
     @Test fun writesFollowTheCurrentMode() = runTest {
         repo.setRead(1, true)
@@ -140,5 +143,43 @@ class ModeAwareFeedRepositoryTest {
         coEvery { local.refresh() } throws IllegalStateException("boom") andThen Result.success(me.dougals.forage.domain.model.SyncReport())
         runCatching { repo.refresh() }
         assertEquals(true, repo.refresh().isSuccess)
+    }
+
+    private fun dnsFailure() = me.dougals.forage.data.remote.FeedFetchException("x", cause = java.net.UnknownHostException("a.example"))
+
+    @Test fun aFailedLookupWhileOfflineIsReportedAsOffline() = runTest {
+        online = false
+        coEvery { local.addFeed(any(), any()) } returns Result.failure(dnsFailure())
+        coEvery { local.refresh() } returns Result.failure(dnsFailure())
+        assertTrue(repo.addFeed("u", null).exceptionOrNull() is me.dougals.forage.domain.model.OfflineException)
+        assertTrue(repo.refresh().exceptionOrNull() is me.dougals.forage.domain.model.OfflineException)
+    }
+
+    @Test fun aFailedLookupWhileOnlineIsAMistypedAddress() = runTest {
+        coEvery { local.addFeed(any(), any()) } returns Result.failure(dnsFailure())
+        assertTrue(repo.addFeed("u", null).exceptionOrNull() is me.dougals.forage.domain.model.HostNotFoundException)
+    }
+
+    @Test fun theGuardsRefusalIsNeitherOfflineNorATypo() = runTest {
+        online = false
+        val refusal = me.dougals.forage.data.net.NonPublicAddressException("internal.example")
+        coEvery { local.addFeed(any(), any()) } returns Result.failure(refusal)
+        assertEquals(refusal, repo.addFeed("u", null).exceptionOrNull())
+    }
+
+    @Test fun otherFailuresPassThroughUntouched() = runTest {
+        online = false
+        val e = java.io.IOException("HTTP 500")
+        coEvery { local.refresh() } returns Result.failure(e)
+        assertEquals(e, repo.refresh().exceptionOrNull())
+    }
+
+    @Test fun aPartialRefreshKeepsItsReportButClassifiesTheCause() = runTest {
+        online = false
+        val report = me.dougals.forage.domain.model.SyncReport(newArticles = 2)
+        coEvery { local.refresh() } returns Result.failure(me.dougals.forage.domain.model.PartialRefreshException(report, dnsFailure()))
+        val e = repo.refresh().exceptionOrNull() as me.dougals.forage.domain.model.PartialRefreshException
+        assertEquals(report, e.report)
+        assertTrue(e.cause is me.dougals.forage.domain.model.OfflineException)
     }
 }

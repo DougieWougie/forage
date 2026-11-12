@@ -53,18 +53,9 @@ class UiTextTest {
 
     @Test fun noMessageFallsBack() = assertEquals(UiText.Res(R.string.unknown_error), RuntimeException().toUiText(R.string.unknown_error))
 
-    @Test fun anUnreachableNetworkSaysYouAreOffline() {
-        assertEquals(UiText.Res(R.string.error_offline), java.net.UnknownHostException("Unable to resolve host \"a.example\"").toUiText(R.string.refresh_failed))
-        assertEquals(UiText.Res(R.string.error_offline), java.net.ConnectException("Network is unreachable").toUiText(R.string.refresh_failed))
-    }
-
-    @Test fun offlineIsFoundInsideAWrappedFailure() {
-        val wrapped = me.dougals.forage.domain.model.PartialRefreshException(me.dougals.forage.domain.model.SyncReport(), java.net.UnknownHostException("x"))
-        assertEquals(UiText.Res(R.string.error_offline), wrapped.toUiText(R.string.refresh_failed))
-    }
-
-    @Test fun theSsrfGuardsUnknownHostIsNotAnOfflineError() {
-        val e = java.net.UnknownHostException("internal.example resolves to a non-public address")
-        assertEquals(UiText.Raw("internal.example resolves to a non-public address"), e.toUiText(R.string.refresh_failed))
+    @Test fun offlineAndMistypedAddressHaveTheirOwnWording() {
+        val cause = java.net.UnknownHostException("a.example")
+        assertEquals(UiText.Res(R.string.error_offline), me.dougals.forage.domain.model.OfflineException(cause).toUiText(R.string.refresh_failed))
+        assertEquals(UiText.Res(R.string.error_host_not_found), me.dougals.forage.domain.model.HostNotFoundException(cause).toUiText(R.string.add_feed_failed))
     }
 }
