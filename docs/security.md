@@ -45,5 +45,5 @@ current page as it navigates, and "Save session" refuses a page that is not HTTP
 Cookies are captured from the in-app login WebView (`SessionCapture`). `@ApiClient` has no cookie interceptor, so
 image fetches and Nextcloud calls never carry site cookies. `allowBackup` is `false`.
 
-Secrets are not encrypted by the app: Jetpack's `EncryptedSharedPreferences` is deprecated, so they rely on Android's file-based
-encryption and app sandbox (see [ADR 0003](adr/0003-scoped-credentials.md)). A rooted device or a debuggable build can read them.
+Secrets are not encrypted by the app itself: Jetpack's `EncryptedSharedPreferences` is deprecated, so they sit in app-private
+storage, which Android encrypts at rest (file-based encryption) and other apps cannot read (see [ADR 0003](adr/0003-scoped-credentials.md)). A rooted device or a debuggable build can read them.
