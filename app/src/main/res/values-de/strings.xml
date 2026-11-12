@@ -206,6 +206,8 @@
     <!-- Messages shown in snackbars -->
     <string name="unknown_error">unbekannter Fehler</string>
     <string name="refresh_failed">Aktualisierung fehlgeschlagen</string>
+    <string name="error_offline">Sie scheinen offline zu sein</string>
+    <string name="error_host_not_found">Diese Adresse wurde nicht gefunden. Prüfen Sie sie auf Tippfehler.</string>
     <string name="sync_failed">Synchronisierung nicht möglich: %1$s</string>
     <string name="connect_fill_in_all">Server, Benutzername und App-Passwort ausfüllen</string>
     <string name="connect_requires_https">Der Nextcloud-Server muss https:// verwenden</string>

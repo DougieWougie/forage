@@ -14,6 +14,9 @@ package me.dougals.forage.presentation
 import android.content.Context
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
+import me.dougals.forage.R
+import me.dougals.forage.domain.model.HostNotFoundException
+import me.dougals.forage.domain.model.OfflineException
 
 /**
  * Text a view model wants shown, without resolving it itself: view models stay free of a [Context],
@@ -41,7 +44,9 @@ private fun List<Any>.resolved(context: Context): Array<Any> = map { if (it is U
  * Web addresses are removed first: a feed URL can carry a secret token, and an error line is easy to screenshot.
  */
 fun Throwable.toUiText(@StringRes fallback: Int): UiText =
-    message?.withoutUrls()?.takeIf { it.isNotBlank() }?.let(UiText::Raw) ?: UiText.Res(fallback)
+    if (this is OfflineException) UiText.Res(R.string.error_offline)
+    else if (this is HostNotFoundException) UiText.Res(R.string.error_host_not_found)
+    else message?.withoutUrls()?.takeIf { it.isNotBlank() }?.let(UiText::Raw) ?: UiText.Res(fallback)
 
 private val urlPattern = Regex("""[A-Za-z][A-Za-z0-9+.\-]*://\S+""")
 

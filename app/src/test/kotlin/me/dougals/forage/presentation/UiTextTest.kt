@@ -52,4 +52,10 @@ class UiTextTest {
         assertEquals(UiText.Raw("<link>"), java.io.IOException("http://a.example/x").toUiText(R.string.unknown_error))
 
     @Test fun noMessageFallsBack() = assertEquals(UiText.Res(R.string.unknown_error), RuntimeException().toUiText(R.string.unknown_error))
+
+    @Test fun offlineAndMistypedAddressHaveTheirOwnWording() {
+        val cause = java.net.UnknownHostException("a.example")
+        assertEquals(UiText.Res(R.string.error_offline), me.dougals.forage.domain.model.OfflineException(cause).toUiText(R.string.refresh_failed))
+        assertEquals(UiText.Res(R.string.error_host_not_found), me.dougals.forage.domain.model.HostNotFoundException(cause).toUiText(R.string.add_feed_failed))
+    }
 }

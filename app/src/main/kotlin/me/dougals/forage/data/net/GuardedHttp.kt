@@ -125,7 +125,7 @@ class PublicOnlyDns(
 ) : Dns {
     override fun lookup(hostname: String): List<InetAddress> {
         val addresses = delegate.lookup(hostname)
-        if (addresses.any { !policy(it) }) throw UnknownHostException("$hostname resolves to a non-public address")
+        if (addresses.any { !policy(it) }) throw NonPublicAddressException(hostname)
         return addresses
     }
 }
@@ -159,3 +159,6 @@ private fun isPublicV6(b: List<Int>): Boolean {
     if (b[0] == 0x20 && b[1] == 0x02) return false                                    // 2002::/16 6to4 (embeds IPv4)
     return true
 }
+
+/** The guard's refusal of a host that resolves to a private address; not a DNS failure, so not a sign of being offline. */
+class NonPublicAddressException(hostname: String) : UnknownHostException("$hostname resolves to a non-public address")
