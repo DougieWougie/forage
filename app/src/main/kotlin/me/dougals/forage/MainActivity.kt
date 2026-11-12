@@ -22,7 +22,7 @@ import androidx.compose.runtime.setValue
 import dagger.hilt.android.AndroidEntryPoint
 import me.dougals.forage.domain.app.AppVisibilityTracker
 import me.dougals.forage.domain.notify.DigestNotifier
-import me.dougals.forage.ui.BrandSplash
+import me.dougals.forage.ui.StartupRefresh
 import me.dougals.forage.ui.FolderRequest
 import me.dougals.forage.ui.ForageRoot
 import me.dougals.forage.ui.folderRequest
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // After a recreation the intent is the one already acted on.
         if (savedInstanceState == null) folderRequest = intent.folderRequest()
-        setContent { ForageTheme { BrandSplash { ForageRoot(folderRequest = folderRequest, onFolderRequestHandled = { folderRequest = null }) } } }
+        setContent { ForageTheme { StartupRefresh { ForageRoot(folderRequest = folderRequest, onFolderRequestHandled = { folderRequest = null }) } } }
     }
 
     /** A digest tapped while the app is already running (the activity is singleTop). */
