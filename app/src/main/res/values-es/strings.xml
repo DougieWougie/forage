@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Startup -->
-    <string name="splash_updating">Actualizando feeds…</string>
-    <string name="splash_no_new">No hay artículos nuevos</string>
-    <string name="splash_update_failed">No se pudieron actualizar los feeds</string>
-    <string name="splash_tap_to_continue">Toca para continuar</string>
-    <plurals name="splash_new_articles">
-        <item quantity="one">%1$d artículo nuevo</item>
-        <item quantity="many">%1$d artículos nuevos</item>
-        <item quantity="other">%1$d artículos nuevos</item>
-    </plurals>
-    <plurals name="splash_in_categories">
-        <item quantity="one">en %1$d categoría</item>
-        <item quantity="many">en %1$d categorías</item>
-        <item quantity="other">en %1$d categorías</item>
-    </plurals>
-    <string name="splash_updating_progress">Actualizando feed %1$d de %2$d</string>
 
     <!-- Navigation -->
     <string name="tab_unread">No leídos</string>

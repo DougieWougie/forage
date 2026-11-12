@@ -32,7 +32,7 @@ class ModeAwareFeedRepository(
     private val nextcloud: FeedRepository,
 ) : FeedRepository {
     /**
-     * Refreshes run one at a time: the splash, pull-to-refresh, Sync now, the worker and a Nextcloud add-feed can
+     * Refreshes run one at a time: the launch refresh, pull-to-refresh, Sync now, the worker and a Nextcloud add-feed can
      * all start one. A caller that arrives mid-refresh waits and then runs its own rather than joining the one in
      * flight, because that one may have read its feed list or server state before this caller's change landed.
      */

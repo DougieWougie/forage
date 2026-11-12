@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Startup -->
-    <string name="splash_updating">Mise à jour des flux…</string>
-    <string name="splash_no_new">Aucun nouvel article</string>
-    <string name="splash_update_failed">Impossible de mettre à jour les flux</string>
-    <string name="splash_tap_to_continue">Touchez pour continuer</string>
-    <plurals name="splash_new_articles">
-        <item quantity="one">%1$d nouvel article</item>
-        <item quantity="many">%1$d nouveaux articles</item>
-        <item quantity="other">%1$d nouveaux articles</item>
-    </plurals>
-    <plurals name="splash_in_categories">
-        <item quantity="one">dans %1$d catégorie</item>
-        <item quantity="many">dans %1$d catégories</item>
-        <item quantity="other">dans %1$d catégories</item>
-    </plurals>
-    <string name="splash_updating_progress">Mise à jour du flux %1$d sur %2$d</string>
 
     <!-- Navigation -->
     <string name="tab_unread">Non lus</string>
