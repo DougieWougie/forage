@@ -52,4 +52,19 @@ class UiTextTest {
         assertEquals(UiText.Raw("<link>"), java.io.IOException("http://a.example/x").toUiText(R.string.unknown_error))
 
     @Test fun noMessageFallsBack() = assertEquals(UiText.Res(R.string.unknown_error), RuntimeException().toUiText(R.string.unknown_error))
+
+    @Test fun anUnreachableNetworkSaysYouAreOffline() {
+        assertEquals(UiText.Res(R.string.error_offline), java.net.UnknownHostException("Unable to resolve host \"a.example\"").toUiText(R.string.refresh_failed))
+        assertEquals(UiText.Res(R.string.error_offline), java.net.ConnectException("Network is unreachable").toUiText(R.string.refresh_failed))
+    }
+
+    @Test fun offlineIsFoundInsideAWrappedFailure() {
+        val wrapped = me.dougals.forage.domain.model.PartialRefreshException(me.dougals.forage.domain.model.SyncReport(), java.net.UnknownHostException("x"))
+        assertEquals(UiText.Res(R.string.error_offline), wrapped.toUiText(R.string.refresh_failed))
+    }
+
+    @Test fun theSsrfGuardsUnknownHostIsNotAnOfflineError() {
+        val e = java.net.UnknownHostException("internal.example resolves to a non-public address")
+        assertEquals(UiText.Raw("internal.example resolves to a non-public address"), e.toUiText(R.string.refresh_failed))
+    }
 }

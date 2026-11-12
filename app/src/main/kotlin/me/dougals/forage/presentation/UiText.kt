@@ -14,6 +14,10 @@ package me.dougals.forage.presentation
 import android.content.Context
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
+import me.dougals.forage.R
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.UnknownHostException
 
 /**
  * Text a view model wants shown, without resolving it itself: view models stay free of a [Context],
@@ -41,7 +45,15 @@ private fun List<Any>.resolved(context: Context): Array<Any> = map { if (it is U
  * Web addresses are removed first: a feed URL can carry a secret token, and an error line is easy to screenshot.
  */
 fun Throwable.toUiText(@StringRes fallback: Int): UiText =
-    message?.withoutUrls()?.takeIf { it.isNotBlank() }?.let(UiText::Raw) ?: UiText.Res(fallback)
+    if (isOffline()) UiText.Res(R.string.error_offline) else message?.withoutUrls()?.takeIf { it.isNotBlank() }?.let(UiText::Raw) ?: UiText.Res(fallback)
+
+/**
+ * True when the network could not be reached at all (DNS failure, no route, refused). The SSRF guard also throws
+ * [UnknownHostException], for a host that resolves to a private address; that one is not an offline error.
+ */
+internal fun Throwable.isOffline(): Boolean = generateSequence(this) { it.cause }.take(8).any {
+    (it is UnknownHostException && it.message?.contains("non-public") != true) || it is ConnectException || it is NoRouteToHostException
+}
 
 private val urlPattern = Regex("""[A-Za-z][A-Za-z0-9+.\-]*://\S+""")
 
