@@ -33,12 +33,12 @@ class ImageResourceFetcher(
 ) : ImageFetcher {
     private val http = GuardedHttp(client, addressPolicy)
 
-    override suspend fun fetch(url: String, allowPrivate: Boolean): Result<FetchedImage> = try {
+    override suspend fun fetch(url: String, allowPrivate: Boolean, maxBytes: Long?): Result<FetchedImage> = try {
         Result.success(
             http.get(url, allowPrivate) { r ->
                 val type = r.body.contentType()
                 if (type?.type != "image") throw IOException("Not an image: ${type ?: "no content type"}")
-                FetchedImage("${type.type}/${type.subtype}", r.readBytesBounded(maxBytes))
+                FetchedImage("${type.type}/${type.subtype}", r.readBytesBounded(minOf(maxBytes ?: this.maxBytes, this.maxBytes)))
             },
         )
     } catch (e: CancellationException) {

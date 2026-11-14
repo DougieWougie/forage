@@ -13,7 +13,7 @@ Feed content, OPML entries, article links and article HTML are untrusted. Ration
 - IP literals are checked before connecting; hostnames are checked after DNS resolution in `PublicOnlyDns`.
   Only globally routable unicast space passes (`isPublicAddress`).
 - Redirects are followed manually (max 10) so each hop is checked. Proxies are disabled so the checked address is the one dialled.
-- Response bodies are size-limited: 10 MB feeds, 5 MB pages, 15 MB images. A caller can ask for extra statuses (only 304, for a conditional feed request that sent validators) to be handed to it instead of failing; every other
+- Response bodies are size-limited: 10 MB feeds, 5 MB pages, 15 MB images in the reader, 2 MB for list thumbnails (a bigger one is skipped). A caller can ask for extra statuses (only 304, for a conditional feed request that sent validators) to be handed to it instead of failing; every other
   non-2xx still throws, the address checks run first, and the validator headers go only to the original host, not to a redirect target.
   Each client also has a whole-call timeout
   (180 s for `@WebClient`, 240 s for `@ApiClient`), and a cancelled caller cancels the call, so a server that drips bytes cannot hold a request open.

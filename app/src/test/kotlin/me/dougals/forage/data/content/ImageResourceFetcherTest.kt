@@ -66,6 +66,16 @@ class ImageResourceFetcherTest {
         }
     }
 
+    @Test fun aCallCanLowerTheLimitButNotRaiseIt() = runTest {
+        MockWebServer().use { s ->
+            s.enqueue(image("image/png", ByteArray(5_000)))
+            s.enqueue(image("image/png", ByteArray(5_000)))
+            s.start()
+            assertTrue(fetcher(maxBytes = 10_000).fetch(s.url("/a").toString(), allowPrivate = true, maxBytes = 1_000).isFailure)
+            assertTrue(fetcher(maxBytes = 1_000).fetch(s.url("/b").toString(), allowPrivate = true, maxBytes = 1_000_000).isFailure)
+        }
+    }
+
     @Test fun httpErrorsAreFailures() = runTest {
         MockWebServer().use { s ->
             s.start(); s.enqueue(MockResponse.Builder().code(404).build())

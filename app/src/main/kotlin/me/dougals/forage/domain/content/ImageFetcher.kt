@@ -18,5 +18,6 @@ class FetchedImage(val mimeType: String, val bytes: ByteArray)
  * limit, image-only content), so callers never need their own HTTP client.
  */
 interface ImageFetcher {
-    suspend fun fetch(url: String, allowPrivate: Boolean): Result<FetchedImage>
+    /** [maxBytes] lowers the size limit for this call (list thumbnails); null keeps the fetcher's own limit. */
+    suspend fun fetch(url: String, allowPrivate: Boolean, maxBytes: Long? = null): Result<FetchedImage>
 }
