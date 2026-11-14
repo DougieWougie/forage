@@ -43,7 +43,7 @@ class ThumbnailFetcher(
         }
         if (!options.networkCachePolicy.readEnabled) throw IOException("Network disabled for $url")
 
-        val image = images.fetch(url, allowPrivate()).getOrThrow()
+        val image = images.fetch(url, allowPrivate(), THUMBNAIL_MAX_BYTES).getOrThrow()
         val editor = cache?.takeIf { options.diskCachePolicy.writeEnabled }?.openEditor(url)
         if (editor != null) {
             try {
@@ -60,6 +60,11 @@ class ThumbnailFetcher(
 
     private fun result(cache: DiskCache, path: Path, from: DataSource, snapshot: DiskCache.Snapshot) =
         SourceFetchResult(ImageSource(path, cache.fileSystem, url, snapshot), null, from)
+
+    companion object {
+        /** A list thumbnail is a few hundred KB at most; anything bigger is skipped rather than decoded for a small slot. */
+        const val THUMBNAIL_MAX_BYTES = 2_000_000L
+    }
 
     class Factory(
         private val images: ImageResourceFetcher,

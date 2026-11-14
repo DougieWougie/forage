@@ -110,4 +110,16 @@ class ThumbnailFetcherTest {
             }
         }
     }
+
+    @Test fun aThumbnailOverTheThumbnailLimitIsSkippedEvenThoughTheReaderWouldAllowIt() = runTest {
+        MockWebServer().use { server ->
+            server.start()
+            val big = ByteArray((ThumbnailFetcher.THUMBNAIL_MAX_BYTES + 1).toInt())
+            server.enqueue(MockResponse.Builder().addHeader("Content-Type", "image/png").body(Buffer().write(big)).build())
+            val cache = DiskCache.Builder().directory(tmp.newFolder().toOkioPath()).maxSizeBytes(10_000_000).build()
+            assertThrows(IOException::class.java) {
+                kotlinx.coroutines.runBlocking { fetcher(server.url("/big.png").toString(), cache).fetch() }
+            }
+        }
+    }
 }
