@@ -54,6 +54,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -85,6 +86,7 @@ import me.dougals.forage.presentation.reader.SafeHtml
 import me.dougals.forage.presentation.reader.ReaderStyle
 import me.dougals.forage.presentation.reader.ReaderViewModel
 import me.dougals.forage.presentation.reader.ShareIntents
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import me.dougals.forage.domain.content.ImageFetcher
 import java.io.ByteArrayInputStream
@@ -177,6 +179,10 @@ private fun ArticleWebView(article: Article, body: SafeHtml, prefs: AppSettings,
     val html = remember(article.id, body, style, byline) { ReaderHtml.wrap(article.title, byline, body, style) }
 
     val allowLocal by rememberUpdatedState(prefs.allowLocalNetwork)
+    // shouldInterceptRequest must answer synchronously, so it blocks on the fetch; cancelling this job when the
+    // reader leaves the screen ends those fetches instead of leaving them to run out their timeouts.
+    val fetchJob = remember { Job() }
+    DisposableEffect(fetchJob) { onDispose { fetchJob.cancel() } }
 
     AndroidView(
         modifier = modifier,
@@ -204,7 +210,7 @@ private fun ArticleWebView(article: Article, body: SafeHtml, prefs: AppSettings,
                             return WebResourceResponse("font/woff2", null, 200, "OK", ReaderFonts.RESPONSE_HEADERS, ctx.assets.open(path))
                         }
                         val image = if (request.method == "GET") {
-                            runBlocking { images.fetch(request.url.toString(), allowLocal) }.getOrNull()
+                            runCatching { runBlocking(fetchJob) { images.fetch(request.url.toString(), allowLocal) } }.getOrNull()?.getOrNull()
                         } else null
                         return if (image != null) {
                             WebResourceResponse(image.mimeType, null, ByteArrayInputStream(image.bytes))
