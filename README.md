@@ -5,6 +5,9 @@
 A native Android RSS reader with optional [Nextcloud News](https://apps.nextcloud.com/apps/news) sync.
 Local-first, no accounts, no tracking.
 
+[<img width="440" alt="googleplay-badge-01-getit width-1440" src="https://github.com/user-attachments/assets/2e46f7c4-6b8c-4402-af7f-3ea60d56472c" />](https://play.google.com/store/apps/details?id=me.dougals.forage)
+
+
 ## Features
 
 - **Feeds:** RSS 2.0, RDF and Atom. OPML import and export. Folders.
